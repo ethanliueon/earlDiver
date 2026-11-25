@@ -100,10 +100,13 @@ export const ABILITY_DEFS = {
   },
   nacre: { exotic: { name: 'Nacre', special: true, maxLoad: 3, dur: 60, cd: 3600, nacre: 0.25, line: 'For 60 s, a chance at a pearl with every catch.' } },
   bloodmoon: { mythical: { name: 'Bloodmoon', special: true, event: true, maxLoad: 1, dur: 60, cd: 21600, blood: true, call: { n: 40, exo: 0.15, leg: 0.02 }, /* (7.6.7, owner) the Lure family's top in all but name */ line: 'For 60 s the water turns to blood and the thing comes for you. Forty fish rush in, one in seven exotic, one in fifty legendary. Everything caught is Cursed: worth five times as much, and it never dies.' } },
+  // (7.6.15, owner) Shoal protects: a school swims with him (or round the sub) and throws itself in the way of a hunter's
+  // strike (never the thing's): the hunter takes a mouthful of fish instead and breaks off, and the school thins. Sardines,
+  // then mackerel, then a court of small lure-lit seadevils whose bite drives the hunter off for longer
   shoal: {
-    rare: { name: 'Shoal', dur: 30, cd: 300, shoal: 1, light: 0.6, line: 'A school of small silver fish circles you for 30 s.' },
-    exotic: { name: 'Shoal+', dur: 45, cd: 600, shoal: 2, light: 0.8, line: 'A larger school circles you for 45 s, its flashing lighting the water.' },
-    legendary: { name: 'Silverstorm', dur: 60, cd: 1800, shoal: 3, light: 1, line: 'A storm of silver fish turns round you for 60 s.' },
+    rare: { name: 'Shoal', dur: 30, cd: 600, shoal: 1, guard: 1, fish: 49, light: 0.6, line: 'For 30 s a school of sardines swims with you and takes one hunter\'s strike for you.' },
+    exotic: { name: 'Shoal+', dur: 45, cd: 1200, shoal: 2, guard: 2, fish: 51, light: 0.8, line: 'For 45 s a school of mackerel swims with you and takes two hunters\' strikes for you.' },
+    legendary: { name: 'Silverstorm', dur: 60, cd: 2400, shoal: 3, guard: 4, fish: 326, light: 1, line: 'For 60 s a court of lure-lit anglers swims with you, takes four hunters\' strikes and bites back, driving them off.' },
   },
   revel: { // (7.6.7, owner) lantern light as strong as a Flare+, in vivid colours; hunters that can bite keep away from it (never the thing)
     rare: { name: 'Revel', dur: 30, cd: 600, revel: 1, light: 1.6, repel: 15, line: 'For 30 s coloured lantern light 45 m round you. Hunters keep 15 m off.' },

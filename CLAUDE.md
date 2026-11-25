@@ -404,3 +404,9 @@ last desktop build is kept on the branch `desktop-4.25.5`).
   him, fish facing the way it swims and flashing together as it turns. Item cards carry no outline in their rarity's
   colour and the pop-up's frame is plain olive steel (nothing is boxed); a card's plate is lit faintly from within instead.
 - (7.6.14, owner rated 2/10) Shoal is a small flock: each sardine its own place and speed, keeping to the school (its own loose spot, from a bell curve, never a pattern or rows), matching its heading, keeping a body's length from its neighbours, a little restless; the school follows a point drifting round him within a few metres.
+- (7.6.15, owner) Shoal protects: sardines (1 strike), mackerel (2), whipnose anglers with their lit lures (4, and their bite
+  drives the hunter off for 90 s instead of 40); a hunter coming in to strike him or the sub (never the thing) takes a
+  mouthful of the school instead and breaks off, the school bursting open and thinning. The school has twice the room
+  round each fish. Charges loaded on a scroll show as lit bone beads along the skill button's left rim (no "×N"). The swap
+  chip is the camera chip's size and the skill's ring is cut away behind it. The bursts are wide, soft and long (rare 1 s
+  to mythical 2.6 s), bending the water most just past the front and on beyond it, as if the water stretched.

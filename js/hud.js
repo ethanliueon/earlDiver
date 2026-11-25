@@ -540,20 +540,28 @@ e.inSub ? [
       // (7.6.4, owner) the swap chip on the skill button's upper left rim, as on the net: the second scroll's coin (its own
       // light rising inside it while it still runs); with no second scroll, a greyed scroll behind a padlock
       // (7.6.7, owner) on its upper right rim, as the camera chip sits on the net's: sized and placed to clear the hand above
-      if (a.abil && !this.inKill) { const A2 = this.abilDef2, rc2 = 12 * u, an = -25 * Math.PI / 180, cx2 = x + Math.cos(an) * (r * 0.85), cy2 = y + Math.sin(an) * (r * 0.85);
+      // (7.6.15, owner) the camera chip's size (16): it may overlap the hand's rim a little; the skill's ring is cut away behind it
+      this.chipCut = null; if (a.abil && !this.inKill) { const A2 = this.abilDef2, rc2 = 16 * u, an = -28 * Math.PI / 180, cx2 = x + Math.cos(an) * (r * 0.9), cy2 = y + Math.sin(an) * (r * 0.9); this.chipCut = { x: cx2, y: cy2, r: rc2 + 1.5 * u };
         if (A2) { drawCoin(ctx, cx2, cy2, rc2, 'ab_' + A2.fam, pressFx('abswap', cx2, cy2, rc2) ? 'press' : this.abil2Running ? 'lit' : 'on', { tier: A2.tier }, A2.tier);
           ctx.save(); ctx.translate(cx2 - rc2 * 0.72, cy2 + rc2 * 0.62); ctx.fillStyle = 'rgba(8,8,6,0.88)'; ctx.beginPath(); ctx.arc(0, 0, rc2 * 0.42, 0, TAU); ctx.fill(); drawGlyph(ctx, 'swap', 0, 0, rc2 * 0.8); ctx.restore();
           hot(cx2 - rc2, cy2 - rc2, rc2 * 2, rc2 * 2, 'abswap'); }
         else { drawCoin(ctx, cx2, cy2, rc2, 'ab_sprint', 'off', null); padlock(cx2 + rc2 * 0.4, cy2 + rc2 * 0.4, rc2 * 0.42); hot(cx2 - rc2, cy2 - rc2, rc2 * 2, rc2 * 2, 'msg:No second scroll: put one in its slot in the bag'); } }
       // (7.6.3, owner) charges loaded on the scroll: their count in bone at the button's foot, left (the glow stick's count
       // sits at the top right); a small notch a charge under it, up to ten
-      if (a.abil && AB && AB.loaded > 0) { ctx.save(); const n = AB.loaded, fx0 = x - r * 0.98, fy0 = y + r * 0.8;
-        ctx.font = `700 ${12 * u}px ${HUDT}`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillStyle = '#ece6d2'; ctx.shadowColor = '#000'; ctx.shadowBlur = 3 * u; ctx.fillText('×' + n, fx0, fy0); ctx.restore(); }
+      // (7.6.15, owner) no "×N": a lit bead for each loaded charge, set along the outside of the button's left rim (clear of
+      // the chip at its upper right and the lamp below), as rivets on its edge; one goes dark as a charge is spent
+      if (a.abil && AB && AB.loaded > 0) { ctx.save(); const n = Math.min(10, AB.loaded), rb = r * 1.16, br = Math.max(2, 2.3 * u), step = 9.5 * Math.PI / 180, a0 = 215 * Math.PI / 180;
+        for (let i = 0; i < n; i++) { const ang = a0 - i * step, bx = x + Math.cos(ang) * rb, by = y + Math.sin(ang) * rb;
+          ctx.fillStyle = 'rgba(6,8,8,0.75)'; ctx.beginPath(); ctx.arc(bx, by + 0.6 * u, br * 1.25, 0, TAU); ctx.fill();
+          const bg = ctx.createRadialGradient(bx - br * 0.35, by - br * 0.4, br * 0.1, bx, by, br); bg.addColorStop(0, '#fbf4dc'); bg.addColorStop(0.55, '#d8cca4'); bg.addColorStop(1, '#8e8262'); ctx.fillStyle = bg; ctx.beginPath(); ctx.arc(bx, by, br, 0, TAU); ctx.fill(); }
+        ctx.restore(); }
+      const cut = a.abil && this.chipCut; if (cut) { ctx.save(); ctx.beginPath(); ctx.rect(x - r * 3, y - r * 3, r * 6, r * 6); ctx.arc(cut.x, cut.y, cut.r, 0, TAU); ctx.clip('evenodd'); } // (7.6.15) the ring stops at the chip
       if (a.abil) { const cdl = cooldownLeft(P), tot = (AB.dur || 0) + (AB.cd || 0);
         if (ABS.activeT > 0) { ctx.strokeStyle = AB.tier === 'mythical' ? 'rgba(236,120,84,0.8)' : AB.tier === 'legendary' ? 'rgba(220,180,110,0.75)' : 'rgba(226,220,196,0.7)'; ctx.lineWidth = 2.2 * u; ctx.beginPath(); ctx.arc(x, y, r * 1.08, -Math.PI / 2, -Math.PI / 2 + TAU * (ABS.activeT / Math.max(0.01, ABS.maxT))); ctx.stroke(); }
         else if (cdl > 0 && tot > 0 && !(AB.charges && ABS.charges > 0)) { ctx.fillStyle = 'rgba(4,6,6,0.6)'; ctx.beginPath(); ctx.moveTo(x, y); ctx.arc(x, y, r * 0.92, -Math.PI / 2, -Math.PI / 2 + TAU * Math.min(1, cdl / tot)); ctx.closePath(); ctx.fill();
           // (5.16.0) a small painted hourglass and the time left in the middle of the greyed coin ("7h 42m", "38s")
           drawHourglass(ctx, x, y - r * 0.2, r * 0.3); ctx.font = `700 ${Math.max(10 * u, r * 0.38)}px ${HUDT}`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillStyle = '#efe8d2'; ctx.shadowColor = '#000'; ctx.shadowBlur = 3 * u; ctx.fillText(fmtLeft(cdl), x, y + r * 0.34); ctx.shadowBlur = 0; } }
+      if (cut) ctx.restore();
       if (a.n > 1 && !a.lock) { ctx.font = `700 ${12 * u}px ${HUDT}`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillStyle = '#ece6d2'; ctx.shadowColor = '#000'; ctx.shadowBlur = 3 * u; ctx.fillText(String(a.n), x + r * 0.72, y - r * 0.72); }
       if (a.bar && g.promptBar != null && a.on) { ctx.strokeStyle = 'rgba(244,246,240,0.95)'; ctx.lineWidth = 3.5 * u; ctx.beginPath(); ctx.arc(x, y, r * 0.62, -Math.PI / 2, -Math.PI / 2 + TAU * clamp(g.promptBar, 0, 1)); ctx.stroke(); }
       ctx.restore();

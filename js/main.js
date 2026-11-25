@@ -2254,7 +2254,7 @@ function useAbility() {
   if (A.call) callFish(A); // (7.6.7, owner) Lure, Lure+, Tidecall and Bloodmoon
   if (A.nacre) g.nacreT = A.dur;
   if (A.blood) bloodmoon(A);
-  if (A.shoal) g.shoalFx = { t: 0, lv: A.shoal, dur: A.dur };
+  if (A.shoal) { g.shoalFx = { t: 0, lv: A.shoal, dur: A.dur, fish: A.fish || 49, guard: A.guard || 1, used: 0 }; } // (7.6.15) its strikes to take
   if (A.revel) g.revelFx = { t: 0, lv: A.revel, dur: A.dur };
   if (A.echo) { g.echoT = A.dur; g.echoLv = A.echo; g.echoAt = g.time; g.echoSweep = 0; } // (5.16.0) the screen-wide sweep (render.js), then the marks on the radar (hud.js)
   if (A.tide) { // (7.4.15) The Last Tide: any time. In red water as Tidewarden; marked, the mark washed off; else only its light and air
@@ -2319,7 +2319,7 @@ function bloodmoon(A) { // the water to blood; the thing just past the radar's r
 // tier (rare a few metres, exotic with a second wave, legendary across the screen, mythical pulled in first and then the
 // brightest light in the game, rippling across the radar). A Heart also throws the thing 200 m further off when it is on
 // the radar but not closer than 100 m (red water or not); the mark stays. Never Bloodmoon, which calls it
-const BURST = { rare: { reach: 4, dur: 0.7, mag: 0.035 }, exotic: { reach: 10, dur: 0.9, mag: 0.05, second: true }, legendary: { reach: 0, dur: 1.2, mag: 0.07, second: true }, mythical: { reach: 0, dur: 1.7, mag: 0.1, second: true, pull: 0.28 } };
+const BURST = { rare: { reach: 5, dur: 1.0, mag: 0.08 }, exotic: { reach: 11, dur: 1.4, mag: 0.11, second: true }, legendary: { reach: 0, dur: 2.0, mag: 0.14, second: true }, mythical: { reach: 0, dur: 2.6, mag: 0.19, second: true, pull: 0.3 } }; // (7.6.15, owner) longer and stronger
 function fireBurst(A) {
   const e = g.earl, m = e.inSub ? g.sub : e, B = BURST[A.tier] || BURST.rare;
   (g.bursts || (g.bursts = [])).push({ t: 0, x: m.x, y: m.y, tier: A.tier, fam: A.fam || '', ...B });

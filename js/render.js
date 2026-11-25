@@ -1546,12 +1546,15 @@ export class Renderer {
       // stay with the school (its own loose spot in it, drawn from a bell curve, never a pattern), swim as the school swims,
       // and keep a body's length from its neighbours; a little restlessness of its own on top. So the shape lives and
       // stretches, thickens and thins, and never falls into rows
-      const sp = this.sardine || (this.sardine = SPECIES_BY_ID[49]), Lp = ppm * 0.28, ch = Math.cos(F.hd), shd = Math.sin(F.hd), SL = (1.1 + 0.3 * F.lv) * (e.inSub ? 1.8 : 1), SW = (0.45 + 0.1 * F.lv) * (e.inSub ? 1.6 : 1);
-      if (!F.fish) { const rnd = (k) => { const v = Math.sin(k * 127.1 + 311.7) * 43758.5453; return v - Math.floor(v); }, gs = (k) => Math.sqrt(-2 * Math.log(Math.max(1e-6, rnd(k)))) * Math.cos(TAU * rnd(k + 0.5));
-        F.fish = []; for (let i = 0; i < n; i++) { const oa = gs(i * 3.1) * 0.45, oc = gs(i * 5.7 + 2) * 0.45; F.fish.push({ x: F.cx + oa * SL * ch - oc * SW * shd, y: F.cy + oa * SL * shd + oc * SW * ch, vx: F.vx, vy: F.vy, oa, oc, ph: rnd(i * 9.3) * TAU, sz: 0.8 + 0.4 * rnd(i * 2.2) }); } }
-      const FF = F.fish; for (const f of FF) { const tx2 = F.cx + f.oa * SL * ch - f.oc * SW * shd, ty2 = F.cy + f.oa * SL * shd + f.oc * SW * ch;
+      const sp = SPECIES_BY_ID[F.fish || 49] || SPECIES_BY_ID[49], Lp = ppm * Math.max(0.28, (sp.len || 0.3) * 0.9), ch = Math.cos(F.hd), shd = Math.sin(F.hd), SL = (2.2 + 0.5 * F.lv) * (e.inSub ? 1.8 : 1), SW = (0.9 + 0.2 * F.lv) * (e.inSub ? 1.6 : 1), sep = F.lv >= 3 ? 0.75 : 0.6; // (7.6.15) twice the room round each fish; sardines, mackerel, seadevils
+      if (!F.fishN) { const rnd = (k) => { const v = Math.sin(k * 127.1 + 311.7) * 43758.5453; return v - Math.floor(v); }, gs = (k) => Math.sqrt(-2 * Math.log(Math.max(1e-6, rnd(k)))) * Math.cos(TAU * rnd(k + 0.5));
+        F.fishN = []; for (let i = 0; i < n; i++) { const oa = gs(i * 3.1) * 0.45, oc = gs(i * 5.7 + 2) * 0.45; F.fishN.push({ x: F.cx + oa * SL * ch - oc * SW * shd, y: F.cy + oa * SL * shd + oc * SW * ch, vx: F.vx, vy: F.vy, oa, oc, ph: rnd(i * 9.3) * TAU, sz: 0.8 + 0.4 * rnd(i * 2.2) }); } }
+      // (7.6.15) a strike taken: the school bursts open round the hunter's mouth (fish flung out, bubbles, a flash of scales)
+      if (F.hit && F.t - F.hit.t < 0.9) { const hk = (F.t - F.hit.t) / 0.9; for (const f of F.fishN) { const dx = f.x - F.hit.x, dy = f.y - F.hit.y, dd = Math.hypot(dx, dy) || 1; if (dd < 4) { f.vx += dx / dd * (1 - hk) * 9 * dt; f.vy += dy / dd * (1 - hk) * 9 * dt; } } if (!F.hit.bub) { F.hit.bub = 1; for (let i = 0; i < 18; i++) g.bubbles && g.bubbles.push({ x: F.hit.x + (Math.random() - 0.5) * 1.2, y: F.hit.y + (Math.random() - 0.5) * 0.8, r: 0.02 + Math.random() * 0.08, w: Math.random() * 6, t: 0 }); } }
+      if (F.fishN && F.used && F.lostTo !== F.used) { F.lostTo = F.used; const keep = Math.max(3, Math.round(F.fishN.length * (1 - 0.55 / F.guard))); F.fishN.splice(keep); }
+      const FF = F.fishN; for (const f of FF) { const tx2 = F.cx + f.oa * SL * ch - f.oc * SW * shd, ty2 = F.cy + f.oa * SL * shd + f.oc * SW * ch;
         let ax = (tx2 - f.x) * 2.2 + (F.vx - f.vx) * 1.6 + Math.sin(F.t * 1.3 + f.ph) * 0.5, ay = (ty2 - f.y) * 2.2 + (F.vy - f.vy) * 1.6 + Math.cos(F.t * 1.1 + f.ph * 1.7) * 0.35;
-        for (const o of FF) { if (o === f) continue; const dx = f.x - o.x, dy = f.y - o.y, d2 = dx * dx + dy * dy; if (d2 < 0.09 && d2 > 1e-6) { const d = Math.sqrt(d2), k = (0.3 - d) / 0.3 * 6; ax += dx / d * k; ay += dy / d * k; } }
+        for (const o of FF) { if (o === f) continue; const dx = f.x - o.x, dy = f.y - o.y, d2 = dx * dx + dy * dy; if (d2 < sep * sep && d2 > 1e-6) { const d = Math.sqrt(d2), k = (sep - d) / sep * 6; ax += dx / d * k; ay += dy / d * k; } }
         f.vx += ax * dt; f.vy += ay * dt; const spd = Math.hypot(f.vx, f.vy), mx2 = Math.hypot(F.vx, F.vy) * 1.6 + 1.2; if (spd > mx2) { f.vx *= mx2 / spd; f.vy *= mx2 / spd; } f.x += f.vx * dt; f.y += f.vy * dt; }
       ctx.save(); for (const f of FF) { const x = S(f.x), y = Sy(f.y), fh = Math.atan2(f.vy * 0.7, f.vx), right = Math.cos(fh) >= 0, angf = clamp(Math.atan2(Math.sin(fh), Math.abs(Math.cos(fh))), -0.6, 0.6);
           ctx.save(); ctx.translate(x, y); ctx.globalAlpha = fade; if (right) { ctx.rotate(angf); ctx.scale(-1, 1); } else ctx.rotate(-angf); drawSpecies(ctx, sp, Lp * f.sz, F.t * 4 + f.ph, 1, f.ph); ctx.restore();
@@ -1853,19 +1856,19 @@ export class Renderer {
           continue;
         }
         const tt = B.t - pull, reach = B.reach ? B.reach * ppm : diag * (B.tier === 'mythical' ? 1.2 : 0.85);
-        const waves = (B.second ? [[0, 1], [0.2, 0.55]] : [[0, 1]]).map(([d0, wk]) => { const k = (tt - d0) / B.dur; if (k <= 0 || k >= 1) return null;
-          const R = Math.max(ppm * 0.3, reach * (1 - Math.pow(1 - k, 2.4))), w = Math.max(ppm * 0.5, reach * (B.reach ? 0.26 : 0.07)) * (0.6 + 0.4 * wk); return { k, wk, R, w, lw: Math.max(ppm * 0.3, w * 0.55), fade: Math.pow(1 - k, 1.15) * wk }; }).filter(Boolean);
+        const waves = (B.second ? [[0, 1], [0.35, 0.55]] : [[0, 1]]).map(([d0, wk]) => { const k = (tt - d0) / B.dur; if (k <= 0 || k >= 1) return null;
+          const R = Math.max(ppm * 0.3, reach * (1 - Math.pow(1 - k, 2.1))), w = Math.max(ppm * 0.9, reach * (B.reach ? 0.5 : 0.17)) * (0.6 + 0.4 * wk); return { k, wk, R, w, lw: Math.max(ppm * 0.6, w * 0.95), fade: Math.pow(1 - k, 1.05) * wk }; }).filter(Boolean); // (7.6.15, owner) wide, soft and long
         // the bends first, every wave (so a later one never wipes an earlier one's light): the band magnified most at its
         // middle and less toward its edges, in nested steps, so it has no seam
-        for (const V of waves) lens(cx, cy, Math.max(0, V.R - V.w), V.R + V.w, 1 + B.mag * V.fade, [[0, 0], [0.5, 1], [1, 0]]);
+        for (const V of waves) lens(cx, cy, Math.max(0, V.R - V.w * 0.7), V.R + V.w * 2.4, 1 + B.mag * V.fade, [[0, 0], [0.2, 1], [0.45, 0.7], [1, 0]]); // (7.6.15) bent most just past the front and on beyond it, fading far out: the water stretched
         // then the light on each front, uneven round the way, and a little light left in the water behind it, fading inward
         ctx.globalCompositeOperation = 'lighter';
         if (B.tier === 'mythical' && tt < 0.5) { const f = 1 - tt / 0.5; ctx.fillStyle = `rgba(${C[0]},${C[1]},${C[2]},${(0.3 * f * f).toFixed(3)})`; ctx.fillRect(0, 0, this.W, this.H); } // (the Heart's flash: the brightest light in the game, gone in half a second)
         for (const V of waves) { const { R, lw } = V;
-          const pk = PEAK[B.tier] * V.fade, lg = ctx.createRadialGradient(cx, cy, Math.max(0, R - lw), cx, cy, R + lw * 0.35);
-          lg.addColorStop(0, `rgba(${C[0]},${C[1]},${C[2]},0)`); lg.addColorStop(0.78, `rgba(${C[0]},${C[1]},${C[2]},${pk.toFixed(3)})`); lg.addColorStop(1, `rgba(${C[0]},${C[1]},${C[2]},0)`);
+          const pk = PEAK[B.tier] * V.fade * 0.75, lg = ctx.createRadialGradient(cx, cy, Math.max(0, R - lw), cx, cy, R + lw * 0.45);
+          lg.addColorStop(0, `rgba(${C[0]},${C[1]},${C[2]},0)`); lg.addColorStop(0.55, `rgba(${C[0]},${C[1]},${C[2]},${(pk * 0.55).toFixed(3)})`); lg.addColorStop(0.8, `rgba(${C[0]},${C[1]},${C[2]},${pk.toFixed(3)})`); lg.addColorStop(1, `rgba(${C[0]},${C[1]},${C[2]},0)`);
           // (one smooth ring, then made brighter and dimmer round its way by an angular mask: no slices, no ticks)
-          { const r1 = R + lw * 0.4, x0 = Math.max(0, Math.floor(cx - r1)), y0 = Math.max(0, Math.floor(cy - r1)), x1 = Math.min(this.c.width, Math.ceil(cx + r1)), y1 = Math.min(this.c.height, Math.ceil(cy + r1)), bw = x1 - x0, bh = y1 - y0;
+          { const r1 = R + lw * 0.5, x0 = Math.max(0, Math.floor(cx - r1)), y0 = Math.max(0, Math.floor(cy - r1)), x1 = Math.min(this.c.width, Math.ceil(cx + r1)), y1 = Math.min(this.c.height, Math.ceil(cy + r1)), bw = x1 - x0, bh = y1 - y0;
             if (bw > 0 && bh > 0) { lx2.setTransform(1, 0, 0, 1, 0, 0); lx2.globalCompositeOperation = 'source-over'; lx2.clearRect(x0, y0, bw, bh); lx2.fillStyle = lg; lx2.beginPath(); lx2.arc(cx, cy, r1, 0, TAU); lx2.arc(cx, cy, Math.max(0, R - lw), 0, TAU, true); lx2.fill('evenodd');
               if (lx2.createConicGradient) { const cg = lx2.createConicGradient(B.x * 3.1 % TAU + tt * 0.5, cx, cy), s2 = B.y * 1.7 % TAU; for (let i = 0; i <= 24; i++) { const am = i / 24 * TAU, nz = 0.3 + 0.7 * (0.5 + 0.5 * Math.sin(am * 3)) * (0.6 + 0.4 * Math.sin(am * 5 - tt * 1.3 + s2)); cg.addColorStop(i / 24, `rgba(0,0,0,${nz.toFixed(3)})`); } lx2.globalCompositeOperation = 'destination-in'; lx2.fillStyle = cg; lx2.fillRect(x0, y0, bw, bh); lx2.globalCompositeOperation = 'source-over'; }
               ctx.drawImage(lc, x0, y0, bw, bh, x0, y0, bw, bh); } }
