@@ -279,3 +279,4 @@ last desktop build is kept on the branch `desktop-4.25.5`).
 - A step that must be done before anything else (getting into the sub, the trawl lesson) darkens the screen's edges (`g.tutVig`). The trawl lesson's net stays open until its jellyfish is in.
 - `tools/tests/phone.cjs` walks to the cabin door and presses the button like a player; it passes when it reaches "Get in the sub" (`reached the sub trip`) with only the three cloud 404s.
 - Mid-line comments are `/* */` only: a `//` mid-line hid the line that tells the game the sub trip had started (so the sub could not be tapped).
+- (7.4.27, owner) Nothing marks the chart by itself except the shops (home, Dave's, Station 7, the Old One's cave); other places are the player's to mark. Marker buoys stand only at the shops. No price board on the sell page.

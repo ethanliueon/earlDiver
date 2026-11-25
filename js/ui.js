@@ -2109,7 +2109,7 @@ export class UI {
       }
       // the price board on the Margaret: chalked up after every sale, the newest first
       const board = P.board || [];
-      if (board.length) html += `<div class="priceboard"><h4>Price board</h4>${board.map((r) => { const P2 = boardPic(r); return `<div class="pb-row">${P2 ? `<span class="pb-pic ${P2.hab}"><img src="${P2.pic}" alt=""></span>` : '<span class="pb-pic"></span>'}<span class="pb-name"${P2 ? ` style="color:${P2.rc}"` : ''}>${r.label}</span><b>${money(r.each)}</b></div>`; }).join('')}</div>`;
+      void board; /* (7.4.27, owner) no price board: the receipt says what each sold for */
     } else if (tab === 'diver') {
       html += this.upgradeGroups(P, ['Diver'], icon, can);
       html += this.suitRows(P, can);

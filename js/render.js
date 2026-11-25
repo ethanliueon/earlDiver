@@ -592,7 +592,7 @@ export class Renderer {
     // and the bait's scent drifting away downstream
     this.trapLabels = [];
     const night = g.day && g.day.light < 0.3;
-    for (const pt of SAIL) if (pt.x > x0 - 6 && pt.x < x1 + 6 && y0 < 4 + 400) drawSailBuoy(ctx, S, Sy, ppm, t, pt, surfY, g.world.floorAt(pt.x), y1, night); // (6.8.1) the sail points' buoys
+    for (const pt of SAIL) if ((pt.id === 'home' || pt.id === 'dave' || pt.id === 'station' || pt.id === 'cave') /* (7.4.27, owner) buoys only at the shops: the others' chains read as a black line down the screen */ && pt.x > x0 - 6 && pt.x < x1 + 6 && y0 < 4 + 400) drawSailBuoy(ctx, S, Sy, ppm, t, pt, surfY, g.world.floorAt(pt.x), y1, night); // (6.8.1) the sail points' buoys
     for (const tr of g.traps || []) {
       if (tr.x < x0 - 10 || tr.x > x1 + 10) continue;
       const T = TRAPS[tr.type], by = surfY(tr.x);

@@ -400,7 +400,10 @@ const ui = new UI({
 // (4.10.0) the chart (K, or the chart button under the journal): the whole sea, and the player's own markers
 // (6.8.1) Sail here: from the chart, to a sail point already found. Only aboard the boat with the sub in its cradle; a
 // short loading screen, then the boat is at the buoy with its anchor down (no voyage, nothing lost, the sea as it was)
-function sailFound(P) { const F = P.sail || (P.sail = { home: true }); return F; }
+// (7.4.27, owner) nothing marks the chart by itself but the shops (home, Dave's, the station, the Old One's cave): places are
+// the player's own to mark
+const SAIL_SHOPS = new Set(['home', 'dave', 'station', 'cave']);
+function sailFound(P) { const F = P.sail || (P.sail = { home: true }); for (const k of Object.keys(F)) if (!SAIL_SHOPS.has(k)) delete F[k]; return F; }
 function sailWhy() {
   if (!g || g.mode !== 'play') return 'Not now';
   if (!(g.aboard || g.helm) || !g.sub.docked) return 'From the boat, with the sub aboard';
@@ -420,7 +423,7 @@ function sailTo(id) {
 }
 function sailFind() { // passing over a point finds it
   const P = profile; if (!P || !g || g.mode !== 'play') return; const F = sailFound(P), e = g.earl;
-  for (const s of SAIL) if (!F[s.id] && (Math.abs(e.x - s.x) < 60 || Math.abs(BOAT.x - s.x) < 60)) { F[s.id] = true; saveProfile(P); if (s.id !== 'home') hud.toast(`${s.no} · ${s.name}: on the chart`, 'note'); }
+  for (const s of SAIL) if (SAIL_SHOPS.has(s.id) && !F[s.id] && (Math.abs(e.x - s.x) < 60 || Math.abs(BOAT.x - s.x) < 60)) { F[s.id] = true; saveProfile(P); if (s.id !== 'home') hud.toast(`${s.name} is on your chart now`, 'note'); }
 }
 ui.chart = new Chart({ getGame: () => g, getProfile: () => profile, save: () => saveProfile(profile), sail: (id) => sailTo(id), sailWhy: () => sailWhy(), sailFound: () => sailFound(profile),
   follow: (m) => { g.markGuide = m || null; if (m) hud.toast(`Following: ${m.name}`); }, following: () => g.markGuide || null });
