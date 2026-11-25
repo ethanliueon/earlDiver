@@ -554,7 +554,7 @@ export function drawCoin(ctx, cx, cy, r, kind, state = 'on', look = null, tint =
       const pc = document.createElement('canvas'); pc.width = 300; pc.height = 180; const px = pc.getContext('2d');
       if (kind === 'trawl') drawTrawl3(px, 300, 180, (look && look.tier) || 'basic'); else drawTrap3(px, 300, 180, (typeof look === 'string' && look) || (look && look.key) || 'pot');
       const sw = R * 1.62 * ((look && look.k) || 1), sh = sw * 0.6; x.drawImage(pc, -sw / 2, -sh / 2 - R * 0.02, sw, sh); }
-    else if (ART[kind]) { const k = R * 0.66 / 50 * ((look && look.k) || 1); x.save(); x.scale(k, k); ART[kind](x, look || {}); x.restore(); } /* (6.5.1) look.k: the picture larger (the interact button's) */
+    else if (ART[kind]) { const k = R * 0.76 / 50 /* (7.6.18, owner) the pictures fill more of their coins */ * ((look && look.k) || 1); x.save(); x.scale(k, k); ART[kind](x, look || {}); x.restore(); } /* (6.5.1) look.k: the picture larger (the interact button's) */
     else drawGlyph(x, kind, 0, 0, R * 0.95 * ((look && look.k) || 1));
     x.restore();
     if (state === 'off') { x.globalCompositeOperation = 'saturation'; x.globalAlpha = 1; /* (6.5.7) fully grey, and darker: a button that can't be used now must read so at a glance */ x.fillStyle = '#808080'; x.beginPath(); x.arc(0, 0, R, 0, TAU); x.fill(); x.globalCompositeOperation = 'source-over'; x.globalAlpha = 1; x.fillStyle = 'rgba(6,8,8,0.46)'; x.fill(); } // (5.16.7) greyer and darker: opaque now, so this alone says 'not now'

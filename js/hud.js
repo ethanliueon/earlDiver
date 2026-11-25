@@ -552,7 +552,7 @@ e.inSub ? [
       // the chip at its upper right and the lamp below), as rivets on its edge; one goes dark as a charge is spent
       // (7.6.16, owner) not beads: an arc cut into segments along the outside of the left rim, one segment a slot the scroll
       // can hold; the loaded ones lit in bone, the spent ones a dark groove
-      if (a.abil && AB && AB.loaded > 0) { ctx.save(); const cap = Math.max(1, Math.min(10, AB.maxLoad || ((AB.tier === 'legendary' || AB.tier === 'mythical') ? 10 : 5))), n = Math.min(cap, AB.loaded), rb = r * 1.17, from = 266 * Math.PI / 180, span = 142 * Math.PI / 180 /* (7.6.17, owner) longer, from the top of the rim down its left side */, gap = Math.min(5 * Math.PI / 180, span / cap * 0.3), seg = (span - gap * (cap - 1)) / cap;
+      if (a.abil && AB && AB.loaded > 0) { ctx.save(); const cap = Math.max(1, Math.min(10, AB.maxLoad || ((AB.tier === 'legendary' || AB.tier === 'mythical') ? 10 : 5))), n = Math.min(cap, AB.loaded), rb = r * 1.17, from = 266 * Math.PI / 180, span = 228 * Math.PI / 180 /* (7.6.17, owner) longer, from the top of the rim down its left side */, gap = Math.min(5 * Math.PI / 180, span / cap * 0.3), seg = (span - gap * (cap - 1)) / cap;
         ctx.lineCap = 'butt';
         for (let i = 0; i < cap; i++) { const a1 = from - i * (seg + gap), a2 = a1 - seg, lit = i < n;
           ctx.strokeStyle = 'rgba(6,8,8,0.78)'; ctx.lineWidth = 4.6 * u; ctx.beginPath(); ctx.arc(x, y, rb, a2, a1); ctx.stroke();
