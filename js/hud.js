@@ -1221,7 +1221,7 @@ e.inSub ? [
     // (2.6.6) "Space  Atlantic herring": the key, then the name, plain, in the name's rarity colour
     
     
-    const capHidden = !SETTINGS.catchTags && !!g.catchTarget; // the catch tag is a setting (pause menu); other Space prompts stay
+    const capHidden = false; /* (7.6.21, owner) fish names always shown: the option is gone */ // the catch tag is a setting (pause menu); other Space prompts stay
     // (2.6.3) Hints off hides only the tips (hud.hint); what F or Space does is always shown, in its box
     // (4.0.0) what the tool can reach, said below (the prompts are all drawn together, after this)
     const capOn = g.capPrompt && !capHidden && !dying && !g.kill && !g.tutHidePrompts; // (4.4.0) the tutorial shows its own

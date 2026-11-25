@@ -42,7 +42,8 @@ import { LEGENDARY } from './specimens.js';
 import { readSlot, setSlot, getSlot, lastSlot, flushSave, SLOTS, SUB_AIR } from './economy.js';
 import { rollChestAll } from './chests.js';
 import { setDiverLook } from './earl_draw.js'; // (6.7.0)
-import { isTestStore } from './purchases.js'; // (6.5.9)
+import { isTestStore } from './purchases.js';
+import { CODES, normCode } from './codes.js'; // (6.5.9)
 import { calState, calClaimed, calWeek, giftPearls, syncServerTime } from './store.js';
 syncServerTime(); setInterval(syncServerTime, 10 * 60e3); /* (7.4.26) the daily gift's clock */
 import { hullCap } from './economy.js';
@@ -289,6 +290,10 @@ const ui = new UI({
       ui.showGains([{ kind: 'pet', id }]); });
     return true;
   },
+  onRedeem: (raw) => { const P = profile; if (!P) return 'Start a dive first'; const k = normCode(raw); if (!k) return 'Type a code'; const C = CODES[k]; if (!C) return 'That code is not recognised';
+    P.codes = P.codes || []; if (P.codes.includes(k)) return 'Already redeemed on this diver';
+    if (C.pearls) P.pearls = (P.pearls || 0) + C.pearls; if (C.cash) P.cash = (P.cash || 0) + C.cash; if (C.item && ITEMS[C.item]) for (let i = 0; i < (C.n || 1); i++) giveItem(P, C.item);
+    P.codes.push(k); saveProfile(P); audio.ready && audio.sale && audio.sale(); return { ok: true, msg: `Redeemed: ${C.say || 'done'}` }; },
   onTest: (act, arg) => {
     const P = profile; if (!P || !isTestStore()) return;
     if (act === 'pearls') { P.pearls = (P.pearls || 0) + (+arg); saveProfile(P); hud.toast(`+${arg} pearls (test)`); return; }

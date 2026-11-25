@@ -362,7 +362,7 @@ export class UI {
     // reduce flashing: the monster's lights stutter slowly and its blue flash is softened
     $('flashing').addEventListener('click', () => { const g = h.getGame(); g.reduceFlash = !g.reduceFlash; try { localStorage.setItem('earl.reduceFlash', g.reduceFlash ? '1' : '0'); } catch (e) { /* not saved */ } this.renderSettings(); });
     // display settings: the brackets round a target, and the "[Space] Net the …" catch tags
-    $('set-catchtags').addEventListener('click', () => { setSetting('catchTags', !SETTINGS.catchTags); this.renderSettings(); });
+    $('set-catchtags').addEventListener('click', () => this.redeemBox()); /* (7.6.21, owner) the fish names option gone (always on); this row redeems a code */
     $('set-sound').addEventListener('click', () => { h.onMute && h.onMute(); this.renderSettings(); });
     document.querySelector('#inventory .inv-close').addEventListener('click', () => this.toggleInventory(false));
     $('inventory').addEventListener('click', (ev) => { const tw = ev.target.closest && ev.target.closest('[data-tw]'); if (tw) { const P = this.h.getProfile(); P.trawlPick = tw.dataset.tw; this.h.onSaveProfile && this.h.onSaveProfile(); this.renderInventory(); return; } }, true);
@@ -1575,12 +1575,21 @@ export class UI {
     const g = this.h.getGame(), sw = (on) => `<b class="sw${on ? ' on' : ''}" aria-hidden="true"><i></i></b>`, row = (id, label, on, note) => { $(id).innerHTML = `<span>${label}${note ? `<em>${note}</em>` : ''}</span>${sw(on)}`; };
     row('set-sound', 'Sound', this.h.getMuted ? !this.h.getMuted() : true, '');
     row('set-fullscreen', 'Full screen', !!document.fullscreenElement, '');
-    row('set-catchtags', 'Show fish names', SETTINGS.catchTags, 'the name of the fish your net can reach');
     // (6.3.0) the brackets setting is gone with the brackets
+    $('set-catchtags').innerHTML = `<span>Redeem code<em>a code for pearls, cash or gear</em></span><b class="set-pick">Enter</b>`;
     row('flashing', 'Softer flashes', !!(g && g.reduceFlash), 'gentler lights from the thing in the deep');
     $('set-units').innerHTML = `<span>Units<em>metres and kilograms, or feet and pounds</em></span><b class="set-pick">${imperial() ? 'Imperial' : 'Metric'}</b>`; // (6.0.3)
     { const nm = uiSizeName(); $('set-uisize').innerHTML = `<span>Button size<em>the controls on screen, larger or smaller</em></span><b class="set-pick">${nm[0].toUpperCase() + nm.slice(1)}</b>`; } // (5.15.7) Small / Normal / Large, a tap steps through them
     $('set-graphics').innerHTML = `<span>Battery saver<em>30 frames a second</em></span>${sw(!!SETTINGS.fast)}` /* (7.5.0, owner) named for what it does */;
+  }
+  // (7.6.21, owner) a small plate to type a code into; the game says what it gave, or why not
+  redeemBox() {
+    let el = $('redeem'); if (!el) { el = document.createElement('div'); el.id = 'redeem'; el.innerHTML = '<div class="rd-plate"><h3>Redeem code</h3><input class="rd-in" maxlength="24" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="Code"><p class="rd-msg"></p><div class="rd-btns"><button class="rd-go">Redeem</button><button class="rd-no">Close</button></div></div>'; document.body.appendChild(el);
+      const inp = el.querySelector('.rd-in'), msg = el.querySelector('.rd-msg');
+      const go = () => { const r = this.h.onRedeem ? this.h.onRedeem(inp.value) : 'Not available'; msg.textContent = r.msg || r; msg.classList.toggle('ok', !!r.ok); if (r.ok) inp.value = ''; };
+      el.querySelector('.rd-go').addEventListener('click', go); inp.addEventListener('keydown', (ev) => { ev.stopPropagation(); if (ev.key === 'Enter') go(); });
+      el.querySelector('.rd-no').addEventListener('click', () => { el.hidden = true; inp.blur(); }); }
+    el.hidden = false; el.querySelector('.rd-msg').textContent = ''; setTimeout(() => el.querySelector('.rd-in').focus(), 50);
   }
   galleryOpen() { return !$('gallery').hidden; }
   cabinOpen() { return !$('cabin').hidden; }
