@@ -1980,11 +1980,27 @@ export class Renderer {
     const W = g.world, day = Math.max(0.18, dayEff ?? 1), tint = (rgb) => rgbStr(mixRgb([18, 20, 22], rgb, day));
     const px = ISLE.palm, gy = W.floorAt(px), wind = Math.sin(t * 0.7) * 0.5 + Math.sin(t * 1.9) * 0.2;
     ctx.save(); ctx.lineCap = 'round'; ctx.lineJoin = 'round';
-    // dune grass: thin blades in tufts, bending with the wind
-    for (let k = 0; k < 26; k++) { const x = ISLE.x0 + 3 + ((k * 7.31) % 1) * 16 + k * 0.05, y = W.floorAt(x); if (y > -0.4) continue;
-      const n = 4 + (k % 3); for (let j = 0; j < n; j++) { const a = (j - n / 2) * 0.22 + wind * 0.25, hgt = 0.35 + ((k * 13 + j * 7) % 10) / 22;
-        ctx.strokeStyle = tint(j % 2 ? [128, 132, 78] : [104, 112, 64]); ctx.lineWidth = Math.max(1, ppm * 0.025);
-        ctx.beginPath(); ctx.moveTo(S(x + j * 0.03), Sy(y + 0.02)); ctx.quadraticCurveTo(S(x + j * 0.03 + Math.sin(a) * hgt * 0.4), Sy(y - hgt * 0.6), S(x + j * 0.03 + Math.sin(a) * hgt), Sy(y - hgt * Math.cos(a))); ctx.stroke(); } }
+    // (7.4.28, owner) dune grass in clumps, painted once into a few sprites (no per-blade work each frame): tapered blades
+    // from a dark olive base to sun-bleached straw tips, the odd dry one and a seed stalk, a soft shadow on the sand under
+    // each; grouped in twos and threes with bare sand between, and a gust running across them now and then
+    { const lvl = Math.round(day * 8) / 8; if (!this.grassSpr || this.grassLvl !== lvl) { this.grassLvl = lvl; this.grassSpr = [];
+        const mix = (rgb) => rgbStr(mixRgb([18, 20, 22], rgb, lvl));
+        for (let v = 0; v < 6; v++) { const c = document.createElement('canvas'); c.width = 160; c.height = 130; const x = c.getContext('2d'); let sd = 11 + v * 97; const r = () => ((sd = (sd * 16807) % 2147483647) / 2147483647);
+          x.fillStyle = 'rgba(40,32,18,0.22)'; x.beginPath(); x.ellipse(80, 124, 34 + v * 3, 5, 0, 0, TAU); x.fill();
+          const nb = 7 + Math.floor(r() * 7);
+          for (let b = 0; b < nb; b++) { const bx = 80 + (r() - 0.5) * 26, a = (r() - 0.5) * 1.3 + (bx - 80) * 0.012, h = 46 + r() * 70, w = 2.4 + r() * 2.2, bend = (r() - 0.5) * 0.7, dry = r() < 0.15;
+            const tx = bx + Math.sin(a) * h, ty = 124 - Math.cos(a) * h, mx = bx + Math.sin(a + bend) * h * 0.55, my = 124 - Math.cos(a) * h * 0.6;
+            const gr = x.createLinearGradient(bx, 124, tx, ty); gr.addColorStop(0, mix(dry ? [104, 86, 52] : [70, 80, 44])); gr.addColorStop(0.55, mix(dry ? [150, 128, 80] : [112, 120, 66])); gr.addColorStop(1, mix(dry ? [196, 176, 126] : [188, 178, 118]));
+            x.fillStyle = gr; x.beginPath(); x.moveTo(bx - w, 124); x.quadraticCurveTo(mx - w * 0.6, my, tx, ty); x.quadraticCurveTo(mx + w * 0.6, my, bx + w, 124); x.closePath(); x.fill();
+            x.strokeStyle = 'rgba(255,246,210,0.18)'; x.lineWidth = 0.8; x.beginPath(); x.moveTo(bx, 122); x.quadraticCurveTo(mx, my, tx, ty); x.stroke(); }
+          if (r() < 0.6) { const sx = 80 + (r() - 0.5) * 12, sh = 90 + r() * 30, a = (r() - 0.5) * 0.4; x.strokeStyle = mix([150, 132, 86]); x.lineWidth = 1.4; x.beginPath(); x.moveTo(sx, 124); x.quadraticCurveTo(sx + Math.sin(a) * sh * 0.5, 124 - sh * 0.55, sx + Math.sin(a) * sh, 124 - sh); x.stroke();
+            x.fillStyle = mix([176, 150, 96]); for (let q = 0; q < 6; q++) { const u = 0.78 + q * 0.04; x.beginPath(); x.ellipse(sx + Math.sin(a) * sh * u, 124 - sh * u, 2.2, 4, a, 0, TAU); x.fill(); } }
+          this.grassSpr.push(c); } }
+      const SPR = this.grassSpr, k = ppm / 120; /* a sprite is 1.3 m tall at 120 px a metre */
+      for (let gI = 0; gI < 7; gI++) { const gx = ISLE.x0 + 2.6 + gI * 2.3 + Math.sin(gI * 7.7) * 0.7, nIn = 2 + (gI * 5) % 3;
+        for (let c2 = 0; c2 < nIn; c2++) { const x = gx + (c2 - nIn / 2) * 0.45 + Math.sin(gI * 3 + c2 * 1.7) * 0.15, y = W.floorAt(x); if (y > -0.4) continue;
+          const spr = SPR[(gI * 3 + c2) % SPR.length], sc = (0.75 + ((gI * 7 + c2 * 3) % 5) * 0.09) * k, gust = Math.max(0, Math.sin(t * 0.9 - x * 0.45)) ** 3 * 0.35, sway = wind * 0.08 + gust;
+          ctx.save(); ctx.translate(S(x), Sy(y + 0.03)); ctx.transform(1, 0, -sway, 1, 0, 0); ctx.drawImage(spr, -80 * sc, -124 * sc, 160 * sc, 130 * sc); ctx.restore(); } } }
     // shells and a fallen coconut on the sand
     for (const [sx, r] of [[ISLE.x0 + 5.2, 0.06], [ISLE.x0 + 9.7, 0.05], [ISLE.x0 + 13.1, 0.07]]) { const y = W.floorAt(sx); ctx.fillStyle = tint([232, 222, 200]); ctx.beginPath(); ctx.ellipse(S(sx), Sy(y - r * 0.4), r * ppm, r * 0.6 * ppm, 0.2, Math.PI, TAU); ctx.fill(); }
     { const cx = px - 2.2, cy = W.floorAt(cx) - 0.12; ctx.fillStyle = tint([96, 70, 42]); ctx.beginPath(); ctx.ellipse(S(cx), Sy(cy), 0.15 * ppm, 0.12 * ppm, 0.3, 0, TAU); ctx.fill(); ctx.fillStyle = tint([130, 98, 62]); ctx.beginPath(); ctx.ellipse(S(cx - 0.04), Sy(cy - 0.04), 0.07 * ppm, 0.05 * ppm, 0.3, 0, TAU); ctx.fill(); }

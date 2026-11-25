@@ -157,6 +157,16 @@ export function generateWorld(seed) {
     }
     W.brine = { x0: BRINE.x0 + 1.5, x1: BRINE.x1 - 1.5, y: surf };
   }
+  // (7.4.28, owner) the floor less placed: gentle rolls tens of metres long, low ridges and small terraces, and bumps a metre
+  // or two across, each scaled to the depth (the shallow sand barely, the open slopes more), never on the island or the pit
+  { const pi0 = Math.round((PIT.x - PIT.half - 20) / FLOOR_RES), pi1 = Math.round((PIT.x + PIT.half + 20) / FLOOR_RES), bi0 = Math.round((BRINE.x0 - 10) / FLOOR_RES), bi1 = Math.round((BRINE.x1 + 10) / FLOOR_RES);
+    for (let i = 0; i < n; i++) { const x = i * FLOOR_RES, d = floor[i]; if (x > 4955 || d < 3 || (i > pi0 && i < pi1) || (i > bi0 && i < bi1)) continue;
+      const k = clamp((d - 3) / 40, 0, 1), big = clamp(d / 400, 0, 1);
+      const roll = fbm1(x / 55, 3, seed + 31) * (1.6 + 10 * big);                          // long gentle rolls
+      const ridge = Math.abs(fbm1(x / 14, 2, seed + 37)); const r2 = (0.35 - ridge) * (0.9 + 3 * big); // low ridges (sharp crests)
+      const step = Math.round(fbm1(x / 30, 2, seed + 41) * 2) / 2 * (0.8 + 2.5 * big);      // small terraces
+      const bump = fbm1(x / 2.2, 2, seed + 43) * (0.18 + 0.5 * big);                        // a metre or two across
+      floor[i] = d + k * (roll + r2 + step * 0.6 + bump); } }
   // level beds for the whale fall (on the plain) and the seep (a terrace cut into the rise)
   for (const [cx, half] of [[WHALE_FALL.x, 34], [SEEP.x, 13], [DAVE.x, DAVE.half], [STATION.x, STATION.half]]) {
     const ic = Math.round(cx / FLOOR_RES), h = Math.round(half / FLOOR_RES), edge = Math.round(8 / FLOOR_RES);

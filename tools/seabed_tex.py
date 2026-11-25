@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""(7.4.17, owner) The seabed's own texture: a seamless 512 px tile of sand, painted as sand looks close to, seen from
+"""(7.4.17, owner; 7.4.28 wavier) The seabed's own texture: a seamless 512 px tile of sand, painted as sand looks close to, seen from
 the side: thin wavy layers, grains light and dark, a few pebbles and broken shell. Near white, so it is laid over the floor's colour by
 multiplying (its light parts leave the colour as it is, its dark parts shade it).
 
@@ -28,12 +28,16 @@ def periodic_noise(scale, octaves=4, amp_fall=0.5):
     return out / tot
 
 y, x = np.mgrid[0:N, 0:N] / N
-warp = periodic_noise(160, 3) * 0.9
-# ripple marks: long soft ridges, a little wavy, their crests sharper than their troughs
-ph = (y * 9 + x * 1 + warp * 1.1) * 2 * np.pi  # side-on: the sand laid down in thin wavy layers
+warp = periodic_noise(160, 3) * 2.2 + periodic_noise(60, 2) * 0.6
+# (7.4.28, owner) no ruled lines: the layers undulate, swell and pinch out, and sets of them lie at slight angles
+# (cross-bedding) in some patches; ripple marks only here and there
+ph = (y * 7 + x * 1 + warp * 1.6) * 2 * np.pi
 rip = np.sin(ph); rip = np.where(rip > 0, np.abs(rip) ** 0.7, -(np.abs(rip) ** 1.6) * 0.6)
+fade = np.clip(periodic_noise(120, 3) * 3 + 0.35, 0, 1)            # the layers show in places and fade out in others
+cb_ph = (y * 11 - x * 4 + warp * 0.8) * 2 * np.pi; cross = np.sin(cb_ph) * np.clip(periodic_noise(140, 2) * 4 - 0.3, 0, 1)
 mott = periodic_noise(220, 4)  # large mottling: patches of darker and lighter sand
-L = 0.84 + 0.035 * rip + 0.1 * mott + 0.04 * periodic_noise(40, 3)
+mud = np.clip(periodic_noise(180, 3) * 5 - 0.9, 0, 1)                 # darker silt patches
+L = 0.84 + 0.04 * rip * fade + 0.025 * cross + 0.13 * mott + 0.05 * periodic_noise(40, 3) - 0.09 * mud
 # grains: fine speckle, mostly dark, some bright
 gr = rng.random((N, N))
 L -= (gr > 0.93) * rng.uniform(0.06, 0.2, (N, N))
@@ -48,7 +52,7 @@ def wrap_draw(fn, cx, cy):
         for oy in (-N, 0, N): fn(cx + ox, cy + oy)
 
 # pebbles: small, rounded, darker, with a lit top and a shadow under
-for _ in range(30):
+for _ in range(46):
     cx, cy = rng.uniform(0, N, 2); r = rng.uniform(1.5, 4) if rng.random() < 0.7 else rng.uniform(5, 10); rx, ry = r * rng.uniform(1, 1.5), r
     tone = int(rng.uniform(120, 175))
     def peb(px, py, rx=rx, ry=ry, tone=tone):
@@ -57,7 +61,7 @@ for _ in range(30):
         d.ellipse([px - rx * 0.6, py - ry * 0.75, px + rx * 0.2, py - ry * 0.1], fill=(255, 250, 235, 60))
     wrap_draw(peb, cx, cy)
 # broken shell: pale arcs and flakes
-for _ in range(18):
+for _ in range(30):
     cx, cy = rng.uniform(0, N, 2); r = rng.uniform(3, 7); a0 = rng.uniform(0, 360)
     def shell(px, py, r=r, a0=a0):
         d.arc([px - r, py - r, px + r, py + r], a0, a0 + rng.uniform(100, 200), fill=(250, 244, 230, 230), width=2)
