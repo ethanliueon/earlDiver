@@ -394,3 +394,4 @@ last desktop build is kept on the branch `desktop-4.25.5`).
   catch lets a real pearl rise (no "+1 pearl"); Eagle Eye closes real lids (feathered dark curves with lash shadows) round
   an almond of sight. Gust keeps Sprint's water streaks while he moves.
 - (7.6.10, owner) The loading screen's depth gauge is set in the game's olive steel (bezel, knurling, lip, screws and needle cap), no brass.
+- (7.6.11, owner) Siphon: no beam ahead and no Lighthouse beams; the water round him is lit as by a Flare (Kraken a Flare+'s light; Carnival too: light 2 and over draws the Lighthouse's sweeping beams, so only that family reaches it). Its ink is let out by distance along the whole jet, lighter and see-through, spreading wider.

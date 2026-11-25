@@ -108,15 +108,15 @@ export const ABILITY_DEFS = {
   revel: { // (7.6.7, owner) lantern light as strong as a Flare+, in vivid colours; hunters that can bite keep away from it (never the thing)
     rare: { name: 'Revel', dur: 30, cd: 600, revel: 1, light: 1.6, repel: 15, line: 'For 30 s coloured lantern light 45 m round you. Hunters keep 15 m off.' },
     exotic: { name: 'Revel+', dur: 45, cd: 1200, revel: 2, light: 1.6, repel: 25, line: 'For 45 s brighter lantern colours round you, pulsing in time. Hunters keep 25 m off.' },
-    legendary: { name: 'Carnival', dur: 60, cd: 2400, revel: 3, light: 2, repel: 40, line: 'For 60 s the sea becomes a carnival of coloured light, pulsing in time. Hunters keep 40 m off.' },
+    legendary: { name: 'Carnival', dur: 60, cd: 2400, revel: 3, light: 1.6, repel: 40, /* (7.6.11) a Flare+'s light: 2 and over draws the Lighthouse's beams */ line: 'For 60 s the sea becomes a carnival of coloured light, pulsing in time. Hunters keep 40 m off.' },
   },
   // (7.6.8, owner) the pure dash: the diver (or the sub) fades into a squid of the tier's size, jets mantle first along the
   // way he taps, ink spilling behind and the water ahead lit, and fades back; nothing can bite him meanwhile, and a hunter
   // on his trail loses him in the ink
   siphon: {
     rare: { name: 'Siphon', pure: true, dur: 0.55, cd: 600, siphon: { dist: 20, sp: 148, len: 2.2, light: 1 }, line: 'Tap a way: you become a squid and jet 20 m, ink behind you. A hunter on your trail loses you in it.' },
-    exotic: { name: 'Siphon+', pure: true, dur: 0.65, cd: 900, siphon: { dist: 30, sp: 149, len: 3.6, light: 1.6 }, line: 'Tap a way: you become a giant squid and jet 30 m, ink behind you and the water ahead lit.' },
-    legendary: { name: 'Kraken', pure: true, dur: 0.8, cd: 1800, siphon: { dist: 45, sp: 'colossal', len: 5.5, light: 2.4, eyes: true }, line: 'Tap a way: you become the colossal squid, eyes burning, and jet 45 m through a cloud of ink, the water ahead lit far.' },
+    exotic: { name: 'Siphon+', pure: true, dur: 0.65, cd: 900, siphon: { dist: 30, sp: 149, len: 3.6, light: 1.3 }, line: 'Tap a way: you become a giant squid and jet 30 m, ink behind you, the water round you lit.' },
+    legendary: { name: 'Kraken', pure: true, dur: 0.8, cd: 1800, siphon: { dist: 45, sp: 'colossal', len: 5.5, light: 1.6, eyes: true }, line: 'Tap a way: you become the colossal squid, eyes burning, and jet 45 m through a cloud of ink, the water round you lit.' },
   },
   tidewarden: {
     legendary: { name: 'Tidewarden', maxLoad: 1, dur: 4, cd: 28800, ward: true, tide: true, line: 'When the water round you turns red: a wave of blue, it freezes, fades, and is gone for 5 minutes.' },
