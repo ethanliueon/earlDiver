@@ -1590,10 +1590,17 @@ export class Renderer {
     // (7.6.8, owner) Siphon: the water ahead of the jet lit (a soft cone off the mantle's tip); Kraken's eyes burning amber
     // and the sharp living specks along its arms; and the ink it leaves, puffs that billow, curl at their edges and thin out
     if (g.mode === 'play' && g.inkPuffs) { ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0);
-      for (const p of g.inkPuffs) { const k = p.t / 7, a = Math.min(1, p.t * 6) * Math.pow(1 - k, 1.8) * 0.3, R = ppm * p.r * (0.6 + Math.sqrt(p.t) * 1.05), dr = p.d || 0, x = S(p.x + Math.sin(p.s + p.t * 0.4) * p.t * 0.15), y = Sy(p.y - p.t * 0.1);
-        // a puff: several small lobes, stretched along the jet when fresh and rounding as it spreads, drifting apart; no outline
-        for (let l = 0; l < 6; l++) { const la = p.s * 1.7 + l * 1.05, sp2 = 0.4 + p.t * 0.22, lx = x + Math.cos(la) * R * sp2 * 1.6, ly = y + Math.sin(la) * R * sp2, lr = R * (0.42 + 0.18 * Math.sin(p.s * 3 + l * 2.1)), st = 1 + 1.2 * Math.max(0, 1 - p.t * 0.6);
-          ctx.save(); ctx.translate(lx, ly); ctx.rotate(dr); ctx.scale(st, 1 / Math.sqrt(st)); const gr = ctx.createRadialGradient(0, 0, 0, 0, 0, lr); gr.addColorStop(0, `rgba(52,34,58,${(a * 0.75).toFixed(3)})`); gr.addColorStop(0.55, `rgba(62,42,70,${(a * 0.4).toFixed(3)})`); gr.addColorStop(1, 'rgba(62,42,70,0)'); /* (7.6.11) a lighter, see-through sepia-violet */ ctx.fillStyle = gr; ctx.fillRect(-lr, -lr, lr * 2, lr * 2); ctx.restore(); } }
+      // (7.6.12, owner, from a photograph of squid ink) not clouds but threads and veils: from a small dense knot, a few
+      // filaments wind out, each thick and dark at its root and hair-fine at its tip, curling slowly as it spreads and
+      // sinks; between neighbouring filaments a torn translucent veil. Never heavy: sepia-black at low strength
+      ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+      for (const p of g.inkPuffs) { const k = p.t / 7, a = Math.min(1, p.t * 5) * Math.pow(1 - k, 1.5), grow = ppm * p.r * (1.4 + Math.sqrt(p.t) * 3.2), x = S(p.x + Math.sin(p.s + p.t * 0.35) * p.t * 0.12), y = Sy(p.y - p.t * 0.06), NS = 4, NP = 18, strands = [];
+        for (let j = 0; j < NS; j++) { const pts = [[x, y]]; let ang = (p.d || 0) + Math.PI + (j - 1.5) * 0.75 + Math.sin(p.s * 3.1 + j) * 0.6, px = x, py = y; const seg = grow / NP * (0.8 + 0.4 * Math.sin(p.s + j * 2.3));
+          for (let i = 1; i <= NP; i++) { ang += Math.sin(p.s * 1.7 + j * 4.1 + i * 0.42 + p.t * 0.4) * 0.38 + Math.sin(i * 0.9 + j) * 0.12 + (j - 1.5) * 0.05; px += Math.cos(ang) * seg; py += Math.sin(ang) * seg + seg * 0.12 * p.t; pts.push([px, py]); }
+          strands.push(pts); }
+        for (let j = 0; j < NS - 1; j++) { const A0 = strands[j], B0 = strands[j + 1]; ctx.fillStyle = `rgba(46,32,40,${(0.09 * a).toFixed(3)})`; ctx.beginPath(); ctx.moveTo(A0[0][0], A0[0][1]); for (let i = 1; i < A0.length * 0.8; i++) ctx.lineTo(A0[i][0], A0[i][1]); for (let i = Math.floor(B0.length * 0.75); i >= 0; i--) ctx.lineTo(B0[i][0], B0[i][1]); ctx.closePath(); ctx.fill(); } // the veils
+        for (const pts of strands) for (let i = 1; i < pts.length; i++) { const u = i / pts.length; ctx.strokeStyle = `rgba(36,24,30,${(0.34 * a * (1 - u * 0.6)).toFixed(3)})`; ctx.lineWidth = Math.max(0.5, ppm * 0.05 * p.r * (1 - u * 0.85)); ctx.beginPath(); ctx.moveTo(pts[i - 1][0], pts[i - 1][1]); ctx.lineTo(pts[i][0], pts[i][1]); ctx.stroke(); }
+        const kr = ppm * p.r * 0.28 * (1 + p.t * 0.2), kg = ctx.createRadialGradient(x, y, 0, x, y, kr); kg.addColorStop(0, `rgba(30,20,26,${(0.2 * a).toFixed(3)})`); kg.addColorStop(1, 'rgba(30,20,26,0)'); ctx.fillStyle = kg; ctx.fillRect(x - kr, y - kr, kr * 2, kr * 2); } // the dense knot it came from
       ctx.restore(); }
     if (g.mode === 'play' && g.siphon && this.siphLead) { const Q = g.siphon, Ld = this.siphLead, J = Q.A.dur, tj = Q.t - SIPH_FO, on = tj > -0.1 && tj < J + 0.15 ? 1 : 0, A2 = Q.A.siphon;
       ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.globalCompositeOperation = 'lighter';

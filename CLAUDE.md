@@ -395,3 +395,4 @@ last desktop build is kept on the branch `desktop-4.25.5`).
   an almond of sight. Gust keeps Sprint's water streaks while he moves.
 - (7.6.10, owner) The loading screen's depth gauge is set in the game's olive steel (bezel, knurling, lip, screws and needle cap), no brass.
 - (7.6.11, owner) Siphon: no beam ahead and no Lighthouse beams; the water round him is lit as by a Flare (Kraken a Flare+'s light; Carnival too: light 2 and over draws the Lighthouse's sweeping beams, so only that family reaches it). Its ink is let out by distance along the whole jet, lighter and see-through, spreading wider.
+- (7.6.12, owner, from a photograph) Siphon's ink is threads and veils, never clouds: from a faint knot, four long filaments wind out (dark and thick at the root, hair-fine at the tip), curling slowly as they spread and sink, torn translucent veils between them; sepia-black at low strength, let out every 1.3 m.
