@@ -10,6 +10,7 @@ import { clamp, lerp, dist, makeRng, formatTime, TAU, smoothstep } from './util.
 import { markOf, SUB_MARKS, BOAT_U, BOAT_LADDER, BOAT_DOOR, deckLine } from './earl_draw.js';
 import { generateWorld, RESOURCES, BOAT, BOAT_HOME, BOAT_MIN, BOAT_MAX, WORLD_W, ISLE, CAVE, CANYON, WHALE_FALL, SEEP, TRENCH, boatDock, SAIL, SAIL_OFF, yardX } from './world.js';
 import { SPECIES, SPECIES_BY_ID } from './species.js';
+import { speciesIcon } from './creatures_draw.js';
 import { Chart } from './chart.js';
 import { Fauna } from './fauna.js';
 import { Earl, Sub, updateEarl, diverDrainMult, subDrainMult, subLeak } from './player.js';
@@ -1308,10 +1309,11 @@ function tutor() {
   { const m0 = P && QUEST_MAIN[questsOf(P).main]; g.questMainId = m0 ? m0.id : null; } /* (6.5.0) the Log's step, for the way-aboard chevrons */ if (ui.cabin) ui.cabin.tutMark = null; // (6.5.6) this had slipped into the comment, so the cabin's chevrons to the computer stayed after the tutorial
   // (4.4.0) during the tutorial the game's own prompts and the things they do are off (hud.js, cabin.js, the key
   // gate below): only the action the step asks for works, on the tutorial's own, larger button
-  g.tutHidePrompts = !!P && g.mode === 'play' && tutorialOn(P); g.tutAction = null; g.tutLadder = false; // (7.1.0) the ladder's chevrons only on a climb step
+  g.tutHidePrompts = !!P && g.mode === 'play' && tutorialOn(P); g.tutAction = null; g.tutDrag = 0; g.tutLadder = false; // (7.1.0) the ladder's chevrons only on a climb step
   if (!P || P.tut !== 'on' || g.mode !== 'play') return;
   { const m1 = QUEST_MAIN[questsOf(P).main]; if (m1 && m1.id === 'subtrip') g.tutHidePrompts = false; } // (6.6.0) the sub trip is played with the game's own buttons
-  const S = questsOf(P), m = QUEST_MAIN[S.main]; if (!m || !TUT_IDS.has(m.id)) { if (P.tut === 'on' && S.main > 0) { P.tut = 'done'; saveProfile(P); setTimeout(() => ui.confirm('Tutorial complete', 'The quest board is in your journal.', 'OK', null, () => {}), 600); /* (6.5.0) a card to close the tutorial, not a toast that was easily missed */ } return; }
+  const S = questsOf(P), m = QUEST_MAIN[S.main]; if (!m || !TUT_IDS.has(m.id)) { if (P.tut === 'on' && S.main > 0) { P.tut = 'done'; saveProfile(P); setTimeout(() => ui.confirm('Tutorial complete', 'You know the basics now. The rest of the sea is yours to find: new jobs wait on the quest board in your journal.', 'Start diving', null, () => {}), 600); /* (6.5.0) a card to close the tutorial, not a toast that was easily missed */ } return; }
+  if (!P.tutJournal || (P.tutJTour || 0) < 4) { P.tutJournal = true; P.tutJTour = 4; } /* (7.6.26, owner) no journal part in the tutorial */
   const done = S.mainProg >= m.need, dir = Math.sign(Math.cos(BOAT.yaw || 0) || 1);
   const ladder = { x: BOAT.x + LADDER_M * dir, y: 1 }, nearBoat = Math.abs(e.x - BOAT.x) < 14 && e.y < 4;
   const inCabin = shown('cabin'), qOpen = shown('quests'), invOpen = shown('inventory'), catOpen = shown('catalog'), jOpen = shown('journal'), shopOpen = shown('workshop');
@@ -1344,15 +1346,9 @@ function tutor() {
     doWhat(tf);
   };
   if (done) {
-    // a step is done: claim it before anything else (the next step only starts counting once this one is claimed)
-    if (qOpen) { spot = { sel: ['#quests [data-q="claim|main"]'] }; } // (4.3.5) the quests are open: just the arrow, no words
-    else if (ui.anyOpen()) {
-      // (4.3.5) another screen is up: point at the way out of it (the shop's Log off, a close button), no keys named;
-      // in the cabin (no button to leave by) the quests key still works
-      text = 'Done. Claim it in your quests';
-      spot = { sel: ['#catalog .cat-x', '#workshop-close', '#inventory .inv-close', '#journal-close', '#quests-btn'] }; // (the Quests button shows in the cabin)
-    }
-    else { text = 'Done. Open your journal and claim it'; spot = { sel: ['#quests-btn'], act: 'quests', say: 'Claim it here', light: true }; }
+    // (7.6.26, owner) no claiming by hand: a step done pays out by itself a moment later (the money, and the pearls flying to
+    // their counter), and the next step begins; the last one ends with the "Tutorial complete" card
+    text = 'Done'; if (!ui.anyOpen('cabin davetalk') || shown('quests')) { /* the cabin is a place, not a screen in the way */ if (g.autoClaimAt == null) g.autoClaimAt = g.time; if (g.time - g.autoClaimAt > 0.7) { g.autoClaimAt = null; ui.h.onQuestClaim && ui.h.onQuestClaim('main'); } } else { g.autoClaimAt = null; spot = { sel: ['#catalog .cat-x', '#workshop-close', '#workshop .refit-x', '#inventory .inv-close', '#journal-close'] }; } /* another screen up: point at its way out */
   } else if (m.id === 'firstfish') {
     // (4.3.4) one dive: down to the fish, observe it, catch it (the first swing misses, the next catches), back up.
     // The step is only done at the surface, so the claim is never made underwater.
@@ -1454,17 +1450,15 @@ function tutor() {
       else if ((ap && ap.state === 'coming') || dist(e.x, e.y, sub.x, sub.y) < 9) toSub();
       else { text = 'Call the sub'; spot = { key: 'c', say: 'Call the sub' }; }
     }
-    else if (part === 6) { // a look at what he carries
-      // (7.4.0, owner) no card with an OK: he taps Catch himself, then the glove shows his catch for a moment
-      if (invOpen && !P.tutBagTour) { const onCatch = !!document.querySelector('#inventory [data-invtab="catch"].on');
-        if (!onCatch) { text = 'Open Catch'; spot = { sel: ['#inventory [data-invtab="catch"]'] }; g.tutCatchAt = null; }
-        else { const card = document.querySelector('#inventory .fish-pop'); // (7.5.0, owner) tap a fish; its card open, the glove steps away, then after 2 s points at the card's cross
-          if (card) { g.tutCardAt = g.tutCardAt ?? g.time; text = 'Your catch'; spot = g.time - g.tutCardAt > 2 ? { sel: ['#inventory .fish-pop .ip-close'] } : null; }
-          else if (g.tutCardAt != null) { P.tutBagTour = true; saveProfile(P); g.tutCardAt = null; } // the card seen and closed
-          else { text = 'Tap a fish'; spot = { sel: ['#inventory .bag-spaces .bs-fish', '#inventory .bag-spaces'] }; } } }
-      else if (invOpen) spot = { sel: ['#inventory .inv-close'], act: 'inventory' };
-      else if (P.tutBagTour) set(7);
-      else { text = 'Open your bag'; spot = { key: 'b', say: 'Open your bag' }; }
+    else if (part === 6) { // (7.6.26, owner) the catch into the sub's tank: open it, drag a fish in (a ghost hand shows how, again
+      // and again, until he does), tap it, read its card (what the tick means), close the room
+      const tankO = !!(ui.tankOpen && ui.tankOpen()), TR = ui.tankRoom, inTank = g.subTank.some((q) => !q.pile && SPECIES_BY_ID[q.id]), cardOpen = !!(TR && TR.openKey);
+      if (!e.inSub) toSub();
+      else if (!tankO) { if (P.tutTankCard) set(7); else { g.tutVig = 1; text = 'Put your catch in the sub\'s tank'; offer('tank', 'Open the tank room', 'T'); } }
+      else if (!inTank) { text = 'Drag a fish from your bag into the tank'; g.tutDrag = 1; spot = null; /* only the ghost hand: no second pointer */ }
+      else if (!P.tutTankCard && !cardOpen) { text = 'Tap the fish in the tank'; spot = { sel: ['#tankroom .tr-zone[data-z="tank"]'], light: true }; }
+      else if (!P.tutTankCard) { text = 'Its card'; spot = { sel: ['#tankroom .tr-card'], card: { id: 'tankcard', side: 'left', text: 'Its card: what it is, where you caught it, how deep it lives and how it is doing. Animals from the shallows live happily in this tank. An animal from deep water dies at the surface unless it goes into a pressure chamber; its card says so.' } }; }
+      else { text = 'Close the tank room'; spot = { sel: ['#tankroom .tr-close'] }; }
     }
     else { // home on the autopilot
       if (sub.docked && e.inSub) { questEvent(P, 'subTrip'); saveProfile(P); }
@@ -1476,12 +1470,12 @@ function tutor() {
   g.tut = { text, to, fish, prompt, spot, door };
   // (4.3.8) the instruction has its own line at the left (tutspot.js), so the game's own messages at the top are
   // never held back by it. None while the quests are open: the arrow at Claim is enough.
-  if (ui.anyOpen('cabin') && !(catOpen && m && m.id === 'buy')) g.tut.text = null; // (4.4.1) nor over any open screen (the journal, the shop, ...): its arrow says it; (5.6.9) the shop on a phone keeps a short line over it, as nothing else says why
+  if (ui.anyOpen('cabin') && !(catOpen && m && m.id === 'buy') && !(m && m.id === 'subtrip' && ui.tankOpen && ui.tankOpen())) g.tut.text = null; /* (7.6.26) the tank room keeps its line: it is a lesson there */ // (4.4.1) nor over any open screen (the journal, the shop, ...): its arrow says it; (5.6.9) the shop on a phone keeps a short line over it, as nothing else says why
   g.tutAction = action;
 }
 const tutSpot = new TutSpot();
 tutSpot.onAction = (id) => runTutAction(id); // (4.4.1) the button
-tutSpot.onCard = (id) => { if (id === 'bagtour' && profile) { profile.tutBagTour = true; saveProfile(profile); audio.ready && audio.click(); return; } /* (6.6.0) */ if (id === 'tanktour' && profile) { profile.tutTankTour = (profile.tutTankTour || 0) + 1; saveProfile(profile); audio.ready && audio.click(); return; } if (id === 'jtour' && profile) { profile.tutJTour = (profile.tutJTour || 0) + 1; saveProfile(profile); audio.ready && audio.click(); } }; // (4.12.2)
+tutSpot.onCard = (id) => { if (id === 'bagtour' && profile) { profile.tutBagTour = true; saveProfile(profile); audio.ready && audio.click(); return; } /* (6.6.0) */ if (id === 'tankcard' && profile) { profile.tutTankCard = true; profile.lessonBagTank = 'done'; profile.tutTankTour = 4; /* the tank learned in the tutorial: its later lessons are not needed */ saveProfile(profile); audio.ready && audio.click(); return; } if (id === 'tanktour' && profile) { profile.tutTankTour = (profile.tutTankTour || 0) + 1; saveProfile(profile); audio.ready && audio.click(); return; } if (id === 'jtour' && profile) { profile.tutJTour = (profile.tutJTour || 0) + 1; saveProfile(profile); audio.ready && audio.click(); } }; // (4.12.2)
 function startRun() {
   // (5.5) an iPhone's browser cannot show a page full screen: once, on the first dive there, how to get it
   if (/iPhone|iPod/.test(navigator.userAgent) && !(window.matchMedia && matchMedia('(display-mode: standalone), (display-mode: fullscreen)').matches) && !navigator.standalone) {
@@ -1521,6 +1515,19 @@ function tutGated(k) { if (g && g.lesson && g.frozen) return !(g.lesson.allow ||
 const deckAtDoor = () => !!g.aboard && g.aboard.x > (DECK_MIN + DECK_MAX) / 2 - (DECK_MAX - DECK_MIN) / 6 && g.aboard.x < DOOR_M + 0.7; // as deckInput's door zone
 // (4.4.1) the tutorial's actions, done directly (not through whatever the game is aiming at, which can change frame
 // to frame): observe the tutorial fish, sell, climb aboard, into the cabin, the shop, back out on deck, out of the sub
+// (7.6.26, owner) a drag taught as real tutorials do: a pale hand presses on the bag, carries a ghost of the fish across
+// to the tank and lets go, over and over, until he does it himself
+function tutDragGhost() {
+  let el = document.getElementById('tut-drag'); const room = document.getElementById('tankroom');
+  const on = !!(g.tutDrag && room && !room.hidden), A = on && room.querySelector('.tr-zone[data-z="bag"]'), B = on && room.querySelector('.tr-zone[data-z="tank"]');
+  if (!on || !A || !B) { if (el) el.hidden = true; return; }
+  if (!el) { el = document.createElement('div'); el.id = 'tut-drag'; el.innerHTML = '<i class="td-fish"></i><img class="td-hand" src="assets/ui/icons/tut-point.png" alt="">'; room.appendChild(el); }
+  else if (el.parentNode !== room) room.appendChild(el);
+  const ra = A.getBoundingClientRect(), rb = B.getBoundingClientRect(), rr = room.getBoundingClientRect();
+  const ax = ra.left + ra.width / 2 - rr.left, ay = ra.top + ra.height * 0.55 - rr.top, bx = rb.left + rb.width * 0.55 - rr.left, by = rb.top + rb.height * 0.45 - rr.top;
+  el.hidden = false; el.style.setProperty('--ax', ax + 'px'); el.style.setProperty('--ay', ay + 'px'); el.style.setProperty('--bx', bx + 'px'); el.style.setProperty('--by', by + 'px');
+  const f = g.bag.find((q) => SPECIES_BY_ID[q.id]); if (f && el.dataset.fish !== String(f.id)) { el.dataset.fish = String(f.id); const c = speciesIcon(SPECIES_BY_ID[f.id], 120, 70); if (c) el.querySelector('.td-fish').style.backgroundImage = `url(${c.toDataURL()})`; }
+}
 function runTutAction(id) {
   const a = g && g.tutAction; if (!a || a.id !== id || a.cabinOnly) return false;
   const tf = g.tutFish;
@@ -1531,6 +1538,7 @@ function runTutAction(id) {
   else if (id === 'shop') ui.toggleCatalog(true);
   else if (id === 'outdoor') ui.toggleCabin(false);
   else if (id === 'leavesub') leaveSub();
+  else if (id === 'tank') ui.toggleTank && ui.toggleTank(true);
   else return false;
   audio.ready && audio.click(); return true;
 }
@@ -2864,7 +2872,7 @@ function update(dt) {
     profile.playT = (profile.playT || 0) + dt; // (3.0.0) play time: the old one's days
     if (g.questT > 1) { g.questT = 0; g.chambersFull = pressSlots(g) > 0 && pressUsed(g) >= pressSlots(g); if (questTick(g, profile)) saveProfile(profile); }
     if (profile.tut === 'on' && !profile.tutJournal && !document.getElementById('journal').hidden) { profile.tutJournal = true; saveProfile(profile); }
-    tutor(); refreshAir(); // (4.2.0; 4.3.4: the first dive's extra air, and back to normal after it)
+    tutor(); tutDragGhost(); refreshAir(); // (4.2.0; 4.3.4: the first dive's extra air, and back to normal after it)
     // (5.6.8) on a phone, what F (or U) acts on is done by tapping the thing itself: the ladder, the cabin door, the sub,
     // something to pick up, a trap; the Margaret when there is a catch to sell. The renderer brackets each (thin cream
     // corners, as an animal to observe gets) and keeps where it drew them for the tap (renderer.tapRects)
