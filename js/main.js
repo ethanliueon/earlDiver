@@ -2378,6 +2378,7 @@ function update(dt) {
     else if (pressed.has('f-tap') && atDave) { if (!ui.daveTalkOpen()) ui.daveTalk(); } // (6.5.4) he speaks at his door first
     else if (pressed.has('f-tap') && atStation) ui.toggleCatalog(undefined, 'station');
     else if (pressed.has('f-tap') && !holdJob && !planting) interact(target, false);
+    else if (pressed.has('f-tap') && holdJob && (g.holdTipT || 0) < g.time - 2.5) { g.holdTipT = g.time; const nm = target.p.type === 'clam' ? 'the clam' : 'it'; hud.toast(`Hold the hand button to pry ${nm} loose`, 'note'); } /* (7.4.27, owner) a quick tap on something that needs holding said nothing */
     if (pressed.has('l') && (g.aboard || g.helm)) { g.sub.lightsOn = !g.sub.lightsOn;  } // (4.0.0) aboard the Margaret: the sub's lights, quietly
     else if (pressed.has('l')) {
       g.lampFlashT = g.time;
