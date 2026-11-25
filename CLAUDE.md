@@ -338,3 +338,7 @@ last desktop build is kept on the branch `desktop-4.25.5`).
   / 300 pearls for $5,000 / $15,000 / $65,000 and a daily deal, 150 for $30,000), Pearls (packs). Scrolls sell only for
   pearls, a quarter of their shelf price. A revive costs 100-500 pearls by the haul's share of cash (shelf.js, main.js).
 
+- (7.6.3, owner) Charges: loaded onto a scroll at the surface (aboard, the cabin, or 0 m) from its card, 1 pearl per 5 min of
+  its cooldown each, up to 5 (rare, exotic) or 10 (legendary, mythical), Tidewarden and Warden Heart 1. A charge fires the
+  skill at once (running, it starts over); with none, the cooldown runs free or is skipped at 3 pearls per 5 min left. The
+  count shows at the skill button's foot (×8).

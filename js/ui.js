@@ -3,7 +3,7 @@ import { drawHourglass, blessedURL } from './coin_art.js';
 import { drawTierEmblemMask } from './scrolls.js'; // (7.5.7) Apex's emblem on a Blessed animal's status
 import { drawCash } from './coins.js';
 import { setUnits, imperial } from './units.js';
-import { fmtLeft } from './abilities.js';
+import { fmtLeft, abilityOf, maxLoad, chargePrice } from './abilities.js';
 // DOM overlays: home screen, journal, boat workshop, pause, run log.
 import { SPECIES_BY_ID, SPECIES } from './species.js';
 const SPECIES_COUNT = SPECIES.length;
@@ -1460,6 +1460,10 @@ export class UI {
       if (seller) acts += it.kind === 'ability' ? `<button class="sell" data-lk="sellscroll:${q.u}">Sell, <img class="st-pearl" src="assets/ui/icons/pearl.png" alt="">${scrollSellPearls(q.id).toLocaleString('en-US')}</button>` /* (7.6.2, owner) scrolls sell for pearls */ : `<button class="sell" data-lk="sellgear:${q.u}">Sell, ${money(sellValue(q), false)}</button>`;
       else acts += '<small>Sell it on the Margaret, at the station, or to Dave.</small>';
     }
+    // (7.6.3, owner) charges: a notch for each one loaded, then Load (one) and Load full, priced in pearls; only at the surface
+    if (it.kind === 'ability') { const A = abilityOf(q.id), mx = maxLoad(A), n = q.load || 0, pr = chargePrice(A), top = this.h.atSurface && this.h.atSurface(), pl = '<img class="st-pearl" src="assets/ui/icons/pearl.png" alt="">';
+      acts += `<div class="ld-row"><span class="ld-n">Charges ${n}/${mx}</span><span class="ld-notches">${Array.from({ length: mx }, (_, i) => `<i class="${i < n ? 'on' : ''}"></i>`).join('')}</span></div>`;
+      if (n < mx) acts += top ? `<button data-lk="load:${q.u}">Load ${pl}${pr}</button><button data-lk="loadfull:${q.u}">Load full ${pl}${pr * (mx - n)}</button>` : '<button disabled>Load at the surface</button>'; }
     // (7.5.6, owner) a scroll always shows its Combine 3, worn or not: greyed with how many he has until there are three
     if (it.kind === 'ability') { const NX = { rare: 'exotic', exotic: 'legendary', legendary: 'mythical' }[it.rarity], /* (7.4.15) three legendaries make the mythical */ nId = NX && `ab_${it.fam}_${NX}`, have = K0.items.filter((x) => x.id === q.id).length;
       if (nId && ITEMS[nId]) acts += `<button data-lk="combine:${q.id}"${have >= 3 ? '' : ' disabled'}>Combine 3${have >= 3 ? '' : ` (${have}/3)`} → <span style="color:${RARITY[NX].col}">${ITEMS[nId].name}</span></button>`; }

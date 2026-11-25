@@ -50,8 +50,8 @@ export const ABILITY_DEFS = {
     mythical: { name: 'Hadal Heart', dur: 90, cd: 3600, press: 3, beyond: 10, light: 1.6, airBack: [0.1, 30], line: 'For 90 s your suit takes three times its rated depth. Deeper even than that, your air goes 10 times slower than the pressure would take it. Air comes back, 10 % a second for its first 30 s.' },
   },
   tidewarden: {
-    legendary: { name: 'Tidewarden', dur: 4, cd: 28800, ward: true, tide: true, line: 'When the water round you turns red: a wave of blue, it freezes, fades, and is gone for 5 minutes.' },
-    mythical: { name: 'Warden Heart', dur: 4, cd: 10800, ward: true, tide: true, any: true, line: 'Any time. In red water: a wave of blue, it freezes, fades, and is gone for 5 minutes. Marked, the mark is washed off you.' },
+    legendary: { name: 'Tidewarden', maxLoad: 1, dur: 4, cd: 28800, ward: true, tide: true, line: 'When the water round you turns red: a wave of blue, it freezes, fades, and is gone for 5 minutes.' },
+    mythical: { name: 'Warden Heart', maxLoad: 1, dur: 4, cd: 10800, ward: true, tide: true, any: true, line: 'Any time. In red water: a wave of blue, it freezes, fades, and is gone for 5 minutes. Marked, the mark is washed off you.' },
   },
 };
 // (7.4.15, owner) mythical: above legendary, only from three legendaries of the same scroll combined. Each has its own
@@ -73,19 +73,24 @@ export function abilityState(g) { return g.abil || (g.abil = { activeT: 0, maxT:
 // (7.4.12, owner) skipping a cooldown with pearls: a flat 1 pearl for every 5 minutes left, rounded up, never less than 1
 // (5 min: 1; 30 min: 6; 1 h: 12; 3 h: 36). The same rate however long the wait (7.4.9's cheaper long waits made escaping
 // the thing something bought)
-export function skipCost(sec) { return Math.max(1, Math.ceil(Math.max(0, sec) / 300)); }
+// (7.6.3, owner) three times a loaded charge: 3 pearls for every 5 minutes left; loading ahead is the cheap way
+export function skipCost(sec) { return 3 * Math.max(1, Math.ceil(Math.max(0, sec) / 300)); }
+// (7.6.3, owner) charges, loaded onto a scroll at the surface: 1 pearl for every 5 minutes of its cooldown each; up to 5 on
+// a rare or exotic scroll, 10 on a legendary or mythical one, or the scroll's own maxLoad (Tidewarden 1)
+export const chargePrice = (A) => Math.max(1, Math.ceil(((A && A.cd) || 300) / 300));
+export const maxLoad = (A) => (A && A.maxLoad) || (A && (A.tier === 'legendary' || A.tier === 'mythical') ? 10 : 5);
 export function cooldownLeft(P) { return Math.max(0, ((P.abilReadyAt || 0) - Date.now()) / 1000); }
 // can it be used now? returns null if so, else why not
 export function whyNot(g, P, A) {
   if (!A) return 'No ability: put a scroll on in the bag';
   const S = abilityState(g), e = g.earl;
-  if (S.activeT > 0 && !A.charges) return 'Already running';
+  if (S.activeT > 0 && !A.charges && !(A.loaded > 0)) return 'Already running'; // (7.6.3) a loaded charge restarts it
   if (g.aboard && !A.speed && A.tier !== 'mythical') return 'In the water';
   if (A.sub && !e.inSub) return 'From inside the sub';
   if (A.press && e.inSub) return 'Only in the water'; // (7.4.22, owner) Dauntless is the diver's alone
   if (A.tide && g.kill) return 'Too late'; // (6.0.0) never in its jaws
   if (A.tide && !A.any && !((g.fx && (g.fx.redTint || 0) > 0.03) || (g.entity && g.entity.dist < 160 && (g.entity.marked || g.entity.state === 'hunt' || g.entity.state === 'stalk')))) return 'Only when the water turns red'; // (6.0.0) once its red reaches him
-  const cd = cooldownLeft(P); if (cd > 0 && !(A.charges && S.charges > 0)) return `Ready in ${fmtLeft(cd)}`;
+  const cd = cooldownLeft(P); if (cd > 0 && !(A.charges && S.charges > 0) && !(A.loaded > 0)) return `Ready in ${fmtLeft(cd)}`;
   return null;
 }
 

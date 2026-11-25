@@ -2220,3 +2220,9 @@ html body .store-panel .co-card small, html body .store-panel .pk-card small { f
 html body .store-panel .pk-pile { position: relative; width: 150px; height: 92px; }
 html body .store-panel .pk-pile img.st-pearl:not(#_a) { position: absolute; width: 30px; height: 30px; filter: drop-shadow(0 2px 2px rgba(0, 0, 0, 0.55)); }
 html body .store-panel .pk-card b { font-size: 18px !important; }
+/* (7.6.3, owner) a scroll's charges on its card: the count, a notch for each (lit bone when loaded), then Load / Load full */
+html body #inventory .lk-acts .ld-row { flex-basis: 100%; display: flex; align-items: center; justify-content: flex-end; gap: 8px; font: 600 13px 'Barlow Semi Condensed', sans-serif; color: rgba(226, 220, 200, 0.75); margin-bottom: 2px; }
+html body #inventory .lk-acts .ld-notches { display: inline-flex; gap: 3px; }
+html body #inventory .lk-acts .ld-notches i { width: 5px; height: 12px; border-radius: 2px; background: rgba(0, 0, 0, 0.45); box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.6); }
+html body #inventory .lk-acts .ld-notches i.on { background: linear-gradient(180deg, #efe6c8, #b8a880); box-shadow: 0 0 4px rgba(236, 224, 190, 0.35); }
+html body #inventory button img.st-pearl { width: 1.1em; height: 1.1em; vertical-align: -0.2em; margin: 0 0.2em; }

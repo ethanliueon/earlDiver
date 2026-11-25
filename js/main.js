@@ -32,7 +32,7 @@ import { STATION_COLLAR } from './station_draw.js';
 import { oldStock, overTable, leftOf, nearLure } from './oldone.js';
 import { CHESTS } from './chests.js';
 import { giveRolled, wornInst } from './items.js';
-import { abilityOf, abilityState, whyNot, ALL_ABILITIES, cooldownLeft, skipCost, fmtLeft, MYTH, NEXT_TIER } from './abilities.js';
+import { abilityOf, abilityState, whyNot, ALL_ABILITIES, cooldownLeft, skipCost, fmtLeft, MYTH, NEXT_TIER, maxLoad, chargePrice } from './abilities.js';
 import { startLegendFx } from './legendfx.js';
 import { SKILLS, RARITY, skillCol } from './item_data.js';
 import { pictureOf, hourglassURL } from './catalog.js';
@@ -391,6 +391,7 @@ const ui = new UI({
   },
   getProfile: () => profile,
   onSaveProfile: () => saveProfile(profile),
+  atSurface: () => atSurface(), // (7.6.3)
   giveItem: (id) => { if (lockerFree(profile) < 1) { hud.toast('Locker full', 'warn'); return null; } const q = giveItem(profile, id); if (q) saveProfile(profile); return q; }, // (7.6.2) a scroll from the shelf
   canChangeGear: () => !!(g && g.mode === 'play' && !g.kill), // (6.0.0) gear changes anywhere (it changes what he can do, never what he has); never in its jaws
   // (5.6.9) the belt: on (from the locker, as many as fit) or off (all of it into the locker)
@@ -999,6 +1000,12 @@ function buy(kind) {
     ui.confirm('Sell ' + it.name + '?', (R ? R.name + ' ' : '') + 'scroll · ' + n.toLocaleString('en-US') + ' pearls', 'Sell, ' + n.toLocaleString('en-US') + ' pearls', 'Keep', () => {
       if (removeItem(P, q.u)) { P.pearls = (P.pearls || 0) + n; saveProfile(P); hud.toast('Sold ' + it.name + ' · +' + n + ' pearls'); } ui.renderInventory && ui.renderInventory(); });
     return false;
+  } else if (kind.startsWith('load:') || kind.startsWith('loadfull:')) { // (7.6.3, owner) charges loaded onto a scroll, at the surface only
+    const full = kind.startsWith('loadfull:'), q = instOf(P, kind.slice(full ? 9 : 5)), A = q && abilityOf(q.id); if (!A) return false;
+    if (!atSurface()) { hud.toast('Load at the surface', 'warn'); return false; }
+    const mx = maxLoad(A), have = q.load || 0, k = full ? mx - have : Math.min(1, mx - have), cost = k * chargePrice(A); if (k <= 0) return false;
+    if ((P.pearls || 0) < cost) { hud.toast('Not enough pearls', 'warn'); return false; }
+    P.pearls -= cost; q.load = have + k; ok = true; audio.ready && audio.uiSoft && audio.uiSoft();
   } else if (kind.startsWith('combine:')) { // (7.4.11, owner) three of a scroll at one rarity, none worn, become one of the next rarity
     const id = kind.slice(8), it = ITEMS[id], NX = it && NEXT_TIER[it.rarity], nId = NX && `ab_${it.fam}_${NX}`; // (7.4.15) three legendaries make the mythical
     const all = kitOf(P).items.filter((x) => x.id === id).sort((a, b) => isOn(P, a) - isOn(P, b)); // (7.5.6, owner) the worn one too, used last
@@ -2193,16 +2200,20 @@ function causeText(kind) {
 }
 
 // ---------------- (5.9.0) abilities ----------------
-function currentAbility() { const q = profile && wornInst(profile, 'ability'); return q ? abilityOf(q.id) : null; }
+// (7.6.3, owner) the surface: aboard, in the cabin, or anywhere at 0 m in the water (or the sub there)
+function atSurface() { const e = g && g.earl; if (!e) return false; return !!(g.aboard || (ui.cabinOpen && ui.cabinOpen()) || (e.inSub ? g.sub.y <= 1.5 : e.y <= 0.8)); }
+function currentAbility() { const q = profile && wornInst(profile, 'ability'); const A = q ? abilityOf(q.id) : null; if (A) { A.loaded = q.load || 0; A.inst = q; } return A; } // (7.6.3) with its loaded charges
 function useAbility() {
   const A = currentAbility(), why = whyNot(g, profile, A);
   // (7.4.9, owner) cooling down: the wait can be skipped with pearls (abilities.js skipCost)
-  if (A && profile && cooldownLeft(profile) > 0 && !(abilityState(g).activeT > 0) && !(A.charges && abilityState(g).charges > 0)) { const left = cooldownLeft(profile), n = skipCost(left), P = profile; // aboard too: the skip is offered wherever he taps it
+  if (A && profile && cooldownLeft(profile) > 0 && !(A.loaded > 0) && !(abilityState(g).activeT > 0) && !(A.charges && abilityState(g).charges > 0)) { const left = cooldownLeft(profile), n = skipCost(left), P = profile; // aboard too: the skip is offered wherever he taps it
     ui.confirm(`${A.name}: ready in ${fmtLeft(left)}`, `Skip the wait: ${n} pearl${n > 1 ? 's' : ''} (you have ${Math.floor(P.pearls || 0)})`, `Skip, ${n} pearl${n > 1 ? 's' : ''}`, 'Wait', () => {
       if ((P.pearls || 0) < n) { hud.toast('Not enough pearls', 'warn'); return; }
       P.pearls -= n; P.abilReadyAt = Date.now(); saveProfile(P); audio.ready && audio.uiSoft && audio.uiSoft(); hud.toast(`${A.name} ready`); });
     return; }
   if (why) { hud.toast(why, 'note'); return; }
+  // (7.6.3, owner) a loaded charge: fires at once, no wait and no question (running, it starts over)
+  const S0 = abilityState(g); if (A.loaded > 0 && (cooldownLeft(profile) > 0 || S0.activeT > 0) && !(A.charges && S0.charges > 0) && !g.dashAim) { A.inst.load = A.loaded - 1; A.loaded--; profile.abilReadyAt = 0; S0.activeT = 0; S0.charges = 0; saveProfile(profile); }
   // (5.16.0) Dash on a phone: pressed, it waits for a tap where to go (time slowed, the screen greyed, the view opened by
   // its tier); pressed again, or 3 s with no tap, and it is put away unspent
   if (A.dash) { if (g.dashAim) { g.dashAim = null; renderer.aimZoom = 1; } else { g.dashAim = { t: 3, A }; renderer.aimZoom = A.zoom || 1; } return; }

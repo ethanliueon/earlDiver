@@ -537,6 +537,10 @@ e.inSub ? [
           ctx.strokeStyle = 'rgba(6,8,8,0.7)'; ctx.lineWidth = 5.2 * u; ctx.beginPath(); ctx.arc(x, y, R1, a0, a1); ctx.stroke();
           ctx.strokeStyle = lit ? `rgba(232,224,198,${(0.55 + 0.4 * k).toFixed(3)})` : 'rgba(120,116,100,0.28)'; ctx.lineWidth = (lit ? 1.6 + 1.8 * k : 1.6) * u; ctx.beginPath(); ctx.arc(x, y, R1, a0, a1); ctx.stroke(); }
         ctx.restore(); }
+      // (7.6.3, owner) charges loaded on the scroll: their count in bone at the button's foot, left (the glow stick's count
+      // sits at the top right); a small notch a charge under it, up to ten
+      if (a.abil && AB && AB.loaded > 0) { ctx.save(); const n = AB.loaded, fx0 = x - r * 0.98, fy0 = y + r * 0.8;
+        ctx.font = `700 ${12 * u}px ${HUDT}`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillStyle = '#ece6d2'; ctx.shadowColor = '#000'; ctx.shadowBlur = 3 * u; ctx.fillText('×' + n, fx0, fy0); ctx.restore(); }
       if (a.abil) { const cdl = cooldownLeft(P), tot = (AB.dur || 0) + (AB.cd || 0);
         if (ABS.activeT > 0) { ctx.strokeStyle = AB.tier === 'mythical' ? 'rgba(236,120,84,0.8)' : AB.tier === 'legendary' ? 'rgba(220,180,110,0.75)' : 'rgba(226,220,196,0.7)'; ctx.lineWidth = 2.2 * u; ctx.beginPath(); ctx.arc(x, y, r * 1.08, -Math.PI / 2, -Math.PI / 2 + TAU * (ABS.activeT / Math.max(0.01, ABS.maxT))); ctx.stroke(); }
         else if (cdl > 0 && tot > 0 && !(AB.charges && ABS.charges > 0)) { ctx.fillStyle = 'rgba(4,6,6,0.6)'; ctx.beginPath(); ctx.moveTo(x, y); ctx.arc(x, y, r * 0.92, -Math.PI / 2, -Math.PI / 2 + TAU * Math.min(1, cdl / tot)); ctx.closePath(); ctx.fill();
