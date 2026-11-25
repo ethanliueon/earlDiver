@@ -1376,16 +1376,16 @@ export class Renderer {
     // each tier; Riptide's gold, with a warm aura and the edges of sight pulsing) and the faintest judder. Vigor: a pale
     // arc in the water where the net now reaches. Flare: light round him. Echo: a ring going out. Bulwark: a shimmer
     // round the sub. Tidewarden: the red washed out to blue.
-    if (g.mode === 'play' && g.abil && g.abil.activeT > 0 && g.abil.def) {
-      const A = g.abil.def, e = g.earl, mover = e.inSub ? g.sub : e, ex = S(mover.x), ey = Sy(mover.y), spd = Math.hypot(mover.vx || 0, mover.vy || 0);
+    for (const AS of [g.abil, g.abil2]) if (g.mode === 'play' && AS && AS.activeT > 0 && AS.def) { // (7.6.4) both scrolls' effects, the one on the button and the other still running
+      const A = AS.def, e = g.earl, mover = e.inSub ? g.sub : e, ex = S(mover.x), ey = Sy(mover.y), spd = Math.hypot(mover.vx || 0, mover.vy || 0);
       ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0);
       if (A.speed && spd > 0.6) {
         // (7.2.8) the water itself is drawn just after this block: only what it needs is handed over here
-        this.sprintEmit = { kS: clamp(spd / (e.inSub ? 7 : 3.6), 0, 1), tier: A.tier, inSub: e.inSub, t: g.time, at: g.abil.at };
+        this.sprintEmit = { kS: clamp(spd / (e.inSub ? 7 : 3.6), 0, 1), tier: A.tier, inSub: e.inSub, t: g.time, at: AS.at };
         ctx.globalAlpha = 1;
         // (7.3.0) a steady tremor by tier, and a kick when it fires that dies away in half a second (owner: more power at
         // every tier). (Riptide's round glow over him is gone: its light is in the light map now, wide and soft like a Flare)
-        const kick = Math.max(0, 1 - (g.time - (g.abil.at ?? -9)) / 0.5), T0 = A.tier === 'mythical' ? [0.2, 1.05] : A.tier === 'legendary' ? [0.16, 0.9] : A.tier === 'exotic' ? [0.08, 0.55] : [0.04, 0.32];
+        const kick = Math.max(0, 1 - (g.time - (AS.at ?? -9)) / 0.5), T0 = A.tier === 'mythical' ? [0.2, 1.05] : A.tier === 'legendary' ? [0.16, 0.9] : A.tier === 'exotic' ? [0.08, 0.55] : [0.04, 0.32];
         if (!g.overenc) g.fx.shake = Math.max(g.fx.shake || 0, T0[0] + T0[1] * kick * kick); // (7.4.0, owner) no tremor while the bag drags him to half speed
       }
       if (A.reach && !e.inSub && g.toolTip) { // (7.6.0, owner) the reach skills: no dashed arc. A light in the net's hoop, by tier, and a wake of churned water along each swing as long as the reach

@@ -260,11 +260,19 @@ export const instOf = (P, u) => kitOf(P).items.find((q) => q.u === u) || null;
 export const wornInst = (P, kind) => { const u = kitOf(P).on[kind]; return u ? instOf(P, u) : null; };
 export const worn = (P, kind) => { const q = wornInst(P, kind); return q ? ITEMS[q.id] : null; };
 export const ownsItem = (P, id) => kitOf(P).items.some((q) => q.id === id);
-export const isOn = (P, q) => kitOf(P).on[ITEMS[q.id].kind] === q.u;
+export const isOn = (P, q) => { const K = kitOf(P), k = ITEMS[q.id].kind; return K.on[k] === q.u || (k === 'ability' && K.on.ability2 === q.u); }; // (7.6.4) a scroll in the second slot is on too
 const bump = (P) => { kitOf(P).rev = (kitOf(P).rev || 0) + 1; };
 // a new thing into the locker (null if it is full)
 export function giveItem(P, id, rnd) { if (!ITEMS[id] || lockerFree(P) <= 0) return null; const q = mk(id, rnd); q.isNew = true; kitOf(P).items.push(q); P.bagGot = (P.bagGot || 0) + 1; /* (5.9.6) */ bump(P); return q; }
-export function putOn(P, u) { const q = instOf(P, u); if (!q) return false; kitOf(P).on[ITEMS[q.id].kind] = u; bump(P); return true; }
+export function putOn(P, u) { const q = instOf(P, u); if (!q) return false; const K = kitOf(P), it = ITEMS[q.id]; K.on[it.kind] = u;
+  // (7.6.4, owner) a scroll in the first slot: the second never holds the same scroll, its family, or a second Heart
+  if (it.kind === 'ability' && K.on.ability2) { const o = instOf(P, K.on.ability2), oi = o && ITEMS[o.id]; if (!oi || K.on.ability2 === u || oi.fam === it.fam || (oi.rarity === 'mythical' && it.rarity === 'mythical')) K.on.ability2 = null; }
+  bump(P); return true; }
+// (7.6.4, owner) the second scroll slot: never the first slot's family, and only one Heart (mythical) worn at a time
+export function putOn2(P, u) { const q = instOf(P, u), K = kitOf(P); if (!q) return 'none'; const it = ITEMS[q.id]; if (it.kind !== 'ability') return 'none';
+  const f = K.on.ability && instOf(P, K.on.ability), fi = f && ITEMS[f.id];
+  if (fi && K.on.ability === u) return 'same'; if (fi && fi.fam === it.fam) return 'family'; if (fi && fi.rarity === 'mythical' && it.rarity === 'mythical') return 'heart';
+  K.on.ability2 = u; bump(P); return 'ok'; }
 // take a thing off, back into the locker. Net, fins, tank, bag and suit always have one on: taking one off puts his
 // starter one back on (3.0.31). Not when the locker has no room for it; not the starter itself.
 export function takeOff(P, kind) {

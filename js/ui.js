@@ -1321,7 +1321,7 @@ export class UI {
   // it, new things marked NEW. Click anything for a pop-up: what it is, and side by side with what he has on.
   equipHtml(P, g, extra = '') {
     ensureKit(P); const K = kitOf(P), free = !!this.h.canChangeGear(), onSet = new Set(Object.values(K.on));
-    const SLOTS = [['suit', 'Suit'], ['fins', 'Fins'], ['tank', 'Tank'], ['bag', 'Bag'], ['ability', 'Ability'], ['net', '1  Net'], ['cam', '2  Camera']]; // (5.9.0) the Ability slot: the scroll he carries
+    const SLOTS = [['suit', 'Suit'], ['fins', 'Fins'], ['tank', 'Tank'], ['bag', 'Bag'], ['ability', 'Ability'], ['net', '1  Net'], ['cam', '2  Camera'], ['ability2', 'Ability 2']]; // (5.9.0) the Ability slot: the scroll he carries. (7.6.4, owner) and the second, its swap on the skill button
     const pic = (q) => { const it = ITEMS[q.id]; return pictureOf(it.kind, it, 120, 72, true); };
     const slot = ([kind, label]) => { const q = K.on[kind] && K.items.find((x) => x.u === K.on[kind]); const it = q && ITEMS[q.id], nm = label.replace(/^\d\s+/, '');
       // (5.11.7) the name inside the box, under the picture (it no longer hangs below and gets cut off); no key numbers (touch
@@ -1432,7 +1432,7 @@ export class UI {
     const K = kitOf(P), q = K.items.find((x) => x.u === this.lkSel); if (!q) { this.lkSel = null; return ''; }
     const K0 = K; // (7.4.11) for the scrolls' Combine
     if (q.isNew) { delete q.isNew; this.h.onSaveProfile && this.h.onSaveProfile(); }
-    const it = ITEMS[q.id], on = K.on[it.kind] === q.u, seller = this.h.canSellGear && this.h.canSellGear();
+    const it = ITEMS[q.id], on2 = it.kind === 'ability' && K.on.ability2 === q.u, on = K.on[it.kind] === q.u || on2, seller = this.h.canSellGear && this.h.canSellGear();
     const curQ = !on && K.on[it.kind] ? K.items.find((x) => x.u === K.on[it.kind]) : null, cur = curQ ? ITEMS[curQ.id] : null, M = MEASURES[it.kind];
     let body, acts = '';
     if (it.kind === 'chest') { // (6.4.0) a chest in the locker: its card, and Open (with room in the locker for all it can give)
@@ -1443,7 +1443,7 @@ export class UI {
     if (on) {
       body = `<div class="ip-cols one">${this.itemCol(P, q, 'You have it on')}</div>`;
       const starter = it.kind === 'net' ? null : FREE_IDS[it.kind]; // (6.9.1) a net unequipped leaves the hands empty, the hand net too
-      if (free && !(starter && q.id === starter)) acts += `<button data-lk="off:${it.kind}">Unequip${starter ? ` <small>(${ITEMS[starter].name} back on)</small>` : ''}</button>`;
+      if (free && !(starter && q.id === starter)) acts += `<button data-lk="off:${on2 ? 'ability2' : it.kind}">Unequip${starter ? ` <small>(${ITEMS[starter].name} back on)</small>` : ''}</button>`;
     } else {
       // the numbers, a row each: his now, this one, which is better
       let rows = '';
@@ -1456,6 +1456,7 @@ export class UI {
       body = `<div class="ip-cols">${cur ? this.itemCol(P, curQ, 'Equipped') : `<div class="ip-col empty"><h5>Equipped</h5><p>Nothing in that slot.</p></div>`}<div class="ip-arrow">→</div>${this.itemCol(P, q, 'Selected')}</div>`
         + (rows ? `<table class="ip-vs"><thead><tr><th></th><td>${cur ? cur.name : '—'}</td><td>${it.name}</td></tr></thead><tbody>${rows}</tbody></table>` : '');
       if (free) acts += `<button data-lk="on:${q.u}">Put it on</button>`;
+      if (free && it.kind === 'ability') acts += `<button data-lk="on2:${q.u}">Second slot</button>`; // (7.6.4, owner)
       // (7.4.11, owner) three of the same scroll at the same rarity, none of them on: they combine into one of the next rarity
       if (seller) acts += it.kind === 'ability' ? `<button class="sell" data-lk="sellscroll:${q.u}">Sell, <img class="st-pearl" src="assets/ui/icons/pearl.png" alt="">${scrollSellPearls(q.id).toLocaleString('en-US')}</button>` /* (7.6.2, owner) scrolls sell for pearls */ : `<button class="sell" data-lk="sellgear:${q.u}">Sell, ${money(sellValue(q), false)}</button>`;
       else acts += '<small>Sell it on the Margaret, at the station, or to Dave.</small>';

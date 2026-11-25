@@ -537,6 +537,13 @@ e.inSub ? [
           ctx.strokeStyle = 'rgba(6,8,8,0.7)'; ctx.lineWidth = 5.2 * u; ctx.beginPath(); ctx.arc(x, y, R1, a0, a1); ctx.stroke();
           ctx.strokeStyle = lit ? `rgba(232,224,198,${(0.55 + 0.4 * k).toFixed(3)})` : 'rgba(120,116,100,0.28)'; ctx.lineWidth = (lit ? 1.6 + 1.8 * k : 1.6) * u; ctx.beginPath(); ctx.arc(x, y, R1, a0, a1); ctx.stroke(); }
         ctx.restore(); }
+      // (7.6.4, owner) the swap chip on the skill button's upper left rim, as on the net: the second scroll's coin (its own
+      // light rising inside it while it still runs); with no second scroll, a greyed scroll behind a padlock
+      if (a.abil && !this.inKill) { const A2 = this.abilDef2, rc2 = r * 0.44, an = -145 * Math.PI / 180, cx2 = x + Math.cos(an) * (r * 1.3), cy2 = y + Math.sin(an) * (r * 1.3);
+        if (A2) { drawCoin(ctx, cx2, cy2, rc2, 'ab_' + A2.fam, pressFx('abswap', cx2, cy2, rc2) ? 'press' : this.abil2Running ? 'lit' : 'on', { tier: A2.tier }, A2.tier);
+          ctx.save(); ctx.translate(cx2 - rc2 * 0.72, cy2 + rc2 * 0.62); ctx.fillStyle = 'rgba(8,8,6,0.88)'; ctx.beginPath(); ctx.arc(0, 0, rc2 * 0.42, 0, TAU); ctx.fill(); drawGlyph(ctx, 'swap', 0, 0, rc2 * 0.8); ctx.restore();
+          hot(cx2 - rc2, cy2 - rc2, rc2 * 2, rc2 * 2, 'abswap'); }
+        else { drawCoin(ctx, cx2, cy2, rc2, 'ab_sprint', 'off', null); padlock(cx2 + rc2 * 0.4, cy2 + rc2 * 0.4, rc2 * 0.42); hot(cx2 - rc2, cy2 - rc2, rc2 * 2, rc2 * 2, 'msg:No second scroll: put one in its slot in the bag'); } }
       // (7.6.3, owner) charges loaded on the scroll: their count in bone at the button's foot, left (the glow stick's count
       // sits at the top right); a small notch a charge under it, up to ten
       if (a.abil && AB && AB.loaded > 0) { ctx.save(); const n = AB.loaded, fx0 = x - r * 0.98, fy0 = y + r * 0.8;

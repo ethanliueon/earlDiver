@@ -342,3 +342,6 @@ last desktop build is kept on the branch `desktop-4.25.5`).
   its cooldown each, up to 5 (rare, exotic) or 10 (legendary, mythical), Tidewarden and Warden Heart 1. A charge fires the
   skill at once (running, it starts over); with none, the cooldown runs free or is skipped at 3 pearls per 5 min left. The
   count shows at the skill button's foot (×8).
+- (7.6.4, owner) Two scroll slots: Ability and Ability 2 in the bag (a scroll's card: Put it on / Second slot); never two of
+  one family, one Heart (mythical skill) at a time. A swap chip at the skill button's upper left brings the second onto the
+  button with its own cooldown; the other keeps running, and each kind of effect takes the stronger of the two.

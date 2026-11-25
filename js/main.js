@@ -31,7 +31,7 @@ import { DAVE_FINDS, DAVE_RATE } from './dave.js';
 import { STATION_COLLAR } from './station_draw.js';
 import { oldStock, overTable, leftOf, nearLure } from './oldone.js';
 import { CHESTS } from './chests.js';
-import { giveRolled, wornInst } from './items.js';
+import { giveRolled, wornInst, putOn2 } from './items.js';
 import { abilityOf, abilityState, whyNot, ALL_ABILITIES, cooldownLeft, skipCost, fmtLeft, MYTH, NEXT_TIER, maxLoad, chargePrice } from './abilities.js';
 import { startLegendFx } from './legendfx.js';
 import { SKILLS, RARITY, skillCol } from './item_data.js';
@@ -984,6 +984,11 @@ function buy(kind) {
       ui.showGains([{ kind: 'item', id: it.id, how: 'Bought' }]); tipEquip();
       if (P.wish === it.id) P.wish = null;
     }
+  } else if (kind.startsWith('on2:')) { // (7.6.4, owner) the second scroll slot
+    const r = putOn2(P, kind.slice(4));
+    if (r === 'heart') { hud.toast('One Heart (mythical skill) at a time', 'warn'); return false; }
+    if (r === 'family') { hud.toast('Not two scrolls of one family', 'warn'); return false; }
+    if (r !== 'ok') return false; ok = true;
   } else if (kind.startsWith('off:')) {
     const r = takeOff(P, kind.slice(4)); // (3.0.31) back into the locker (a starter goes back on for the five that need one)
     if (r === 'full') hud.toast('Locker full', 'warn');
@@ -2202,6 +2207,13 @@ function causeText(kind) {
 // ---------------- (5.9.0) abilities ----------------
 // (7.6.3, owner) the surface: aboard, in the cabin, or anywhere at 0 m in the water (or the sub there)
 function atSurface() { const e = g && g.earl; if (!e) return false; return !!(g.aboard || (ui.cabinOpen && ui.cabinOpen()) || (e.inSub ? g.sub.y <= 1.5 : e.y <= 0.8)); }
+// (7.6.4, owner) the swap chip: the second scroll comes onto the button, with its own cooldown and run; the other keeps
+// running beside it
+function abilSwap() { const P = profile, K = kitOf(P); if (!K.on.ability2) { hud.toast('No second scroll: put one in its slot in the bag'); return; }
+  [K.on.ability, K.on.ability2] = [K.on.ability2, K.on.ability || null]; [P.abilReadyAt, P.abilReadyAt2] = [P.abilReadyAt2 || 0, P.abilReadyAt || 0];
+  const S1 = abilityState(g); g.abil = g.abil2 || { activeT: 0, maxT: 0, def: null, charges: null, fx: 0 }; g.abil2 = S1; g.dashAim = null; renderer.aimZoom = 1;
+  saveProfile(P); audio.ready && audio.click && audio.click(); }
+function secondAbility() { const q = profile && wornInst(profile, 'ability2'); const A = q ? abilityOf(q.id) : null; if (A) A.loaded = q.load || 0; return A; }
 function currentAbility() { const q = profile && wornInst(profile, 'ability'); const A = q ? abilityOf(q.id) : null; if (A) { A.loaded = q.load || 0; A.inst = q; } return A; } // (7.6.3) with its loaded charges
 function useAbility() {
   const A = currentAbility(), why = whyNot(g, profile, A);
@@ -2272,19 +2284,23 @@ function tickAbility(dt) {
   const S = abilityState(g), e = g.earl, A = S.def;
   if (S.activeT > 0) S.activeT = Math.max(0, S.activeT - dt);
   const on = S.activeT > 0 && A;
-  e.abilSpeed = on && A.speed ? A.speed : 1; e.abilNoAir = !!(on && A.noAir);
+  // (7.6.4, owner) the second scroll keeps running while the other is on the button: both tick, and each kind of effect
+  // takes the stronger of the two (never the two together)
+  const S2 = g.abil2 || null, A2 = S2 && S2.def; if (S2 && S2.activeT > 0) S2.activeT = Math.max(0, S2.activeT - dt);
+  const on2 = !!(S2 && S2.activeT > 0 && A2);
+  e.abilSpeed = Math.max(on && A.speed ? A.speed : 1, on2 && A2.speed ? A2.speed : 1); e.abilNoAir = !!((on && A.noAir) || (on2 && A2.noAir));
   // (7.4.15) Rift's second dash waits 20 s at most; then the rest begins
   if (S.charges > 0) { S.chargeT -= dt; if (S.chargeT <= 0) { S.charges = 0; const R0 = currentAbility(); if (R0 && R0.charges) { profile.abilReadyAt = Date.now() + R0.cd * 1000; saveProfile(profile); } } }
   // (7.4.15) a mythical's 10 s: light, speed and air (in the sub, the cabin's air)
   // (7.4.19) Dauntless: the suit and the hull rated deeper while it runs; the field's strength is how much of the extra
   // depth he is using (0 at the old rating, 1 at the new)
-  { const pm = on && A.press ? A.press : 1, pb = on && A.beyond ? A.beyond : 0; e.pressMul = pm; e.pressBeyond = pb; g.sub.pressMul = 1; g.sub.pressBeyond = 0; // (7.4.22) the diver's suit only
+  { const PA = on && A.press ? A : on2 && A2.press ? A2 : null, PS = PA === A ? S : S2; const pm = PA ? PA.press : 1, pb = PA && PA.beyond ? PA.beyond : 0; e.pressMul = pm; e.pressBeyond = pb; g.sub.pressMul = 1; g.sub.pressBeyond = 0; // (7.4.22) the diver's suit only
     if (pm > 1) { const base = e.pressBase || 300, d = e.y; g.pressK = clamp((d - base) / (base * (pm - 1)), 0, 1); }
-    if (pm > 1 && !g.pressFx) { g.pressFx = { t: 0, end: 0, tier: A.tier, def: A }; if (audio.ready) { audio.thud && audio.thud(0.6); audio.creak && audio.creak(0.5); } } // it opens: a deep thud, the hull's creak
-    if (g.pressFx) { const F = g.pressFx; F.t += dt; if (pm > 1) { F.tier = A.tier; F.def = A; F.left = S.activeT; } else { if (!F.end && audio.ready && audio.groan) audio.groan(0.3); F.end += dt; if (F.end > 1.2) g.pressFx = null; } } } // it is crushed back: the pressure's groan
+    if (pm > 1 && !g.pressFx) { g.pressFx = { t: 0, end: 0, tier: PA.tier, def: PA }; if (audio.ready) { audio.thud && audio.thud(0.6); audio.creak && audio.creak(0.5); } } // it opens: a deep thud, the hull's creak
+    if (g.pressFx) { const F = g.pressFx; F.t += dt; if (pm > 1) { F.tier = PA.tier; F.def = PA; F.left = PS.activeT; } else { if (!F.end && audio.ready && audio.groan) audio.groan(0.3); F.end += dt; if (F.end > 1.2) g.pressFx = null; } } } // it is crushed back: the pressure's groan
   // (7.6.0, owner) Dauntless gives air back early in its run (2/3/5/10 % a second for 10/15/20/30 s); beside a mythical's
   // +50 % the stronger rate wins, never the two together
-  const dRate = on && A.airBack && !e.inSub && (A.dur - S.activeT) < A.airBack[1] ? A.airBack[0] : 0;
+  const rate1 = (D, SS, o) => (o && D.airBack && !e.inSub && (D.dur - SS.activeT) < D.airBack[1] ? D.airBack[0] : 0), dRate = Math.max(rate1(A, S, on), on2 ? rate1(A2, S2, on2) : 0);
   if (dRate > 0 && !(g.mythT > 0 && MYTH.air >= dRate)) e.o2 = Math.min(e.o2Max, e.o2 + e.o2Max * dRate * dt);
   if (g.mythT > 0) { g.mythT = Math.max(0, g.mythT - dt); e.abilSpeed = Math.max(e.abilSpeed, MYTH.speed); e.abilNoAir = true;
     const full = e.inSub ? (g.sub.o2Max || 0) : (e.o2Max || 0), add = dRate > MYTH.air ? 0 : Math.min(full * MYTH.air * dt, full * 0.5 - (g.mythAir || 0));
@@ -2293,10 +2309,10 @@ function tickAbility(dt) {
   depthPearls(); // (7.6.2, owner)
   if (g.songFx) { g.songFx.t += dt; if (g.songFx.t > 4) g.songFx = null; }
   if (g.markWashFx) { g.markWashFx.t += dt; if (g.markWashFx.t > 2) g.markWashFx = null; }
-  g.multiCatch = on && A.multi ? A.multi : 1; g.reachMul = on && A.reach ? A.reach : 1; g.swingMul = on && A.swing ? A.swing : 1; g.sureCatch = !!(on && A.sure); g.blessCatch = !!(on && A.bless);
-  g.abilLight = Math.max(on && A.light ? A.light : 0, g.mythT > 0 ? MYTH.light : 0);
-  { const lh = !!(on && A.light >= 2 && (g.lightFade ?? 1) > 0.5); if (document.documentElement.classList.contains('lighthouse') !== lh) document.documentElement.classList.toggle('lighthouse', lh); } /* (5.16.0) Lighthouse: the HUD comes to life */
-  g.netRange = gear(profile, 'net').range || 1.2; g.wardOn = !!(on && A.ward && !A.tide); // (7.3.0) these two had slipped into the comment above: the Lighthouse never kept hunters off
+  { const RA = on && A.reach ? A : on2 && A2.reach ? A2 : null; g.multiCatch = RA && RA.multi ? RA.multi : 1; g.reachMul = RA ? RA.reach : 1; g.swingMul = RA && RA.swing ? RA.swing : 1; g.sureCatch = !!(RA && RA.sure); g.blessCatch = !!(RA && RA.bless); g.reachDef = RA; }
+  g.abilLight = Math.max(on && A.light ? A.light : 0, on2 && A2.light ? A2.light : 0, g.mythT > 0 ? MYTH.light : 0);
+  { const lh = !!(((on && A.light >= 2) || (on2 && A2.light >= 2)) && (g.lightFade ?? 1) > 0.5); if (document.documentElement.classList.contains('lighthouse') !== lh) document.documentElement.classList.toggle('lighthouse', lh); } /* (5.16.0) Lighthouse: the HUD comes to life */
+  g.netRange = gear(profile, 'net').range || 1.2; g.wardOn = !!((on && A.ward && !A.tide) || (on2 && A2.ward && !A2.tide)); // (7.3.0) these two had slipped into the comment above: the Lighthouse never kept hunters off
   if (g.echoT > 0) g.echoT = Math.max(0, g.echoT - dt);
   if (g.echoSweep != null) { g.echoSweep += dt; if (g.echoSweep > 3) g.echoSweep = null; } // (5.16.0) Echo's sweep over the whole screen, 3 s
   if (g.subGuardT > 0) g.subGuardT = Math.max(0, g.subGuardT - dt);
@@ -2361,6 +2377,7 @@ function update(dt) {
     // (5.7.1) the sub's leave button: always works (the tutorial's own leave step, if it is the one asked)
     // (5.9.0) the ability: fired from the arc's button (key 'ability'), run each frame
     if (pressed.has('ability')) { pressed.delete('ability'); useAbility(); }
+    if (pressed.has('abswap')) { pressed.delete('abswap'); abilSwap(); } // (7.6.4)
     tickAbility(dt);
     if (pressed.has('petstay')) { pressed.delete('petstay'); if (g.anyTarget) { /* (7.4.4) something else claimed the button this frame: that, not the pet */ pressed.add(g.obsTarget && !target ? 'obs' : 'f-tap'); } else { const r = toggleStay(g); if (r) { audio.ready && audio.uiSoft && audio.uiSoft(); say(r === 'stay' ? 'Stay' : 'Follow', 'pet'); saveProfile(profile); } } } // (7.3.9) the pet's Stay / Follow, on the action arc
     if (pressed.has('leavesub')) { pressed.delete('leavesub'); if (e.inSub) { if (!(g.tutAction && g.tutAction.id === 'leavesub' && runTutAction('leavesub'))) leaveSub(); } }
@@ -3297,6 +3314,7 @@ function frame(now) {
   /* (7.4.26, owner) the hand button in the cabin (the door picture at the door): it uses what he stands at. Nothing took it before, so in the tutorial's "Out on deck" a tap at the door did nothing */
   if (hud.inCabin && pressed.has('f')) { pressed.delete('f'); pressed.delete('f-tap'); if (ui.cabin.near && ui.cabin.near() && !(ui.anyOpen && ui.anyOpen('cabin davetalk'))) { fSwallow = keys.has('f'); ui.cabin.use(); audio.ready && audio.click && audio.click(); } } // (7.4.0, owner) at the cabin door the big button takes him out too
   hud.abilDef = currentAbility(); // (5.9.0) the arc's ability button
+  hud.abilDef2 = secondAbility(); hud.abil2Running = !!(g.abil2 && g.abil2.activeT > 0); // (7.6.4) its swap chip
   hud.killTide = false; // (6.0.0) nothing saves him once it strikes: the Tidewarden is for before, while the water reddens // (5.10.8) the Tidewarden, offered in the jaws
   hud.cabinNear = hud.inCabin && ui.cabin.near ? ui.cabin.near() : null; // (7.1.0) which station is in reach, for the button's picture
   hud.handOn = !!(g.aboard && !(profile && profile.tut === 'on' && !hud.inCabin && !(g.tutAction && g.tutAction.id === 'cabin')) && (hud.inCabin ? ui.cabin.near && ui.cabin.near() : g.aboard.near === 'door' && !g.aboard.jump && !g.aboard.climb)); // (5.4) on a phone the touch buttons step aside while a panel is open
