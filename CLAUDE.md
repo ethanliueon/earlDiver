@@ -308,6 +308,9 @@ last desktop build is kept on the branch `desktop-4.25.5`).
   letter's light: olive to greyed drowned green, never cyan), mottling, gouged scars, mid-tone silt stains, rust,
   barnacles and threads, never by darkening. A worn scroll's card (a Heart's too) moves it to the other slot (Second slot
   / Put it on; main.js `moveslot:`), the two swapping with their own cooldowns.
+- (7.6.37, owner) The painted heads' ChatGPT job is handed over: docs/HEADS_HANDOFF.pdf and tools/heads/ (templates made
+  from face_draw.js's own bald head, hair 'none', on key green with corner crosses; pieces.json, 28 pieces with exact
+  prompts and fix lines; check_piece.py). Helmet on in the sea; women their own four faces; no extras in batch one.
 - **(7.6.28, 7.6.33, owner) Saves carry over**: a change must not wipe or break the owner's saves (economy.js `migrate` fills
   anything new from a fresh profile), and the game quietly keeps the last version's save beside each slot
   (`earl.save.slotN.prev`; economy.js `restorePrevSave`). No backup or restore buttons (7.6.34, owner: unnecessary). Superseded:

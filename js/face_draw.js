@@ -110,6 +110,7 @@ export function drawFace(ctx, hx, hy, u, look) {
 
 // the hair that falls behind (a bob to the jaw, a ponytail), under the head
 function hairBack(ctx, Q, u, h) {
+  if (h === 'none') return; // (7.6.37)
   const p = new Path2D(), mv = (X, Y) => p.moveTo(...Q(X, Y)), qc = (a, b, c, d) => p.quadraticCurveTo(...Q(a, b), ...Q(c, d));
   if (h === 'bob') { mv(-1.0, -5.6); qc(-8.4, -5.0, -7.8, 2.6); qc(-7.4, 6.0, -4.4, 6.6); qc(-2.0, 6.6, -0.6, 5.2); qc(-2.4, 2.0, -1.0, -1.0); p.closePath(); }
   else if (h === 'ponytail') { mv(-6.0, -3.6); qc(-9.2, -3.2, -9.0, 1.6); qc(-8.8, 5.6, -8.0, 7.2); qc(-7.6, 4.4, -7.0, 1.2); qc(-6.8, -1.4, -5.4, -2.4); p.closePath(); }
@@ -119,6 +120,7 @@ function hairBack(ctx, Q, u, h) {
 // the hair on top of the head: a mass standing above the skull, from the hairline at the top of the forehead back over
 // the crown to behind the ear, a short sideburn in front of the ear. Each style its own height and edge
 function hairTop(ctx, Q, u, h) {
+  if (h === 'none') return; // (7.6.37) bald: the ChatGPT template's bare head (tools/heads); the creator never offers it
   const p = new Path2D(), mv = (X, Y) => p.moveTo(...Q(X, Y)), qc = (a, b, c, d) => p.quadraticCurveTo(...Q(a, b), ...Q(c, d)), ln = (X, Y) => p.lineTo(...Q(X, Y));
   // the line under the hair, on the skin: the hairline, the temple, round above the ear, down the back to behind it
   const under = () => { ln(-6.6, 0.4); qc(-4.6, -0.6, -3.0, -0.4); qc(-2.0, -1.2, -0.6, -0.8); ln(-0.4, 1.0); ln(0.4, 1.0); qc(0.8, -1.8, 2.8, -3.2); qc(4.0, -4.6, 4.6, -5.4); p.closePath(); };

@@ -1,0 +1,300 @@
+{
+ "version": 1,
+ "preamble": "Edit this image. Keep the canvas size, the head's position, size and angle, the four black corner crosses and the flat pure green background exactly as they are. Change only what is described below. Paint it by hand, matte and muted, like a plate in an old illustrated field guide: soft light from the upper left, no outlines, no gloss or shine, no text, no extra objects, no new background.",
+ "fix_lines": {
+  "size": "The image must stay exactly 1024 by 1024 pixels: do not crop or resize.",
+  "crosses": "Keep the four black crosses in the corners exactly where they were; do not move, redraw or remove them.",
+  "key_border": "Keep the background one flat pure green (#00FF00) everywhere: no shading, texture, vignette or scenery.",
+  "skull_match": "Keep the back of the head, the crown, the ear and the nape exactly where they were in the original; change only the face in front of the ear.",
+  "head_overall": "Keep the head the same size and in the same place; only the jaw, chin, cheeks and nose may change.",
+  "on_the_head": "The piece must sit exactly where it would on the original head: same size and place, nothing floating away from it.",
+  "off_the_face": "Nothing may cover the face: keep the hair (or cap) behind the hairline and above the ear.",
+  "style_gloss": "Make it matte and painted by hand: no shine, no 3D-render look, no outlines.",
+  "style_angle": "Keep the exact side-on profile, facing right, as in the original; do not turn the head.",
+  "style_extra": "Remove everything that was not asked for: no text, no objects, no shoulders, no background detail.",
+  "style_colour": "Paint it in one neutral mid grey only, with no colour.",
+  "trait": "Make the asked-for change clearly visible: {change}"
+ },
+ "pieces": [
+  {
+   "id": "head_m_oval",
+   "file": "head_m_oval.png",
+   "kind": "head",
+   "template": "template_m.png",
+   "sex": "m",
+   "prompt": "Edit this image. Keep the canvas size, the head's position, size and angle, the four black corner crosses and the flat pure green background exactly as they are. Change only what is described below. Paint it by hand, matte and muted, like a plate in an old illustrated field guide: soft light from the upper left, no outlines, no gloss or shine, no text, no extra objects, no new background. Change: give the head an even, oval face: a moderate jaw angle and a rounded chin. Keep the skull, the ear, the back of the head and the eye exactly where they are; keep the neutral grey-beige skin and no hair at all.",
+   "status": "todo",
+   "tries": 0
+  },
+  {
+   "id": "head_m_square",
+   "file": "head_m_square.png",
+   "kind": "head",
+   "template": "template_m.png",
+   "sex": "m",
+   "prompt": "Edit this image. Keep the canvas size, the head's position, size and angle, the four black corner crosses and the flat pure green background exactly as they are. Change only what is described below. Paint it by hand, matte and muted, like a plate in an old illustrated field guide: soft light from the upper left, no outlines, no gloss or shine, no text, no extra objects, no new background. Change: give the head a square face: a strong, low, sharply turned jaw angle and a broad chin. Keep the skull, the ear, the back of the head and the eye exactly where they are; keep the neutral grey-beige skin and no hair at all.",
+   "status": "todo",
+   "tries": 0
+  },
+  {
+   "id": "head_m_narrow",
+   "file": "head_m_narrow.png",
+   "kind": "head",
+   "template": "template_m.png",
+   "sex": "m",
+   "prompt": "Edit this image. Keep the canvas size, the head's position, size and angle, the four black corner crosses and the flat pure green background exactly as they are. Change only what is described below. Paint it by hand, matte and muted, like a plate in an old illustrated field guide: soft light from the upper left, no outlines, no gloss or shine, no text, no extra objects, no new background. Change: give the head a long, narrow face: a high, soft jaw angle and a small chin set lower. Keep the skull, the ear, the back of the head and the eye exactly where they are; keep the neutral grey-beige skin and no hair at all.",
+   "status": "todo",
+   "tries": 0
+  },
+  {
+   "id": "head_m_round",
+   "file": "head_m_round.png",
+   "kind": "head",
+   "template": "template_m.png",
+   "sex": "m",
+   "prompt": "Edit this image. Keep the canvas size, the head's position, size and angle, the four black corner crosses and the flat pure green background exactly as they are. Change only what is described below. Paint it by hand, matte and muted, like a plate in an old illustrated field guide: soft light from the upper left, no outlines, no gloss or shine, no text, no extra objects, no new background. Change: give the head a round face: a short, soft jaw, full cheeks and a small rounded chin. Keep the skull, the ear, the back of the head and the eye exactly where they are; keep the neutral grey-beige skin and no hair at all.",
+   "status": "todo",
+   "tries": 0
+  },
+  {
+   "id": "head_f_oval",
+   "file": "head_f_oval.png",
+   "kind": "head",
+   "template": "template_f.png",
+   "sex": "f",
+   "prompt": "Edit this image. Keep the canvas size, the head's position, size and angle, the four black corner crosses and the flat pure green background exactly as they are. Change only what is described below. Paint it by hand, matte and muted, like a plate in an old illustrated field guide: soft light from the upper left, no outlines, no gloss or shine, no text, no extra objects, no new background. Change: give the head a woman's even, oval face: a soft jaw, a small rounded chin, fine cheekbones and a smaller nose. Keep the skull, the ear, the back of the head and the eye exactly where they are; keep the neutral grey-beige skin and no hair at all.",
+   "status": "todo",
+   "tries": 0
+  },
+  {
+   "id": "head_f_heart",
+   "file": "head_f_heart.png",
+   "kind": "head",
+   "template": "template_f.png",
+   "sex": "f",
+   "prompt": "Edit this image. Keep the canvas size, the head's position, size and angle, the four black corner crosses and the flat pure green background exactly as they are. Change only what is described below. Paint it by hand, matte and muted, like a plate in an old illustrated field guide: soft light from the upper left, no outlines, no gloss or shine, no text, no extra objects, no new background. Change: give the head a woman's heart-shaped face: wide cheekbones narrowing to a small pointed chin, a soft jaw and a smaller nose. Keep the skull, the ear, the back of the head and the eye exactly where they are; keep the neutral grey-beige skin and no hair at all.",
+   "status": "todo",
+   "tries": 0
+  },
+  {
+   "id": "head_f_long",
+   "file": "head_f_long.png",
+   "kind": "head",
+   "template": "template_f.png",
+   "sex": "f",
+   "prompt": "Edit this image. Keep the canvas size, the head's position, size and angle, the four black corner crosses and the flat pure green background exactly as they are. Change only what is described below. Paint it by hand, matte and muted, like a plate in an old illustrated field guide: soft light from the upper left, no outlines, no gloss or shine, no text, no extra objects, no new background. Change: give the head a woman's long face: a high cheekbone, a long gentle jaw line and a narrow chin, a straight smaller nose. Keep the skull, the ear, the back of the head and the eye exactly where they are; keep the neutral grey-beige skin and no hair at all.",
+   "status": "todo",
+   "tries": 0
+  },
+  {
+   "id": "head_f_round",
+   "file": "head_f_round.png",
+   "kind": "head",
+   "template": "template_f.png",
+   "sex": "f",
+   "prompt": "Edit this image. Keep the canvas size, the head's position, size and angle, the four black corner crosses and the flat pure green background exactly as they are. Change only what is described below. Paint it by hand, matte and muted, like a plate in an old illustrated field guide: soft light from the upper left, no outlines, no gloss or shine, no text, no extra objects, no new background. Change: give the head a woman's round face: full soft cheeks, a short gentle jaw and a small rounded chin, a small upturned nose. Keep the skull, the ear, the back of the head and the eye exactly where they are; keep the neutral grey-beige skin and no hair at all.",
+   "status": "todo",
+   "tries": 0
+  },
+  {
+   "id": "hair_crop",
+   "file": "hair_crop.png",
+   "kind": "hair",
+   "template": "template_m.png",
+   "sex": "m",
+   "prompt": "Edit this image. Keep the canvas size, the head's position, size and angle, the four black corner crosses and the flat pure green background exactly as they are. Change only what is described below. Paint it by hand, matte and muted, like a plate in an old illustrated field guide: soft light from the upper left, no outlines, no gloss or shine, no text, no extra objects, no new background. Change: give the head short cropped hair, close at the sides and a little longer on top, a clean hairline, painted in one neutral mid grey (no colour at all) with locks and strands catching the light. The hair sits exactly on this skull: from the hairline at the top of the forehead, over the crown, round above the ear, to behind it. Then show only the hair, alone on the same flat pure green background, in the same place it would sit on this head: remove the head, the face and the neck entirely, and keep the four corner crosses.",
+   "status": "todo",
+   "tries": 0
+  },
+  {
+   "id": "hair_swept",
+   "file": "hair_swept.png",
+   "kind": "hair",
+   "template": "template_m.png",
+   "sex": "m",
+   "prompt": "Edit this image. Keep the canvas size, the head's position, size and angle, the four black corner crosses and the flat pure green background exactly as they are. Change only what is described below. Paint it by hand, matte and muted, like a plate in an old illustrated field guide: soft light from the upper left, no outlines, no gloss or shine, no text, no extra objects, no new background. Change: give the head hair swept back from the forehead, lifted with volume above the skull and combed back over the crown to behind the ear, painted in one neutral mid grey (no colour at all) with locks and strands catching the light. The hair sits exactly on this skull: from the hairline at the top of the forehead, over the crown, round above the ear, to behind it. Then show only the hair, alone on the same flat pure green background, in the same place it would sit on this head: remove the head, the face and the neck entirely, and keep the four corner crosses.",
+   "status": "todo",
+   "tries": 0
+  },
+  {
+   "id": "hair_curly",
+   "file": "hair_curly.png",
+   "kind": "hair",
+   "template": "template_m.png",
+   "sex": "m",
+   "prompt": "Edit this image. Keep the canvas size, the head's position, size and angle, the four black corner crosses and the flat pure green background exactly as they are. Change only what is described below. Paint it by hand, matte and muted, like a plate in an old illustrated field guide: soft light from the upper left, no outlines, no gloss or shine, no text, no extra objects, no new background. Change: give the head short tight curls standing a little above the skull, the edge broken by curls, painted in one neutral mid grey (no colour at all) with locks and strands catching the light. The hair sits exactly on this skull: from the hairline at the top of the forehead, over the crown, round above the ear, to behind it. Then show only the hair, alone on the same flat pure green background, in the same place it would sit on this head: remove the head, the face and the neck entirely, and keep the four corner crosses.",
+   "status": "todo",
+   "tries": 0
+  },
+  {
+   "id": "hair_buzz",
+   "file": "hair_buzz.png",
+   "kind": "hair",
+   "template": "template_m.png",
+   "sex": "m",
+   "prompt": "Edit this image. Keep the canvas size, the head's position, size and angle, the four black corner crosses and the flat pure green background exactly as they are. Change only what is described below. Paint it by hand, matte and muted, like a plate in an old illustrated field guide: soft light from the upper left, no outlines, no gloss or shine, no text, no extra objects, no new background. Change: give the head a very short buzz cut, the skull's shape showing through, a soft hairline, painted in one neutral mid grey (no colour at all) with locks and strands catching the light. The hair sits exactly on this skull: from the hairline at the top of the forehead, over the crown, round above the ear, to behind it. Then show only the hair, alone on the same flat pure green background, in the same place it would sit on this head: remove the head, the face and the neck entirely, and keep the four corner crosses.",
+   "status": "todo",
+   "tries": 0
+  },
+  {
+   "id": "hair_bob",
+   "file": "hair_bob.png",
+   "kind": "hair",
+   "template": "template_m.png",
+   "sex": "m",
+   "prompt": "Edit this image. Keep the canvas size, the head's position, size and angle, the four black corner crosses and the flat pure green background exactly as they are. Change only what is described below. Paint it by hand, matte and muted, like a plate in an old illustrated field guide: soft light from the upper left, no outlines, no gloss or shine, no text, no extra objects, no new background. Change: give the head a woman's chin-length bob, smooth, parted back, falling behind the ear to the jaw, painted in one neutral mid grey (no colour at all) with locks and strands catching the light. The hair sits exactly on this skull: from the hairline at the top of the forehead, over the crown, round above the ear, to behind it. Then show only the hair, alone on the same flat pure green background, in the same place it would sit on this head: remove the head, the face and the neck entirely, and keep the four corner crosses.",
+   "status": "todo",
+   "tries": 0
+  },
+  {
+   "id": "hair_ponytail",
+   "file": "hair_ponytail.png",
+   "kind": "hair",
+   "template": "template_m.png",
+   "sex": "m",
+   "prompt": "Edit this image. Keep the canvas size, the head's position, size and angle, the four black corner crosses and the flat pure green background exactly as they are. Change only what is described below. Paint it by hand, matte and muted, like a plate in an old illustrated field guide: soft light from the upper left, no outlines, no gloss or shine, no text, no extra objects, no new background. Change: give the head hair drawn smoothly back into a low ponytail at the nape, tied with a plain band, the tail hanging behind the neck, painted in one neutral mid grey (no colour at all) with locks and strands catching the light. The hair sits exactly on this skull: from the hairline at the top of the forehead, over the crown, round above the ear, to behind it. Then show only the hair, alone on the same flat pure green background, in the same place it would sit on this head: remove the head, the face and the neck entirely, and keep the four corner crosses.",
+   "status": "todo",
+   "tries": 0
+  },
+  {
+   "id": "hair_bun",
+   "file": "hair_bun.png",
+   "kind": "hair",
+   "template": "template_m.png",
+   "sex": "m",
+   "prompt": "Edit this image. Keep the canvas size, the head's position, size and angle, the four black corner crosses and the flat pure green background exactly as they are. Change only what is described below. Paint it by hand, matte and muted, like a plate in an old illustrated field guide: soft light from the upper left, no outlines, no gloss or shine, no text, no extra objects, no new background. Change: give the head hair drawn smoothly back into a round bun high at the back of the head, painted in one neutral mid grey (no colour at all) with locks and strands catching the light. The hair sits exactly on this skull: from the hairline at the top of the forehead, over the crown, round above the ear, to behind it. Then show only the hair, alone on the same flat pure green background, in the same place it would sit on this head: remove the head, the face and the neck entirely, and keep the four corner crosses.",
+   "status": "todo",
+   "tries": 0
+  },
+  {
+   "id": "beard_stubble_oval",
+   "file": "beard_stubble_oval.png",
+   "kind": "beard",
+   "template": "template_m.png",
+   "sex": "m",
+   "prompt": "Edit this image. Keep the canvas size, the head's position, size and angle, the four black corner crosses and the flat pure green background exactly as they are. Change only what is described below. Paint it by hand, matte and muted, like a plate in an old illustrated field guide: soft light from the upper left, no outlines, no gloss or shine, no text, no extra objects, no new background. Change: first give the head an even, oval face: a moderate jaw angle and a rounded chin; then give it a shadow of short stubble along the jaw, the chin and over the lip, painted in one neutral mid grey (no colour at all). Then show only the beard, alone on the same flat pure green background, in the same place it would sit on this head: remove the head, the face and the neck entirely, and keep the four corner crosses.",
+   "status": "todo",
+   "tries": 0
+  },
+  {
+   "id": "beard_short_oval",
+   "file": "beard_short_oval.png",
+   "kind": "beard",
+   "template": "template_m.png",
+   "sex": "m",
+   "prompt": "Edit this image. Keep the canvas size, the head's position, size and angle, the four black corner crosses and the flat pure green background exactly as they are. Change only what is described below. Paint it by hand, matte and muted, like a plate in an old illustrated field guide: soft light from the upper left, no outlines, no gloss or shine, no text, no extra objects, no new background. Change: first give the head an even, oval face: a moderate jaw angle and a rounded chin; then give it a short, close beard along the jaw and round the chin, with a moustache, painted in one neutral mid grey (no colour at all). Then show only the beard, alone on the same flat pure green background, in the same place it would sit on this head: remove the head, the face and the neck entirely, and keep the four corner crosses.",
+   "status": "todo",
+   "tries": 0
+  },
+  {
+   "id": "beard_full_oval",
+   "file": "beard_full_oval.png",
+   "kind": "beard",
+   "template": "template_m.png",
+   "sex": "m",
+   "prompt": "Edit this image. Keep the canvas size, the head's position, size and angle, the four black corner crosses and the flat pure green background exactly as they are. Change only what is described below. Paint it by hand, matte and muted, like a plate in an old illustrated field guide: soft light from the upper left, no outlines, no gloss or shine, no text, no extra objects, no new background. Change: first give the head an even, oval face: a moderate jaw angle and a rounded chin; then give it a full beard, thick along the jaw and below the chin, joined to a moustache, painted in one neutral mid grey (no colour at all). Then show only the beard, alone on the same flat pure green background, in the same place it would sit on this head: remove the head, the face and the neck entirely, and keep the four corner crosses.",
+   "status": "todo",
+   "tries": 0
+  },
+  {
+   "id": "beard_stubble_square",
+   "file": "beard_stubble_square.png",
+   "kind": "beard",
+   "template": "template_m.png",
+   "sex": "m",
+   "prompt": "Edit this image. Keep the canvas size, the head's position, size and angle, the four black corner crosses and the flat pure green background exactly as they are. Change only what is described below. Paint it by hand, matte and muted, like a plate in an old illustrated field guide: soft light from the upper left, no outlines, no gloss or shine, no text, no extra objects, no new background. Change: first give the head a square face: a strong, low, sharply turned jaw angle and a broad chin; then give it a shadow of short stubble along the jaw, the chin and over the lip, painted in one neutral mid grey (no colour at all). Then show only the beard, alone on the same flat pure green background, in the same place it would sit on this head: remove the head, the face and the neck entirely, and keep the four corner crosses.",
+   "status": "todo",
+   "tries": 0
+  },
+  {
+   "id": "beard_short_square",
+   "file": "beard_short_square.png",
+   "kind": "beard",
+   "template": "template_m.png",
+   "sex": "m",
+   "prompt": "Edit this image. Keep the canvas size, the head's position, size and angle, the four black corner crosses and the flat pure green background exactly as they are. Change only what is described below. Paint it by hand, matte and muted, like a plate in an old illustrated field guide: soft light from the upper left, no outlines, no gloss or shine, no text, no extra objects, no new background. Change: first give the head a square face: a strong, low, sharply turned jaw angle and a broad chin; then give it a short, close beard along the jaw and round the chin, with a moustache, painted in one neutral mid grey (no colour at all). Then show only the beard, alone on the same flat pure green background, in the same place it would sit on this head: remove the head, the face and the neck entirely, and keep the four corner crosses.",
+   "status": "todo",
+   "tries": 0
+  },
+  {
+   "id": "beard_full_square",
+   "file": "beard_full_square.png",
+   "kind": "beard",
+   "template": "template_m.png",
+   "sex": "m",
+   "prompt": "Edit this image. Keep the canvas size, the head's position, size and angle, the four black corner crosses and the flat pure green background exactly as they are. Change only what is described below. Paint it by hand, matte and muted, like a plate in an old illustrated field guide: soft light from the upper left, no outlines, no gloss or shine, no text, no extra objects, no new background. Change: first give the head a square face: a strong, low, sharply turned jaw angle and a broad chin; then give it a full beard, thick along the jaw and below the chin, joined to a moustache, painted in one neutral mid grey (no colour at all). Then show only the beard, alone on the same flat pure green background, in the same place it would sit on this head: remove the head, the face and the neck entirely, and keep the four corner crosses.",
+   "status": "todo",
+   "tries": 0
+  },
+  {
+   "id": "beard_stubble_narrow",
+   "file": "beard_stubble_narrow.png",
+   "kind": "beard",
+   "template": "template_m.png",
+   "sex": "m",
+   "prompt": "Edit this image. Keep the canvas size, the head's position, size and angle, the four black corner crosses and the flat pure green background exactly as they are. Change only what is described below. Paint it by hand, matte and muted, like a plate in an old illustrated field guide: soft light from the upper left, no outlines, no gloss or shine, no text, no extra objects, no new background. Change: first give the head a long, narrow face: a high, soft jaw angle and a small chin set lower; then give it a shadow of short stubble along the jaw, the chin and over the lip, painted in one neutral mid grey (no colour at all). Then show only the beard, alone on the same flat pure green background, in the same place it would sit on this head: remove the head, the face and the neck entirely, and keep the four corner crosses.",
+   "status": "todo",
+   "tries": 0
+  },
+  {
+   "id": "beard_short_narrow",
+   "file": "beard_short_narrow.png",
+   "kind": "beard",
+   "template": "template_m.png",
+   "sex": "m",
+   "prompt": "Edit this image. Keep the canvas size, the head's position, size and angle, the four black corner crosses and the flat pure green background exactly as they are. Change only what is described below. Paint it by hand, matte and muted, like a plate in an old illustrated field guide: soft light from the upper left, no outlines, no gloss or shine, no text, no extra objects, no new background. Change: first give the head a long, narrow face: a high, soft jaw angle and a small chin set lower; then give it a short, close beard along the jaw and round the chin, with a moustache, painted in one neutral mid grey (no colour at all). Then show only the beard, alone on the same flat pure green background, in the same place it would sit on this head: remove the head, the face and the neck entirely, and keep the four corner crosses.",
+   "status": "todo",
+   "tries": 0
+  },
+  {
+   "id": "beard_full_narrow",
+   "file": "beard_full_narrow.png",
+   "kind": "beard",
+   "template": "template_m.png",
+   "sex": "m",
+   "prompt": "Edit this image. Keep the canvas size, the head's position, size and angle, the four black corner crosses and the flat pure green background exactly as they are. Change only what is described below. Paint it by hand, matte and muted, like a plate in an old illustrated field guide: soft light from the upper left, no outlines, no gloss or shine, no text, no extra objects, no new background. Change: first give the head a long, narrow face: a high, soft jaw angle and a small chin set lower; then give it a full beard, thick along the jaw and below the chin, joined to a moustache, painted in one neutral mid grey (no colour at all). Then show only the beard, alone on the same flat pure green background, in the same place it would sit on this head: remove the head, the face and the neck entirely, and keep the four corner crosses.",
+   "status": "todo",
+   "tries": 0
+  },
+  {
+   "id": "beard_stubble_round",
+   "file": "beard_stubble_round.png",
+   "kind": "beard",
+   "template": "template_m.png",
+   "sex": "m",
+   "prompt": "Edit this image. Keep the canvas size, the head's position, size and angle, the four black corner crosses and the flat pure green background exactly as they are. Change only what is described below. Paint it by hand, matte and muted, like a plate in an old illustrated field guide: soft light from the upper left, no outlines, no gloss or shine, no text, no extra objects, no new background. Change: first give the head a round face: a short, soft jaw, full cheeks and a small rounded chin; then give it a shadow of short stubble along the jaw, the chin and over the lip, painted in one neutral mid grey (no colour at all). Then show only the beard, alone on the same flat pure green background, in the same place it would sit on this head: remove the head, the face and the neck entirely, and keep the four corner crosses.",
+   "status": "todo",
+   "tries": 0
+  },
+  {
+   "id": "beard_short_round",
+   "file": "beard_short_round.png",
+   "kind": "beard",
+   "template": "template_m.png",
+   "sex": "m",
+   "prompt": "Edit this image. Keep the canvas size, the head's position, size and angle, the four black corner crosses and the flat pure green background exactly as they are. Change only what is described below. Paint it by hand, matte and muted, like a plate in an old illustrated field guide: soft light from the upper left, no outlines, no gloss or shine, no text, no extra objects, no new background. Change: first give the head a round face: a short, soft jaw, full cheeks and a small rounded chin; then give it a short, close beard along the jaw and round the chin, with a moustache, painted in one neutral mid grey (no colour at all). Then show only the beard, alone on the same flat pure green background, in the same place it would sit on this head: remove the head, the face and the neck entirely, and keep the four corner crosses.",
+   "status": "todo",
+   "tries": 0
+  },
+  {
+   "id": "beard_full_round",
+   "file": "beard_full_round.png",
+   "kind": "beard",
+   "template": "template_m.png",
+   "sex": "m",
+   "prompt": "Edit this image. Keep the canvas size, the head's position, size and angle, the four black corner crosses and the flat pure green background exactly as they are. Change only what is described below. Paint it by hand, matte and muted, like a plate in an old illustrated field guide: soft light from the upper left, no outlines, no gloss or shine, no text, no extra objects, no new background. Change: first give the head a round face: a short, soft jaw, full cheeks and a small rounded chin; then give it a full beard, thick along the jaw and below the chin, joined to a moustache, painted in one neutral mid grey (no colour at all). Then show only the beard, alone on the same flat pure green background, in the same place it would sit on this head: remove the head, the face and the neck entirely, and keep the four corner crosses.",
+   "status": "todo",
+   "tries": 0
+  },
+  {
+   "id": "cap_knit",
+   "file": "cap_knit.png",
+   "kind": "cap",
+   "template": "template_m.png",
+   "sex": "m",
+   "prompt": "Edit this image. Keep the canvas size, the head's position, size and angle, the four black corner crosses and the flat pure green background exactly as they are. Change only what is described below. Paint it by hand, matte and muted, like a plate in an old illustrated field guide: soft light from the upper left, no outlines, no gloss or shine, no text, no extra objects, no new background. Change: give the head a worn knitted watch cap, rolled up once at the brim, sitting snug over the skull and the top of the ear, in one neutral mid grey (no colour at all), its ribbing and worn stitches visible. Then show only the cap, alone on the same flat pure green background, in the same place it would sit on this head: remove the head, the face and the neck entirely, and keep the four corner crosses.",
+   "status": "todo",
+   "tries": 0
+  }
+ ]
+}

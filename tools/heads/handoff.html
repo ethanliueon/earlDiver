@@ -1,0 +1,189 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>Hatchetfish: painted heads, the ChatGPT job</title>
+<style>
+  @page { size: A4; margin: 16mm 15mm; }
+  body { font: 10.5pt/1.45 "Barlow Semi Condensed", "Helvetica Neue", Arial, sans-serif; color: #222; }
+  h1 { font-size: 22pt; margin: 0 0 4mm; } h2 { font-size: 15pt; margin: 0 0 3mm; border-bottom: 1.5px solid #556; padding-bottom: 1mm; }
+  h3 { font-size: 11.5pt; margin: 4mm 0 1.5mm; }
+  section { page-break-after: always; } section:last-child { page-break-after: auto; }
+  img { max-width: 100%; border-radius: 2px; } .row { display: flex; gap: 4mm; } .row > * { flex: 1; }
+  .cap { font-size: 9pt; color: #555; margin: 1mm 0 3mm; }
+  code, pre { font: 8.6pt/1.4 Menlo, Consolas, monospace; } pre { background: #f2f2ee; padding: 2.5mm 3mm; border-radius: 2px; white-space: pre-wrap; }
+  table { border-collapse: collapse; width: 100%; font-size: 9.5pt; } td, th { border: 1px solid #bbb; padding: 1.2mm 2mm; text-align: left; vertical-align: top; } th { background: #e8e8e2; }
+  .note { background: #fbf6e6; border-left: 3px solid #b8964a; padding: 2mm 3mm; margin: 3mm 0; }
+  .stop { background: #f8ebe8; border-left: 3px solid #a84a36; padding: 2mm 3mm; margin: 3mm 0; }
+  ol li, ul li { margin-bottom: 1mm; }
+</style></head><body>
+
+<section>
+<h1>Painted heads for Hatchetfish: the ChatGPT job</h1>
+<p>You are a Claude working on the owner's computer, in their browser. Your job is to have ChatGPT paint about <b>28 pieces</b> of a
+diver's head for a phone game called <b>Hatchetfish: Deep Sea Survival</b>, check every one, redo the ones that fail, and hand back a
+folder of passed pieces. You do not change the game. Another Claude wires the pieces in afterwards.</p>
+<h3>What a head is for</h3>
+<p>In the game a new player makes their diver: man or woman, a face shape, a hairstyle, a beard, a skin and hair colour. The head is
+seen in profile in the creator, on the boat's deck, in the cabin, and in one scene after death. Underwater the diver wears a helmet,
+so the head is never seen in the sea. Today the heads are drawn in code (below); they are clean but flat. The painted pieces replace them.</p>
+<img src="ref/current_heads.png" style="max-height:48mm"><p class="cap">The heads the game draws now (code). Same angle, same skull, same place: the painted pieces must keep exactly this layout.</p>
+<h3>Done means</h3>
+<ul><li>Every piece in <code>pieces.json</code> has status <b>passed</b> (or <b>needs_owner</b> after three failed tries).</li>
+<li>The passed files are in <code>~/hatchetfish-heads/passed/</code>, named as in the checklist, 1024 × 1024 PNG.</li>
+<li><code>~/hatchetfish-heads/log.json</code> records every try: the prompt sent, the check results, your scores, why a retry was needed.</li>
+<li>A contact sheet <code>~/hatchetfish-heads/contact.png</code> shows every passed piece side by side.</li></ul>
+<h3>What you are given (the folder <code>tools/heads/</code> of the game's repository)</h3>
+<table><tr><th>File</th><th>What it is</th></tr>
+<tr><td><code>template_m.png</code>, <code>template_f.png</code></td><td>The two templates every image is an edit of (section 3).</td></tr>
+<tr><td><code>pieces.json</code></td><td>The checklist: every piece, its file name, its template, its exact prompt, its status (section 4).</td></tr>
+<tr><td><code>check_piece.py</code></td><td>The automatic check, run on every download (section 8).</td></tr>
+<tr><td><code>ref/</code></td><td>Pictures of the game and an example piece with its overlay.</td></tr></table>
+</section>
+
+<section>
+<h2>2. The look</h2>
+<p>The game is a quiet horror about being small in a dark sea. Its pictures are <b>painted by hand, matte and muted, worn</b>: olive,
+bronze, bone, deep water and rust. Nothing glossy, nothing cartoon, nothing that looks generated. Think of a plate in an old
+illustrated field guide.</p>
+<div class="row"><div><img src="ref/game_loading.jpg"><p class="cap">The loading screen.</p></div><div><img src="ref/game_slots.jpg"><p class="cap">Choosing a diver.</p></div></div>
+<h3>A head passes the look when</h3>
+<ul><li>It is <b>painted</b>: soft brush modelling, light from the upper left, a little texture; no outlines anywhere.</li>
+<li>It is <b>matte</b>: no shine on skin or hair, no 3D-render plastic, no airbrushed glamour.</li>
+<li>It is <b>a real adult face in profile</b>: a believable jaw that turns under the ear, a nose, lips and chin; calm, no expression.</li>
+<li>It is <b>exactly side-on, facing right</b>, the same size and place as the template.</li></ul>
+<h3>Reject on sight</h3>
+<table><tr><th>Failure</th><th>What it looks like</th></tr>
+<tr><td>Generated gloss</td><td>Shiny skin, rim lights, perfect smoothness, a CGI or stock-art finish.</td></tr>
+<tr><td>Cartoon</td><td>Outlines, flat cel shading, big eyes, anime or comic features.</td></tr>
+<tr><td>Moved</td><td>The head turned toward the viewer, tilted, larger, smaller or shifted; a neck or shoulders added.</td></tr>
+<tr><td>New background</td><td>Any shading, texture, vignette or scene instead of flat pure green.</td></tr>
+<tr><td>Extras</td><td>Text, signatures, frames, jewellery, glasses, earrings, clothing, props.</td></tr>
+<tr><td>Wrong colour</td><td>Hair, beard or cap in a colour (they must be neutral grey: the game colours them itself).</td></tr></table>
+</section>
+
+<section>
+<h2>3. The templates</h2>
+<div class="row"><div><img src="template_m.png" style="max-height:70mm"><p class="cap"><code>template_m.png</code></p></div><div><img src="template_f.png" style="max-height:70mm"><p class="cap"><code>template_f.png</code></p></div></div>
+<p>Each is 1024 × 1024: the game's own bald head, in profile facing right, in a <b>neutral grey-beige skin</b> (the game tints it to each
+skin colour), on <b>flat pure green #00FF00</b> (so pieces can be cut out), with <b>four black crosses</b> at (48,48), (976,48), (48,976),
+(976,976) to prove nothing moved.</p>
+<p><b>Every image is an edit of a template, never a fresh drawing.</b> Asked to draw from nothing, ChatGPT gives every head a different
+size, angle and style, and nothing lines up. Asked to edit a fixed picture, it keeps the layout.</p>
+<p>The skull, the ear, the back of the head and the eye are <b>shared by every face</b>, so every hairstyle fits every face. Faces differ
+only in front of the ear and below the cheekbone (jaw, chin, cheeks, nose).</p>
+</section>
+
+<section>
+<h2>4. The checklist (<code>pieces.json</code>)</h2>
+<table><tr><th>Group</th><th>Pieces</th><th>Template</th><th>Count</th></tr>
+<tr><td>Men's heads</td><td>oval, square, narrow, round</td><td>m</td><td>4</td></tr>
+<tr><td>Women's heads</td><td>oval, heart, long, round</td><td>f</td><td>4</td></tr>
+<tr><td>Hairstyles</td><td>crop, swept, curly, buzz, bob, ponytail, bun (alone on green)</td><td>m</td><td>7</td></tr>
+<tr><td>Beards</td><td>stubble, short, full × the four men's jaws (alone on green)</td><td>m</td><td>12</td></tr>
+<tr><td>Knit cap</td><td>one (alone on green)</td><td>m</td><td>1</td></tr></table>
+<p>Each entry:</p>
+<pre>{ "id": "hair_swept", "file": "hair_swept.png", "kind": "hair", "template": "template_m.png", "sex": "m",
+  "prompt": "Edit this image. Keep the canvas size, ... Change: give the head hair swept back ...",
+  "status": "todo", "tries": 0 }</pre>
+<p><b>Status</b> moves: <code>todo</code> → <code>sent</code> → <code>passed</code>, or <code>failed</code> (tries + 1, retried) → after 3 failures
+<code>needs_owner</code>. <code>waiting</code> means paused for a usage limit (section 7). Write the file after every change so a new chat or
+a crash can carry on from where you were. Work in the order of the file (heads first: they show whether the style holds).</p>
+<div class="note">Beards: each beard is painted <i>on the jaw it belongs to</i>, so its prompt first gives the head that jaw, then the beard,
+then removes the head. Do not reuse a beard across jaws.</div>
+</section>
+
+<section>
+<h2>5. The prompts</h2>
+<p>Every prompt is in <code>pieces.json</code>, word for word. <b>Send them exactly; never reword them.</b> The only thing you ever add is a
+fix line from the list in section 9. Each prompt is the fixed preamble plus one change:</p>
+<pre>Edit this image. Keep the canvas size, the head's position, size and angle, the four black corner crosses and the flat pure
+green background exactly as they are. Change only what is described below. Paint it by hand, matte and muted, like a plate in
+an old illustrated field guide: soft light from the upper left, no outlines, no gloss or shine, no text, no extra objects,
+no new background. Change: give the head a square face: a strong, low, sharply turned jaw angle and a broad chin. Keep the
+skull, the ear, the back of the head and the eye exactly where they are; keep the neutral grey-beige skin and no hair at all.</pre>
+<p>Hair, beards and the cap end with: <i>"Then show only the hair, alone on the same flat pure green background, in the same place it
+would sit on this head: remove the head, the face and the neck entirely, and keep the four corner crosses."</i> They are asked for in
+<b>one neutral mid grey</b>; the game tints them to the seven hair colours.</p>
+</section>
+
+<section>
+<h2>6. Driving ChatGPT</h2>
+<ol>
+<li>The owner logs in to ChatGPT in their browser before you start. <b>You never type a password or log in.</b></li>
+<li>Make the work folder: <code>~/hatchetfish-heads/raw/</code>, <code>passed/</code>, <code>log.json</code>, and a copy of <code>pieces.json</code>.</li>
+<li>For each piece: open a <b>new chat</b> (one piece per chat, so earlier images never pull the style), attach the piece's template file
+(the original, never a previous result), paste the prompt, send.</li>
+<li>Wait for the image to finish. Download it at full size (the image's own download button, not a screenshot) and save it as
+<code>raw/&lt;file&gt;</code>, adding <code>_try2</code>, <code>_try3</code> for retries.</li>
+<li>Run the check (section 8), look at the image and its overlay, score it, and update the checklist and the log.</li>
+<li>Passed: copy to <code>passed/&lt;file&gt;</code>. Failed: retry in a <b>new chat</b> with the fix lines (section 9).</li></ol>
+<div class="note">If ChatGPT answers in words instead of an image, or asks a question, reply once: "Please make the edited image now,
+exactly as described." If it refuses, record the refusal and move on; do not argue with it.</div>
+</section>
+
+<section>
+<h2>7. Tabs and usage limits</h2>
+<p>Image tools have usage limits. When a chat says you have reached a limit:</p>
+<ol><li>Note the time it says it resets (or "unknown") in the log, and mark the piece <code>waiting</code>.</li>
+<li>You may carry on in another open tab <b>only if it is the same signed-in account</b> and the limit message does not apply there
+(for example, another model on the same plan).</li>
+<li>Otherwise stop, and tell the owner the reset time and how many pieces are left. Resume from the checklist when they say so.</li></ol>
+<div class="stop"><b>Do not</b> switch between different ChatGPT accounts, make new accounts, or use any other trick to get round a limit.
+It is against OpenAI's terms and can get the owner's account suspended. A paused job costs nothing; a lost account costs a lot.</div>
+</section>
+
+<section>
+<h2>8. Checking each image</h2>
+<h3>a. The automatic check (always first)</h3>
+<pre>python3 check_piece.py raw/head_m_square.png head m       # kinds: head | hair | beard | cap ; sex: m | f
+python3 check_piece.py raw/hair_swept.png hair m</pre>
+<p>It prints a JSON report and writes <code>…_overlay.png</code> (the piece at 50 % over the template). Exit code 0 means every check passed.</p>
+<table><tr><th>Check</th><th>Passes when</th></tr>
+<tr><td>size</td><td>exactly 1024 × 1024</td></tr>
+<tr><td>crosses</td><td>all four corner crosses within 2 px of the template's</td></tr>
+<tr><td>key_border</td><td>the border band still flat pure green (under 1 % off)</td></tr>
+<tr><td>skull_match (heads)</td><td>the back 55 % of the head matches the template, IoU ≥ 0.96 (about 5 px of drift)</td></tr>
+<tr><td>head_overall (heads)</td><td>the whole head overlaps the template, IoU ≥ 0.80 (the face may change)</td></tr>
+<tr><td>on_the_head (hair, beard, cap)</td><td>97 % of the piece within a band round the template's head</td></tr>
+<tr><td>off_the_face (hair, cap)</td><td>under 2 % of the piece over the face</td></tr></table>
+<div class="row"><div><img src="ref/example_piece_hair.png" style="max-height:38mm"><p class="cap">A hair piece (here the game's own hair, cut out, used to test the check).</p></div>
+<div><img src="ref/example_piece_hair_overlay.png" style="max-height:38mm"><p class="cap">Its overlay: the hair sits on the template's skull.</p></div></div>
+<h3 style="page-break-before: always">b. Your eye check (only if the automatic check passed)</h3>
+<p>Open the image and its overlay. Score each 0, 1 or 2:</p>
+<table><tr><th>Question</th><th>2</th><th>1</th><th>0</th></tr>
+<tr><td>Painted and matte?</td><td>brushwork, no shine</td><td>a little smooth or glossy</td><td>render, gloss, cartoon</td></tr>
+<tr><td>Same angle and place?</td><td>identical on the overlay</td><td>slight drift</td><td>turned, tilted, resized</td></tr>
+<tr><td>Anatomy?</td><td>believable</td><td>one small oddity</td><td>wrong (two ears, melted jaw)</td></tr>
+<tr><td>The asked-for change, and only that?</td><td>clearly that</td><td>weak or with a small extra</td><td>not there, or something else changed</td></tr>
+<tr><td>Free of anything generated or extra?</td><td>clean</td><td>a faint artefact</td><td>text, objects, background</td></tr></table>
+<p><b>Pass</b> = automatic check passed, eye score ≥ 8 of 10, and no zero. Write the scores and one sentence of reasons in the log.</p>
+</section>
+
+<section>
+<h2>9. Retrying</h2>
+<p>A failed piece is sent again in a <b>new chat</b>, with the <b>template</b> (never the failed image), the <b>same prompt</b>, and one
+fix line added at the end for each thing that failed. The fix lines are in <code>pieces.json</code> under <code>fix_lines</code>:</p>
+<table><tr><th>Failed</th><th>Line added</th></tr>
+<tr><td>crosses</td><td>Keep the four black crosses in the corners exactly where they were; do not move, redraw or remove them.</td></tr>
+<tr><td>skull_match</td><td>Keep the back of the head, the crown, the ear and the nape exactly where they were in the original; change only the face in front of the ear.</td></tr>
+<tr><td>key_border</td><td>Keep the background one flat pure green (#00FF00) everywhere: no shading, texture, vignette or scenery.</td></tr>
+<tr><td>gloss (eye)</td><td>Make it matte and painted by hand: no shine, no 3D-render look, no outlines.</td></tr>
+<tr><td>angle (eye)</td><td>Keep the exact side-on profile, facing right, as in the original; do not turn the head.</td></tr>
+<tr><td>…</td><td>(the rest in <code>fix_lines</code>)</td></tr></table>
+<p><b>Three tries at most.</b> After the third failure mark the piece <code>needs_owner</code>, keep the best try in <code>raw/</code>, note why
+it failed, and go on to the next piece. Never loosen a check to make a piece pass.</p>
+</section>
+
+<section>
+<h2>10. Handing back</h2>
+<ol><li>When every piece is <code>passed</code> or <code>needs_owner</code>, make the contact sheet: every passed piece over its template,
+4 across, labelled with its id (any simple script).</li>
+<li>Tell the owner: how many passed, which need them and why, and where the folder is.</li>
+<li>The owner puts <code>passed/</code> into the repository's <code>assets/face/</code> (or sends it to the game's Claude), which cuts the
+green out, tints skins and hair, and wires them into the creator.</li></ol>
+<h2>11. If something goes wrong</h2>
+<table><tr><th>Problem</th><th>Do</th></tr>
+<tr><td>The download is smaller than 1024</td><td>Use the image's own full-size download, not a preview or screenshot. If ChatGPT itself changed the size, retry with the size fix line.</td></tr>
+<tr><td>The style drifts over many pieces</td><td>Each piece gets a new chat and the original template. Compare against the first passed head; if the style has moved, mark the drifting ones failed with the gloss fix line.</td></tr>
+<tr><td>A browser crash or a new chat with you</td><td>Read <code>pieces.json</code> and <code>log.json</code> and carry on from the first piece not <code>passed</code>.</td></tr>
+<tr><td>Anything else unclear</td><td>Stop and ask the owner. Do not guess at the look.</td></tr></table>
+</section>
+</body></html>

@@ -1,4 +1,9 @@
-# Painted heads for the diver creator: the ChatGPT pipeline (planned, not built)
+# Painted heads for the diver creator: the ChatGPT pipeline
+
+**7.6.37: the handover is ready** (`docs/HEADS_HANDOFF.pdf`, `tools/heads/`: templates, checklist, check script).
+Decided (owner, 7.6.37): the helmet stays on in the sea (heads are seen in the creator, on deck, in the cabin and in Rebirth),
+women get their own four faces (oval, heart, long, round), no extras (no aged or scarred set) in the first batch; a
+helmet item with its own options may come in a later update.
 
 Written 7.5.0 at the owner's request, to be done later. A PDF version for the other Claude comes after.
 
@@ -70,7 +75,7 @@ background; remove the head." Hair is asked for in a **neutral mid grey** so cod
   pieces are in.
 - The creator, the deck, the cabin and the Rebirth scene all use the same function, so the new heads show everywhere.
 
-## Open questions for the owner
+## Open questions for the owner (answered 7.6.37, see the top)
 
 - Does the helmet stay on in the sea (so heads are only seen aboard, in the creator and in Rebirth)? Then 256 px is
   plenty.
