@@ -539,7 +539,8 @@ e.inSub ? [
         ctx.restore(); }
       // (7.6.4, owner) the swap chip on the skill button's upper left rim, as on the net: the second scroll's coin (its own
       // light rising inside it while it still runs); with no second scroll, a greyed scroll behind a padlock
-      if (a.abil && !this.inKill) { const A2 = this.abilDef2, rc2 = r * 0.44, an = -145 * Math.PI / 180, cx2 = x + Math.cos(an) * (r * 1.3), cy2 = y + Math.sin(an) * (r * 1.3);
+      // (7.6.7, owner) on its upper right rim, as the camera chip sits on the net's: sized and placed to clear the hand above
+      if (a.abil && !this.inKill) { const A2 = this.abilDef2, rc2 = 12 * u, an = -25 * Math.PI / 180, cx2 = x + Math.cos(an) * (r * 0.85), cy2 = y + Math.sin(an) * (r * 0.85);
         if (A2) { drawCoin(ctx, cx2, cy2, rc2, 'ab_' + A2.fam, pressFx('abswap', cx2, cy2, rc2) ? 'press' : this.abil2Running ? 'lit' : 'on', { tier: A2.tier }, A2.tier);
           ctx.save(); ctx.translate(cx2 - rc2 * 0.72, cy2 + rc2 * 0.62); ctx.fillStyle = 'rgba(8,8,6,0.88)'; ctx.beginPath(); ctx.arc(0, 0, rc2 * 0.42, 0, TAU); ctx.fill(); drawGlyph(ctx, 'swap', 0, 0, rc2 * 0.8); ctx.restore();
           hot(cx2 - rc2, cy2 - rc2, rc2 * 2, rc2 * 2, 'abswap'); }
@@ -1067,6 +1068,13 @@ e.inSub ? [
     // (5.9.0) Echo: every animal within the radar's 200 m as a dot while it lasts (rare and better in their colours at Echo+)
     // (5.16.0) Echo: for its time, every exotic and legendary animal in reach shows as the same pale bone pip with a soft ring
     // (no telling which is which); Fathom reaches three times as far (the radar's edge stands for its reach then)
+    // (7.6.7, owner) a Heart's burst ripples across the radar: a band of light running out from the centre to the rim, a
+    // weaker one after it (a radar is an instrument: its own rings are its language)
+    if (g.radarRipple) { const rt = g.radarRipple.t; ctx.save(); ctx.beginPath(); ctx.arc(rcx, rcy, rr, 0, TAU); ctx.clip();
+      for (const [d0, wk] of [[0, 1], [0.35, 0.5]]) { const k = (rt - d0) / 1.5; if (k <= 0 || k >= 1) continue; const R = rr * (1 - Math.pow(1 - k, 2)), bw = rr * 0.16, a = (1 - k) * wk;
+        const gr = ctx.createRadialGradient(rcx, rcy, Math.max(0, R - bw), rcx, rcy, R + bw * 0.3); gr.addColorStop(0, 'rgba(255,214,160,0)'); gr.addColorStop(0.8, `rgba(255,214,160,${(0.7 * a).toFixed(3)})`); gr.addColorStop(1, 'rgba(255,214,160,0)');
+        ctx.globalCompositeOperation = 'lighter'; ctx.fillStyle = gr; ctx.fillRect(rcx - rr, rcy - rr, rr * 2, rr * 2); }
+      ctx.restore(); }
     if (g.echoT > 0 && g.fauna) { const al = Math.min(1, g.echoT / 1.5), reach = g.echoLv >= 4 ? 1200 : g.echoLv >= 3 ? 600 : 200, song = g.echoLv >= 4; // (7.4.15) Whalesong: twice Fathom's reach
       for (const c of g.fauna.list) { if (c.dead) continue; const dx = c.x - e.x, dy = c.y - e.y, d = Math.hypot(dx, dy); if (d > reach) continue;
         const R = c.rk || (c.rk = (rarityOf(c.sp) || {}).id || 'common'); if (R !== 'exotic' && R !== 'legendary') continue;

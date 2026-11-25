@@ -48,7 +48,7 @@ syncServerTime(); setInterval(syncServerTime, 10 * 60e3); /* (7.4.26) the daily 
 import { hullCap } from './economy.js';
 import { loadBest, TRACKS, tlv, GEAR, lv, statValue, upgradeCost, owns, gear, coinsFor, upgradeCoins, WARES } from './economy.js';
 import { SUB_ADDONS, SUPPLIES, supplyMax, GOODS, PATCH_PRICE, HOSPITAL_SHARE, hospitalCap, replacementPrice, SUBS, rollCrush, crushMean, newProfile, loadProfile, saveProfile, marketTick, priceOf, sell, spend, money } from './economy.js';
-import { updateHunters, directEncounters } from './hunters.js';
+import { updateHunters, directEncounters, AGGRO } from './hunters.js';
 import { Entity, dreadFromDistance, LANTERN_RADIUS } from './entity.js';
 import { Renderer, dayCycle } from './render.js';
 import { Hud } from './hud.js';
@@ -1006,6 +1006,8 @@ function buy(kind) {
     ui.confirm('Sell ' + it.name + '?', (R ? R.name + ' ' : '') + 'scroll · ' + n.toLocaleString('en-US') + ' pearls', 'Sell, ' + n.toLocaleString('en-US') + ' pearls', 'Keep', () => {
       if (removeItem(P, q.u)) { P.pearls = (P.pearls || 0) + n; saveProfile(P); hud.toast('Sold ' + it.name + ' · +' + n + ' pearls'); } ui.renderInventory && ui.renderInventory(); });
     return false;
+  } else if (kind.startsWith('loadlock:')) { hud.toast('At the surface', 'note'); return false; // (7.6.7) the padlocked Load
+  } else if (kind.startsWith('loadfull-done:')) { return false;
   } else if (kind.startsWith('load:') || kind.startsWith('loadfull:')) { // (7.6.3, owner) charges loaded onto a scroll, at the surface only
     const full = kind.startsWith('loadfull:'), q = instOf(P, kind.slice(full ? 9 : 5)), A = q && abilityOf(q.id); if (!A) return false;
     if (!atSurface()) { hud.toast('Load at the surface', 'warn'); return false; }
@@ -2234,6 +2236,7 @@ function useAbility() {
   const S = abilityState(g), e = g.earl, P = profile;
   S.def = A; S.activeT = A.dur; S.maxT = A.dur; S.at = g.time;
   P.abilReadyAt = Date.now() + (A.dur + A.cd) * 1000; // (5.16.0) real time
+  fireBurst(A); // (7.6.7, owner)
   if (A.airNow) { if (e.inSub) g.sub.o2 = Math.min(g.sub.o2Max, g.sub.o2 + g.sub.o2Max * A.airNow); else e.o2 = Math.min(e.o2Max, e.o2 + e.o2Max * A.airNow); g.breathFx = { t: 0, tier: A.tier }; } // (7.6.5, owner) Breath: air back at once
   saveProfile(P);
   if (A.tier === 'mythical') mythFire(A);
@@ -2246,7 +2249,7 @@ function useAbility() {
   if (A.snatch) { g.snatch = { left: A.snatch, def: A, bonus: A.snBonus || 0 }; hud.toast(`${A.name}: tap ${A.snatch} fish`, 'note'); }
   if (A.iron) { g.injury = 0; g.ironT = A.dur; g.ironFx = { t: 0 }; }
   if (A.calm) { if (g.entity) { g.entity.marked = false; g.entity.attn = 0; } g.calmT = A.dur; g.markWashFx = { t: 0 }; }
-  if (A.tidecall) tidecall();
+  if (A.call) callFish(A); // (7.6.7, owner) Lure, Lure+, Tidecall and Bloodmoon
   if (A.nacre) g.nacreT = A.dur;
   if (A.blood) bloodmoon(A);
   if (A.shoal) g.shoalFx = { t: 0, lv: A.shoal, dur: A.dur };
@@ -2274,7 +2277,7 @@ function castTo(wx, wy) {
   const C = g.castAim; if (!C) return false; g.castAim = null; const A = C.A, e = g.earl, P = profile;
   const dx = wx - e.x, dy = wy - e.y, L = Math.hypot(dx, dy) || 1, k = Math.min(1, A.cast.range / L), x1 = e.x + dx * k, y1 = Math.max(0.5, e.y + dy * k);
   const S = abilityState(g); S.def = A; S.activeT = A.dur; S.maxT = A.dur; S.at = g.time; P.abilReadyAt = Date.now() + (A.dur + A.cd) * 1000; saveProfile(P);
-  g.castNet = { x0: e.x, y0: e.y, x1, y1, t: 0, dur: 0.35 + L * 0.02, r: A.cast.r, tier: A.tier }; audio.ready && audio.click && audio.click(); return true;
+  g.castNet = { x0: e.x, y0: e.y, x1, y1, t: 0, dur: 0.35 + L * 0.02, r: A.cast.r, tier: A.tier }; fireBurst(A); audio.ready && audio.click && audio.click(); return true;
 }
 function castLand(N) {
   const got = []; for (const c of g.fauna.list) { if (c.dead || c.pet || c.companion || (c.len || 0) > 2 || Math.hypot(c.x - N.x1, c.y - N.y1) > N.r + (c.len || 0) * 0.4) continue; if (bagUsed(g) >= bagSlots(g)) { say('The bag is full'); break; } got.push(c); skillCatch(c, N.x1, N.y1); } // (7.6.6) filled one by one: only the catch that tips the bag over goes in past it
@@ -2297,16 +2300,34 @@ function snatchAt(wx, wy) {
   else if (Math.random() < Math.min(0.97, 0.62 + N.bonus)) skillCatch(best, best.x, best.y); else { say('Missed'); best.flee = 1; }
   if (N.left <= 0) g.snatch = null; return true;
 }
-function tidecall() { // a great school gathers round him: the kinds already near, many of them; and it draws the hunters
-  const e = g.earl, near = g.fauna.list.filter((c) => !c.dead && !c.pet && Math.hypot(c.x - e.x, c.y - e.y) < 80 && (c.len || 0) < 1.2), kinds = [...new Set(near.map((c) => c.sp))].slice(0, 3);
-  if (!kinds.length) { say('Nothing near to call'); return; }
-  for (const sp of kinds) { const gid = g.fauna.groupId++; for (let i = 0; i < 9; i++) { const a = Math.random() * TAU, r = 3 + Math.random() * 5, f = g.fauna.makeFish(sp, e.x + Math.cos(a) * r, Math.max(1, e.y + Math.sin(a) * r * 0.6), Math.random() < 0.5 ? -1 : 1, gid, true); if (f) g.fauna.list.push(f); } }
-  if (g.entity) g.entity.attn = Math.min(1, (g.entity.attn || 0) + 0.35); say('The sea gathers round you');
+// (7.6.7, owner) the fish come in from just past the screen's edges on every side, rush to him and mill round him while
+// the call lasts and a little after; then they go their own way as any fish. Hunters notice the commotion
+function callFish(A) {
+  const e = g.earl, m = e.inSub ? g.sub : e, cm = renderer.cam; if (!cm) return;
+  const fish = g.fauna.callSchool({ x: cm.x, y: cm.y, w: cm.w || 30, h: cm.h || 16 }, m.x, m.y, A.call.n, A.call.exo, A.call.leg || 0, Math.random, (sp) => !!AGGRO[sp.id]); // (no hunter answers a call)
+  if (!fish.length) { say('Nothing lives here to call'); return; }
+  g.callFx = { fish, home: fish[0].home, t: 0, dur: A.dur + 6 };
+  if (g.entity && !A.blood) g.entity.attn = Math.min(1, (g.entity.attn || 0) + 0.2);
 }
 function bloodmoon(A) { // the water to blood; the thing just past the radar's reach, marking him, hunting him
-  const e = g.earl, ent = g.entity; g.bloodT = A.dur; g.echoT = A.dur; g.echoLv = 2; g.echoAt = g.time;
+  const e = g.earl, ent = g.entity; g.bloodT = A.dur; g.echoT = A.dur; g.echoLv = 2; // (7.6.7) the radar's marks only, no sweep drawn across the water
   if (ent) { const a = Math.random() * TAU; ent.x = e.x + Math.cos(a) * 220; ent.y = Math.max(40, e.y + Math.sin(a) * 60); ent.marked = true; if (ent.state !== 'hunt') ent.state = 'search'; ent.attn = 1; }
   hud.toast("It's here. Catch what you can.", 'warn'); audio.ready && audio.scare && audio.scare();
+}
+// (7.6.7, owner) every skill opens with a burst: a lens of light rolling out from him, bending the water as it passes, by
+// tier (rare a few metres, exotic with a second wave, legendary across the screen, mythical pulled in first and then the
+// brightest light in the game, rippling across the radar). A Heart also throws the thing 200 m further off when it is on
+// the radar but not closer than 100 m (red water or not); the mark stays. Never Bloodmoon, which calls it
+const BURST = { rare: { reach: 4, dur: 0.7, mag: 0.035 }, exotic: { reach: 10, dur: 0.9, mag: 0.05, second: true }, legendary: { reach: 0, dur: 1.2, mag: 0.07, second: true }, mythical: { reach: 0, dur: 1.7, mag: 0.1, second: true, pull: 0.28 } };
+function fireBurst(A) {
+  const e = g.earl, m = e.inSub ? g.sub : e, B = BURST[A.tier] || BURST.rare;
+  (g.bursts || (g.bursts = [])).push({ t: 0, x: m.x, y: m.y, tier: A.tier, fam: A.fam || '', ...B });
+  if (g.bursts.length > 3) g.bursts.shift();
+  if (A.tier === 'mythical') { g.radarRipple = { t: 0 };
+    const ent = g.entity; if (ent && !A.blood && !g.kill && !ent.frozen && !(ent.sleepT > 0) && ent.dist >= 100 && ent.dist <= 200) {
+      const dx = ent.x - m.x, dy = ent.y - m.y, d = Math.hypot(dx, dy) || 1, k = (d + 200) / d;
+      ent.x = m.x + dx * k; ent.y = clamp(m.y + dy * k * 0.5, 40, g.world.floorAt(ent.x) - 10); ent.vx = 0; ent.vy = 0; ent.dist = d + 200;
+      if (ent.state === 'hunt' || ent.state === 'charge') ent.state = 'search'; g.pushFx = { t: 0, x: ent.x, y: ent.y }; } }
 }
 function dashTo(wx, wy) {
   const D = g.dashAim; if (!D) return false;
@@ -2318,8 +2339,8 @@ function dashTo(wx, wy) {
   if (A.charges) { // (7.4.15) Rift: the first dash leaves more. (7.5.6, owner) every dash has charges: each dash leaves the rest for 20 s; the rest starts after the last
     S.chargeMax = A.charges;
     if (S.charges > 0) { S.charges--; S.chargeT = 20; if (S.charges <= 0) { S.charges = 0; S.chargeT = 0; P.abilReadyAt = Date.now() + (A.dur + A.cd) * 1000; } }
-    else { S.charges = A.charges - 1; S.chargeT = 20; P.abilReadyAt = 0; if (A.tier === 'mythical') mythFire(A); }
-  } else P.abilReadyAt = Date.now() + (A.dur + A.cd) * 1000;
+    else { S.charges = A.charges - 1; S.chargeT = 20; P.abilReadyAt = 0; if (A.tier === 'mythical') mythFire(A); fireBurst(A); }
+  } else { P.abilReadyAt = Date.now() + (A.dur + A.cd) * 1000; fireBurst(A); }
   saveProfile(P);
   g.dashMove = { x0: M.x, y0: M.y, x1, y1, t: 0, dur: A.dur, tier: A.dash };
   g.dashFx = { x0: M.x, y0: M.y, x1, y1, t: 0, tier: A.dash };
@@ -2349,8 +2370,8 @@ function tickAbility(dt) {
   // depth he is using (0 at the old rating, 1 at the new)
   { const PA = on && A.press ? A : on2 && A2.press ? A2 : null, PS = PA === A ? S : S2; const pm = PA ? PA.press : 1, pb = PA && PA.beyond ? PA.beyond : 0; e.pressMul = pm; e.pressBeyond = pb; g.sub.pressMul = 1; g.sub.pressBeyond = 0; // (7.4.22) the diver's suit only
     if (pm > 1) { const base = e.pressBase || 300, d = e.y; g.pressK = clamp((d - base) / (base * (pm - 1)), 0, 1); }
-    if (pm > 1 && !g.pressFx) { g.pressFx = { t: 0, end: 0, tier: PA.tier, def: PA }; if (audio.ready) { audio.thud && audio.thud(0.6); audio.creak && audio.creak(0.5); } } // it opens: a deep thud, the hull's creak
-    if (g.pressFx) { const F = g.pressFx; F.t += dt; if (pm > 1) { F.tier = PA.tier; F.def = PA; F.left = PS.activeT; } else { if (!F.end && audio.ready && audio.groan) audio.groan(0.3); F.end += dt; if (F.end > 1.2) g.pressFx = null; } } } // it is crushed back: the pressure's groan
+    if (pm > 1 && !g.pressFx && !PA.heat) { g.pressFx = { t: 0, end: 0, tier: PA.tier, def: PA }; if (audio.ready) { audio.thud && audio.thud(0.6); audio.creak && audio.creak(0.5); } } // it opens: a deep thud, the hull's creak
+    if (g.pressFx) { const F = g.pressFx; F.t += dt; if (pm > 1 && !PA.heat) { F.tier = PA.tier; F.def = PA; F.left = PS.activeT; } else { if (!F.end && audio.ready && audio.groan) audio.groan(0.3); F.end += dt; if (F.end > 1.2) g.pressFx = null; } } } // it is crushed back: the pressure's groan
   // (7.6.0, owner) Dauntless gives air back early in its run (2/3/5/10 % a second for 10/15/20/30 s); beside a mythical's
   // +50 % the stronger rate wins, never the two together
   const rate1 = (D, SS, o) => { if (!o) return 0; const el = D.dur - SS.activeT; if (D.airSteps) { for (const [r, until] of D.airSteps) if (el < until) return r; return 0; } return D.airBack && !e.inSub && el < D.airBack[1] ? D.airBack[0] : 0; }, dRate = Math.max(rate1(A, S, on), on2 ? rate1(A2, S2, on2) : 0);
@@ -2359,6 +2380,8 @@ function tickAbility(dt) {
   if (g.breathFx) { g.breathFx.t += dt; if (g.breathFx.t > 1.4) g.breathFx = null; }
   // (7.6.5, owner) Plunge: the anchor's pull (player.js), the strongest running; Lookout: the view drawn out
   e.abilSink = Math.max(on && A.sink ? A.sink : 0, on2 && A2.sink ? A2.sink : 0); g.sinkDef = on && A.sink ? A : on2 && A2.sink ? A2 : null;
+  g.repelR = Math.max(on && A.repel ? A.repel : 0, on2 && A2.repel ? A2.repel : 0); // (7.6.7, owner) Revel: hunters that bite keep this far off
+  { const TA = on && A.heat ? A : on2 && A2.heat ? A2 : null; g.temper = TA && !e.inSub ? { tier: TA.tier, k: Math.min(1, (g.temper ? g.temper.k : 0) + dt * 1.5) } : g.temper && g.temper.k > 0 ? { tier: g.temper.tier, k: Math.max(0, g.temper.k - dt * 0.7) } : null; } // (7.6.7, owner) Temper: heat on the suit
   { const z = Math.max(on && A.zoom ? A.zoom : 1, on2 && A2.zoom ? A2.zoom : 1); g.lookZoom = lerp(g.lookZoom || 1, z, Math.min(1, dt * 1.6)); g.eagle = (on && A.eagle) || (on2 && A2.eagle) ? Math.min(1, (g.eagle || 0) + dt * 1.2) : Math.max(0, (g.eagle || 0) - dt * 0.8); }
   if (g.mythT > 0) { g.mythT = Math.max(0, g.mythT - dt); e.abilSpeed = Math.max(e.abilSpeed, MYTH.speed); e.abilNoAir = true;
     const full = e.inSub ? (g.sub.o2Max || 0) : (e.o2Max || 0), add = dRate > MYTH.air ? 0 : Math.min(full * MYTH.air * dt, full * 0.5 - (g.mythAir || 0));
@@ -2368,6 +2391,11 @@ function tickAbility(dt) {
   // (7.6.6, owner) the second batch's running parts
   if (g.castNet) { const N = g.castNet; N.t += dt; if (N.t >= N.dur && !N.landed) { N.landed = true; castLand(N); } if (N.t > N.dur + 0.8) g.castNet = null; }
   if (g.castAim) { g.castAim.t -= dt; if (g.castAim.t <= 0) g.castAim = null; }
+  if (g.bursts) { for (const b of g.bursts) b.t += dt; g.bursts = g.bursts.filter((b) => b.t < (b.pull || 0) + b.dur + 0.2); } // (7.6.7)
+  if (g.radarRipple) { g.radarRipple.t += dt; if (g.radarRipple.t > 2.2) g.radarRipple = null; }
+  if (g.callFx) { const C = g.callFx, m = g.earl.inSub ? g.sub : g.earl; C.t += dt; C.home.x = m.x; C.home.y = m.y; // (7.6.7) the called fish home on him while the call lasts
+    for (const c of C.fish) if (!c.dead && c.called && Math.hypot(c.x - m.x, c.y - m.y) < 7) { c.speed = c.cruise; c.called = false; }
+    if (C.t > C.dur) { for (const c of C.fish) if (c.home === C.home) { c.home = null; c.speed = c.cruise; c.called = false; } g.callFx = null; } }
   if (g.snatch && !(abilityState(g).activeT > 0 || (g.abil2 && g.abil2.activeT > 0))) g.snatch = null;
   if (g.snatchFx) { g.snatchFx.t += dt; if (g.snatchFx.t > 0.5) g.snatchFx = null; }
   if (g.ironT > 0) g.ironT = Math.max(0, g.ironT - dt);
@@ -2996,7 +3024,7 @@ function update(dt) {
 
     // protection: necklace or a nearby lantern
     if (g.glows && g.glows.length) { for (const L of g.glows) { L.t -= dt; if (L.rest) continue; const fl = W.floorAt(L.x) - 0.15; L.y += 0.15 * dt; L.x += Math.sin(g.time * 0.7 + L.ph) * 0.05 * dt; if (L.y >= fl) { L.y = fl; L.rest = true; } } g.glows = g.glows.filter((L) => L.t > 0); } // (5.17.1) sinking, then resting
-    g.protection = null; g.hunterWard = g.wardOn && (g.lightFade ?? 1) > 0.5 ? { x: e.x, y: e.y } : null; // (5.16.0) Lighthouse keeps hunters out of its light (while it burns), never the thing
+    g.protection = null; g.hunterWard = (g.wardOn && (g.lightFade ?? 1) > 0.5) || g.repelR > 0 ? { x: e.x, y: e.y } : null; // (5.16.0) Lighthouse keeps hunters out of its light (while it burns), never the thing
     for (const l of W.lanterns) {
       const d = dist(e.x, e.y, l.x, l.y);
       const inside = d < (e.inSub ? LANTERN_RADIUS + 3 : LANTERN_RADIUS) && l.charge > 0.05;

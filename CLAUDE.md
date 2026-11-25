@@ -361,3 +361,20 @@ last desktop build is kept on the branch `desktop-4.25.5`).
   Bloodmoon's emblem in oxblood on the card); Shoal, Revel (coloured shafts of light from above in time, never round
   glows), Ink (the water round him tinted, Inkstorm's trail) for the eye alone. The same line said again restarts the
   one shown, never stacks.
+- (7.6.7, owner) Every skill opens with a burst (main.js `fireBurst`, render.js): never a drawn circle but a lens rolling out
+  from him, the water magnified in a soft band round its front (a soft-masked blend, no edges) and the front lit unevenly
+  round its way. Rare about 4 m; exotic 10 m with a second wave; legendary across the screen; a Heart first pulls the water
+  in and darkens it, then bursts with the brightest light in the game and ripples across the radar. Every Heart (never
+  Bloodmoon) throws the thing 200 m further off when it is on the radar and at least 100 m away, red water or not; the mark
+  stays. Calm's and Tidewarden's drawn rings are gone; Echo stays as it is.
+- (7.6.7, owner) Lure / Lure+ / Tidecall: 15 / 25 / 40 fish of the kinds that live at his depth (2 m or less, no hunters, no
+  reef residents) come in from just past the screen's edges on every side and mill round him; exotics 5 / 7 / 10 %.
+  Bloodmoon calls 40 the same way (exotics 15 %, legendaries 2 %), still summons the thing to just outside the radar, never
+  pushes it, and draws no sweep (radar marks only). Revel / Revel+ / Carnival: light as a Flare+ (Carnival more), vivid
+  lantern colours (the water's colour swinging in time, soft-edged coloured shafts, lantern jellies that light the water
+  round them); hunters that bite keep 15 / 25 / 40 m off (never the thing). Temper: no field; heat colours on his own
+  figure (copper with a straw-purple-blue band sweeping head to foot, his shading kept), laid over after the deep's dark.
+- (7.6.7, owner) A scroll's card: charges inside the card under its description (Charges n / max, notches, Load and Load
+  full; away from the surface the same buttons greyed under a padlock, "At the surface"); one centred action bar; a worn
+  scroll's card and frame fit what they hold. The swap chip sits on the skill button's upper right rim (as the camera chip
+  on the net's), sized to clear the hand button.

@@ -109,6 +109,8 @@ export function updateHunters(g, dt) {
       continue;
     }
 
+    // (7.6.7, owner) Revel's lantern light: a hunter that bites keeps its distance while it burns (never the thing)
+    if (g.repelR > 0 && d < g.repelR + c.len) { const dx = c.x - e.x, dy = c.y - e.y, dd = Math.hypot(dx, dy) + 0.01; c.ctrl = { x: c.x + dx / dd * 20, y: clamp(c.y + dy / dd * 8, 2, 3990), speed: 3.5 }; if (at.s !== 'idle' && at.s !== 'leave') { at.s = 'leave'; at.t = 0; at.cool = 30; } continue; }
     const toEarl = (speed, off = 0) => { c.ctrl = { x: e.x, y: e.y + off, speed }; };
     // steer so the snout, not the middle, arrives at him (a long animal: drawn 1.6x life)
     const headTo = (speed, off = 0) => { const s = Math.sign(e.x - c.x) || 1; c.ctrl = { x: e.x - s * c.len * 0.8, y: e.y + off, speed }; };

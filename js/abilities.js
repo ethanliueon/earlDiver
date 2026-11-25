@@ -62,9 +62,9 @@ export const ABILITY_DEFS = {
     legendary: { name: 'Splintering Gale', pure: true, dur: 90, cd: 3600, speed: 4.2, line: '×4.2 speed for 90 s: faster than anything else in the sea.' },
   },
   temper: {
-    rare: { name: 'Temper', pure: true, dur: 30, cd: 900, press: 1.5, line: 'For 30 s your suit takes half again its rated depth.' },
-    exotic: { name: 'Temper+', pure: true, dur: 45, cd: 1800, press: 2, line: 'For 45 s your suit takes twice its rated depth.' },
-    legendary: { name: 'Adamant', pure: true, dur: 90, cd: 3600, press: 3.5, line: 'For 90 s your suit takes three and a half times its rated depth: deeper than any Heart.' },
+    rare: { name: 'Temper', pure: true, dur: 30, cd: 900, heat: true, press: 1.5, line: 'For 30 s your suit takes half again its rated depth.' },
+    exotic: { name: 'Temper+', pure: true, dur: 45, cd: 1800, heat: true, press: 2, line: 'For 45 s your suit takes twice its rated depth.' },
+    legendary: { name: 'Adamant', pure: true, dur: 90, cd: 3600, heat: true, press: 3.5, line: 'For 90 s your suit takes three and a half times its rated depth: deeper than any Heart.' },
   },
   plunge: {
     rare: { name: 'Plunge', pure: true, dur: 10, cd: 300, sink: 3.2, line: 'An anchor drops and pulls you down for 10 s. Stick up to hold against it.' },
@@ -91,18 +91,24 @@ export const ABILITY_DEFS = {
   },
   ironskin: { legendary: { name: 'Ironskin', special: true, maxLoad: 3, dur: 30, cd: 3600, iron: true, line: 'Every injury healed at once; for 30 s no animal can hurt you. Not the thing\'s jaws.' } },
   calm: { legendary: { name: 'Calm', special: true, maxLoad: 3, dur: 30, cd: 7200, calm: true, line: 'While it is not hunting you: the mark is gone, and for 30 s the thing cannot notice you.' } },
-  tidecall: { legendary: { name: 'Tidecall', special: true, maxLoad: 2, dur: 20, cd: 5400, tidecall: true, line: 'A great school gathers round you at once. Hunters come for it too.' } },
+  // (7.6.7, owner) the Lure family: fish of the kinds that live at his depth come in from just past the screen's edges on
+  // every side and mill round him; more of them, and more exotics, by tier. Hunters notice the commotion
+  tidecall: {
+    rare: { name: 'Lure', dur: 20, cd: 1800, call: { n: 15, exo: 0.05, leg: 0 }, line: 'Fifteen fish of the kinds that live here come in round you. One in twenty is exotic.' },
+    exotic: { name: 'Lure+', dur: 20, cd: 3600, call: { n: 25, exo: 0.07, leg: 0 }, line: 'Twenty-five fish of the kinds that live here come in round you. One in fourteen is exotic.' },
+    legendary: { name: 'Tidecall', maxLoad: 2, dur: 20, cd: 5400, call: { n: 40, exo: 0.1, leg: 0 }, line: 'Forty fish of the kinds that live here come in round you, one in ten exotic. Hunters come for them too.' },
+  },
   nacre: { exotic: { name: 'Nacre', special: true, maxLoad: 3, dur: 60, cd: 3600, nacre: 0.25, line: 'For 60 s, a chance at a pearl with every catch.' } },
-  bloodmoon: { mythical: { name: 'Bloodmoon', special: true, event: true, maxLoad: 1, dur: 60, cd: 21600, blood: true, line: 'For 60 s the water turns to blood and the thing comes for you. Everything caught is Cursed: worth five times as much, and it never dies.' } },
+  bloodmoon: { mythical: { name: 'Bloodmoon', special: true, event: true, maxLoad: 1, dur: 60, cd: 21600, blood: true, call: { n: 40, exo: 0.15, leg: 0.02 }, /* (7.6.7, owner) the Lure family's top in all but name */ line: 'For 60 s the water turns to blood and the thing comes for you. Forty fish rush in, one in seven exotic, one in fifty legendary. Everything caught is Cursed: worth five times as much, and it never dies.' } },
   shoal: {
     rare: { name: 'Shoal', dur: 30, cd: 300, shoal: 1, light: 0.6, line: 'A school of small silver fish circles you for 30 s.' },
     exotic: { name: 'Shoal+', dur: 45, cd: 600, shoal: 2, light: 0.8, line: 'A larger school circles you for 45 s, its flashing lighting the water.' },
     legendary: { name: 'Silverstorm', dur: 60, cd: 1800, shoal: 3, light: 1, line: 'A storm of silver fish turns round you for 60 s.' },
   },
-  revel: {
-    rare: { name: 'Revel', dur: 30, cd: 300, revel: 1, line: 'The water flickers with lantern colours for 30 s.' },
-    exotic: { name: 'Revel+', dur: 45, cd: 600, revel: 2, line: 'The water pulses with lantern colours in time with the music for 45 s.' },
-    legendary: { name: 'Carnival', dur: 60, cd: 1800, revel: 3, line: 'For 60 s the sea becomes a carnival: colours in time with the music, every glow in the water pulsing with it.' },
+  revel: { // (7.6.7, owner) lantern light as strong as a Flare+, in vivid colours; hunters that can bite keep away from it (never the thing)
+    rare: { name: 'Revel', dur: 30, cd: 600, revel: 1, light: 1.6, repel: 15, line: 'For 30 s coloured lantern light 45 m round you. Hunters keep 15 m off.' },
+    exotic: { name: 'Revel+', dur: 45, cd: 1200, revel: 2, light: 1.6, repel: 25, line: 'For 45 s brighter lantern colours round you, pulsing in time. Hunters keep 25 m off.' },
+    legendary: { name: 'Carnival', dur: 60, cd: 2400, revel: 3, light: 2, repel: 40, line: 'For 60 s the sea becomes a carnival of coloured light, pulsing in time. Hunters keep 40 m off.' },
   },
   ink: {
     rare: { name: 'Ink', dur: 30, cd: 300, ink: 1, line: 'The water round you tinted a colour for 30 s.' },

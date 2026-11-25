@@ -1468,9 +1468,12 @@ export class UI {
       else acts += '<small>Sell it on the Margaret, at the station, or to Dave.</small>';
     }
     // (7.6.3, owner) charges: a notch for each one loaded, then Load (one) and Load full, priced in pearls; only at the surface
+    // (7.6.7, owner) inside the card, under its description, where they belong to the scroll; away from the surface the same
+    // two buttons, greyed under a small padlock (tapped: "At the surface"), so the card keeps one shape everywhere
     if (it.kind === 'ability') { const A = abilityOf(q.id), mx = maxLoad(A), n = q.load || 0, pr = chargePrice(A), top = this.h.atSurface && this.h.atSurface(), pl = '<img class="st-pearl" src="assets/ui/icons/pearl.png" alt="">';
-      acts += `<div class="ld-row"><span class="ld-n">Charges ${n}/${mx}</span><span class="ld-notches">${Array.from({ length: mx }, (_, i) => `<i class="${i < n ? 'on' : ''}"></i>`).join('')}</span></div>`;
-      if (n < mx) acts += top ? `<button data-lk="load:${q.u}">Load ${pl}${pr}</button><button data-lk="loadfull:${q.u}">Load full ${pl}${pr * (mx - n)}</button>` : '<button disabled>Load at the surface</button>'; }
+      const btn = (k, label) => top && n < mx ? `<button data-lk="${k}:${q.u}">${label}</button>` : `<button class="ld-off" data-lk="${n < mx ? 'loadlock' : 'loadfull-done'}:${q.u}">${n < mx ? '<i class="ld-pad"></i>' : ''}${label}</button>`;
+      const box = `<div class="ld-box"><div class="ld-head"><span>Charges</span><b>${n} / ${mx}</b></div><div class="ld-notches">${Array.from({ length: mx }, (_, i) => `<i class="${i < n ? 'on' : ''}"></i>`).join('')}</div><div class="ld-btns lk-acts">${btn('load', `Load ${pl}${pr}`)}${btn('loadfull', `Load full ${pl}${pr * Math.max(1, mx - n)}`)}</div></div>`;
+      const cut = body.lastIndexOf('</div></div>'); body = cut > 0 ? body.slice(0, cut) + box + body.slice(cut) : body + box; }
     // (7.5.6, owner) a scroll always shows its Combine 3, worn or not: greyed with how many he has until there are three
     if (it.kind === 'ability') { const NX = { rare: 'exotic', exotic: 'legendary', legendary: 'mythical' }[it.rarity], /* (7.4.15) three legendaries make the mythical */ nId = NX && `ab_${it.fam}_${NX}`, have = K0.items.filter((x) => x.id === q.id).length;
       if (nId && ITEMS[nId]) acts += `<button data-lk="combine:${q.id}"${have >= 3 ? '' : ' disabled'}>Combine 3${have >= 3 ? '' : ` (${have}/3)`} → <span style="color:${RARITY[NX].col}">${ITEMS[nId].name}</span></button>`; }

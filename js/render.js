@@ -24,7 +24,7 @@ import { armPose } from './arm.js';
 import { makeVariantSprite } from './variants.js';
 import { SPECIES_BY_ID } from './species.js';
 import { LEGENDARY } from './specimens.js';
-import { glint, ember } from './scrolls.js'; // (7.4.3) the legendary sparkle, for a legendary pet
+import { glint, ember, ACCENT } from './scrolls.js'; // (7.4.3) the legendary sparkle, for a legendary pet
 import { BOAT, WORLD_W, EAST, CAVE, ANGLER, CANYON, SAIL, WHALE_FALL, ISLE } from './world.js';
 import { LANTERN_RADIUS } from './entity.js';
 import { Clouds } from './clouds.js';
@@ -1117,6 +1117,23 @@ export class Renderer {
         else if (P0 === 'climb') gear.climb = g.aboard.rung || 0;
       }
       const h = drawEarl(ctx, (g.aboard || g.ashore ? 1.7 : EARL_H) * ppm, e.kick, moving, lampCol, amb, gear); // (standing on deck he is drawn at a man's height)
+      // (7.6.7, owner) Temper: heat colours on his own figure, never round him. He is drawn again on a side canvas under
+      // the same transform, only his own pixels are coloured (straw, bronze, purple and steel blue, as tempered steel,
+      // running slowly along him), and that is laid over him; Adamant's colours run deeper and brighter
+      if (g.temper && g.temper.k > 0.01 && !e.inSub && g.mode === 'play') { const T = g.temper, oc = this.suitC || (this.suitC = document.createElement('canvas')); if (oc.width !== this.c.width || oc.height !== this.c.height) { oc.width = this.c.width; oc.height = this.c.height; }
+        const ox = oc.getContext('2d'); ox.setTransform(1, 0, 0, 1, 0, 0); ox.globalCompositeOperation = 'source-over'; ox.clearRect(0, 0, oc.width, oc.height); ox.setTransform(ctx.getTransform());
+        drawEarl(ox, (g.aboard || g.ashore ? 1.7 : EARL_H) * ppm, e.kick, moving, lampCol, amb, gear);
+        ox.globalCompositeOperation = 'source-atop'; // (in his own drawing frame, so the colour always runs head to foot however he lies)
+        const Hd = (g.aboard || g.ashore ? 1.7 : EARL_H) * ppm, p0 = (g.time * 0.35) % 1.4 - 0.2, hg = ox.createLinearGradient(0, -Hd * 0.6, 0, Hd * 0.6), BASE = '#b8581a'; // the tempering band sweeps head to foot over a copper heat
+        hg.addColorStop(0, BASE); for (const [o2, c2] of [[p0 - 0.3, BASE], [p0 - 0.18, '#f6cc66'], [p0 - 0.06, '#ec7a28'], [p0 + 0.06, '#b044d4'], [p0 + 0.18, '#3c86ff'], [p0 + 0.3, BASE]]) if (o2 > 0 && o2 < 1) hg.addColorStop(o2, c2); hg.addColorStop(1, BASE);
+        // his own shading kept: his figure lightened, the heat multiplied into it, then cut back to his outline (a mask copy)
+        const mc = this.suitM || (this.suitM = document.createElement('canvas')); if (mc.width !== oc.width || mc.height !== oc.height) { mc.width = oc.width; mc.height = oc.height; }
+        const mx3 = mc.getContext('2d'); mx3.setTransform(1, 0, 0, 1, 0, 0); mx3.globalCompositeOperation = 'copy'; mx3.drawImage(oc, 0, 0); mx3.globalCompositeOperation = 'source-over';
+        ox.fillStyle = 'rgba(255,255,255,0.55)'; ox.fillRect(-Hd, -Hd, Hd * 2, Hd * 2);
+        ox.globalCompositeOperation = 'multiply'; ox.fillStyle = hg; ox.fillRect(-Hd, -Hd, Hd * 2, Hd * 2);
+        ox.setTransform(1, 0, 0, 1, 0, 0); ox.globalCompositeOperation = 'destination-in'; ox.drawImage(mc, 0, 0); ox.globalCompositeOperation = 'source-over';
+        this.temperDraw = { lv: T.tier === 'legendary' ? 0.85 : T.tier === 'exotic' ? 0.7 : 0.55, k: T.k, leg: T.tier === 'legendary' }; // laid over the scene later, after the deep's darkness (see the skill effects)
+      } else this.temperDraw = null;
       ctx.restore();
       // (2.8.2) a Legendary's wake: a few dim motes that school with him, shaped by the net's skill (trail.js)
       if (e.trail && !e.inSub && !g.aboard && g.mode === 'play') {
@@ -1421,7 +1438,7 @@ export class Renderer {
         ember(ctx, px, py, er * 4, er * 1.1, -Math.PI / 2 + Math.sin(t * 2 + i) * 0.3, Math.sin(Math.PI * ph) * 0.7 * fade); } } // rising off him
       if (g.songFx) { const T = g.songFx.t, rr = Math.hypot(ctx.canvas.width, ctx.canvas.height) * Math.min(1.1, 0.08 + T / 2.6), a = 0.22 * Math.max(0, 1 - T / 4); // (7.4.15) Whalesong: a pale ring of light going out over the screen
         const rg = ctx.createRadialGradient(mx, my, rr * 0.78, mx, my, rr); rg.addColorStop(0, 'rgba(214,230,240,0)'); rg.addColorStop(0.7, `rgba(214,230,240,${a.toFixed(3)})`); rg.addColorStop(1, 'rgba(214,230,240,0)'); ctx.fillStyle = rg; ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height); }
-      if (g.markWashFx) { const k0 = g.markWashFx.t / 2, r = sz * (0.8 + k0 * 4); ctx.strokeStyle = `rgba(150,190,230,${((1 - k0) * 0.6).toFixed(3)})`; ctx.lineWidth = Math.max(2, ppm * 0.18) * (1 - k0 * 0.6); ctx.beginPath(); ctx.arc(mx, my, r, 0, TAU); ctx.stroke(); }
+      /* (7.6.7, owner) the mark wash's drawn ring is gone: the burst that opens every skill carries it */
       ctx.restore(); }
     // (7.4.19, owner) Dauntless: a force field of pressed water round him (or round the sub's hull). The same pale water
     // colour at every tier; a higher tier is a bigger field, a thicker brighter rim, more pressure rings closing in, more
@@ -1490,11 +1507,33 @@ export class Renderer {
       ctx.restore(); }
     // (7.6.6, owner) Revel: the water flickers with warm lantern colours in time with the music (Carnival: stronger, and
     // the glows in the water pulse with it); Ink: the water round him tinted its colour, a fading trail behind (Inkstorm)
-    if (g.mode === 'play' && g.revelFx) { const F = g.revelFx, fade = Math.min(1, F.t / 1, (F.dur + 1.5 - F.t) / 1.5), beat = 0.5 + 0.5 * Math.cos(F.t * Math.PI * 2 * 1.9), C = [[220, 150, 70], [196, 92, 86], [120, 160, 110], [210, 180, 110]][Math.floor(F.t * 1.9) % 4];
-      ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.globalCompositeOperation = 'soft-light'; ctx.fillStyle = `rgba(${C[0]},${C[1]},${C[2]},${(fade * (0.12 + 0.1 * F.lv) * (0.5 + 0.5 * beat)).toFixed(3)})`; ctx.fillRect(0, 0, this.W, this.H);
-      // (7.6.6) Revel+ and Carnival: coloured shafts of light from above, swaying in time, as stage lights through water (never round glows)
-      if (F.lv >= 2) { ctx.globalCompositeOperation = 'lighter'; const W = this.W, Hh = this.H; for (let i = 0; i < F.lv + 1; i++) { const Ci = [[220, 150, 70], [196, 92, 86], [120, 160, 110], [210, 180, 110]][(Math.floor(F.t * 1.9) + i) % 4], cx0 = W * (0.15 + i * 0.7 / F.lv) + Math.sin(F.t * 0.9 + i * 2) * W * 0.06, tilt = Math.sin(F.t * 0.7 + i) * 0.25, w0 = W * 0.03, w1 = W * 0.12, a = fade * (0.06 + 0.05 * F.lv) * (0.4 + 0.6 * beat);
-        const lg = ctx.createLinearGradient(0, 0, 0, Hh); lg.addColorStop(0, `rgba(${Ci[0]},${Ci[1]},${Ci[2]},${a.toFixed(3)})`); lg.addColorStop(1, `rgba(${Ci[0]},${Ci[1]},${Ci[2]},0)`); ctx.fillStyle = lg; ctx.beginPath(); ctx.moveTo(cx0 - w0, 0); ctx.lineTo(cx0 + w0, 0); ctx.lineTo(cx0 + tilt * Hh + w1, Hh); ctx.lineTo(cx0 + tilt * Hh - w1, Hh); ctx.closePath(); ctx.fill(); } }
+    // (7.6.7, owner) Revel: the sea lit in vivid lantern colours. The water's own colour swings through crimson, amber,
+    // violet and kelp green in time; from Revel+ soft-edged coloured shafts fall from above, swaying; lantern jellies (a
+    // ribbed bell with a hot heart and trailing threads, each its own colour) drift round him, lighting the water round
+    // themselves, more of them by tier. The light itself (as bright as a Flare+) comes through the light map
+    // (7.6.7) Temper's heated figure, laid over him here, after the deep's darkness, so it glows as hot metal does
+    if (this.temperDraw && this.suitC && g.mode === 'play') { const T = this.temperDraw; ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = T.k * T.lv * (0.85 + 0.15 * Math.sin(g.time * 1.7)); ctx.drawImage(this.suitC, 0, 0);
+      if (T.leg) { ctx.globalAlpha = T.k * (0.25 + 0.12 * Math.sin(g.time * 2.2)); ctx.drawImage(this.suitC, 0, 0); } ctx.restore(); }
+    if (g.mode === 'play' && g.revelFx) { const F = g.revelFx, fade = Math.min(1, F.t / 0.8, (F.dur + 1.5 - F.t) / 1.5), beat = 0.5 + 0.5 * Math.cos(F.t * Math.PI * 2 * 1.9);
+      const PAL = [[214, 40, 52], [240, 150, 30], [150, 60, 210], [60, 190, 90], [230, 80, 150]], ph = F.t * 0.45, pi0 = Math.floor(ph) % PAL.length, pf = ph % 1, C = PAL[pi0].map((v, q) => Math.round(v + (PAL[(pi0 + 1) % PAL.length][q] - v) * pf));
+      const e = g.earl, m = e.inSub ? g.sub : e, mx = S(m.x), my = Sy(m.y);
+      ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0);
+      ctx.globalCompositeOperation = 'soft-light'; ctx.fillStyle = `rgba(${C[0]},${C[1]},${C[2]},${(fade * (0.32 + 0.1 * F.lv) * (0.65 + 0.35 * beat)).toFixed(3)})`; ctx.fillRect(0, 0, this.W, this.H);
+      ctx.globalCompositeOperation = 'lighter';
+      if (F.lv >= 2) for (let i = 0; i < F.lv + 1; i++) { const Ci = PAL[(pi0 + i * 2) % PAL.length], x = this.W * (0.18 + i * 0.64 / F.lv) + Math.sin(F.t * 0.7 + i * 2.1) * this.W * 0.07, tilt = Math.sin(F.t * 0.5 + i * 1.7) * 0.28, a = fade * (0.1 + 0.05 * F.lv) * (0.5 + 0.5 * beat);
+        ctx.save(); ctx.translate(x, -this.H * 0.05); ctx.rotate(tilt); const sw = this.W * (0.05 + 0.02 * F.lv), lg = ctx.createLinearGradient(-sw, 0, sw, 0); lg.addColorStop(0, `rgba(${Ci[0]},${Ci[1]},${Ci[2]},0)`); lg.addColorStop(0.5, `rgba(${Ci[0]},${Ci[1]},${Ci[2]},${a.toFixed(3)})`); lg.addColorStop(1, `rgba(${Ci[0]},${Ci[1]},${Ci[2]},0)`);
+        ctx.fillStyle = lg; ctx.beginPath(); ctx.moveTo(-sw * 0.35, 0); ctx.lineTo(sw * 0.35, 0); ctx.lineTo(sw, this.H * 1.2); ctx.lineTo(-sw, this.H * 1.2); ctx.closePath(); ctx.fill();
+        ctx.restore(); }
+      const nL = [0, 3, 5, 8][F.lv], R0 = ppm * (e.inSub ? 7 : 3.2);
+      for (let i = 0; i < nL; i++) { const Ci = PAL[i % PAL.length], a = i / nL * TAU + F.t * (0.25 + (i % 3) * 0.05), rr = R0 * (0.8 + 0.35 * Math.sin(i * 2.3 + F.t * 0.4)), x = mx + Math.cos(a) * rr * 1.25, y = my + Math.sin(a) * rr * 0.7 + Math.sin(F.t * 1.3 + i) * ppm * 0.25, pulse = 0.6 + 0.4 * Math.cos(F.t * Math.PI * 2 * 1.9 + i * 0.9), sz = ppm * (0.2 + 0.03 * F.lv);
+        const pool = ctx.createRadialGradient(x, y, 0, x, y, ppm * (1.6 + 0.3 * F.lv)); pool.addColorStop(0, `rgba(${Ci[0]},${Ci[1]},${Ci[2]},${(0.2 * fade * pulse).toFixed(3)})`); pool.addColorStop(1, `rgba(${Ci[0]},${Ci[1]},${Ci[2]},0)`); ctx.fillStyle = pool; ctx.fillRect(x - ppm * 3, y - ppm * 3, ppm * 6, ppm * 6);
+        ctx.save(); ctx.translate(x, y); ctx.rotate(Math.sin(F.t * 0.9 + i) * 0.2); ctx.globalCompositeOperation = 'source-over'; ctx.globalAlpha = fade;
+        const bell = ctx.createLinearGradient(0, -sz, 0, sz * 0.4); bell.addColorStop(0, `rgba(${Math.min(255, Ci[0] + 60)},${Math.min(255, Ci[1] + 60)},${Math.min(255, Ci[2] + 60)},0.95)`); bell.addColorStop(1, `rgba(${Ci[0]},${Ci[1]},${Ci[2]},0.55)`);
+        ctx.fillStyle = bell; ctx.beginPath(); ctx.moveTo(-sz, sz * 0.25); ctx.bezierCurveTo(-sz * 1.05, -sz * 0.9, sz * 1.05, -sz * 0.9, sz, sz * 0.25); ctx.quadraticCurveTo(sz * 0.5, sz * 0.05, 0, sz * 0.3); ctx.quadraticCurveTo(-sz * 0.5, sz * 0.05, -sz, sz * 0.25); ctx.fill();
+        ctx.strokeStyle = `rgba(255,240,220,${(0.45 * pulse).toFixed(3)})`; ctx.lineWidth = Math.max(0.6, sz * 0.07); for (const rx of [-0.5, 0, 0.5]) { ctx.beginPath(); ctx.moveTo(rx * sz, -sz * 0.62 * (1 - Math.abs(rx) * 0.5)); ctx.quadraticCurveTo(rx * sz * 1.25, -sz * 0.1, rx * sz * 1.5, sz * 0.2); ctx.stroke(); }
+        ctx.strokeStyle = `rgba(${Ci[0]},${Ci[1]},${Ci[2]},0.6)`; for (let q = 0; q < 4; q++) { const tx = (q - 1.5) * sz * 0.4; ctx.beginPath(); ctx.moveTo(tx, sz * 0.25); ctx.quadraticCurveTo(tx + Math.sin(F.t * 2 + q + i) * sz * 0.4, sz * 1.1, tx + Math.sin(F.t * 1.6 + q) * sz * 0.3, sz * 1.9); ctx.stroke(); }
+        ctx.globalCompositeOperation = 'lighter'; ctx.fillStyle = `rgba(255,236,200,${(0.85 * pulse).toFixed(3)})`; ctx.beginPath(); ctx.ellipse(0, -sz * 0.2, sz * 0.22, sz * 0.3, 0, 0, TAU); ctx.fill();
+        ctx.restore(); ctx.globalCompositeOperation = 'lighter'; }
       ctx.restore(); }
     if (g.mode === 'play' && g.inkFx) { const F = g.inkFx, e = g.earl, m = e.inSub ? g.sub : e, fade = Math.min(1, F.t / 1.5, (F.dur + 1.5 - F.t) / 1.5), C = F.col;
       if (F.lv >= 3) { const T = F.trail; if (!T.length || Math.hypot(T[T.length - 1].x - m.x, T[T.length - 1].y - m.y) > 0.6) T.push({ x: m.x, y: m.y, t: F.t }); while (T.length && F.t - T[0].t > 8) T.shift(); }
@@ -1644,7 +1683,7 @@ export class Renderer {
         ctx.restore(); ctx.globalAlpha = 1; } }
     if (g.mode === 'play' && g.echoAt != null && g.time - g.echoAt < 1.6) { const k = (g.time - g.echoAt) / 1.6, e = g.earl, m = e.inSub ? g.sub : e; ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.strokeStyle = `rgba(150,230,214,${(0.6 * (1 - k)).toFixed(3)})`; ctx.lineWidth = 3 * (1 - k) + 1; ctx.beginPath(); ctx.arc(S(m.x), Sy(m.y), k * Math.max(this.W, this.H) * 0.7, 0, TAU); ctx.stroke(); ctx.restore(); }
     if (g.mode === 'play' && g.subGuardT > 0) { const sx0 = S(g.sub.x), sy0 = Sy(g.sub.y), q = 0.5 + 0.5 * Math.sin(g.time * 6); ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.strokeStyle = `rgba(200,224,240,${(0.3 + 0.25 * q).toFixed(3)})`; ctx.lineWidth = 3; ctx.beginPath(); ctx.ellipse(sx0, sy0 - ppm * 0.6, ppm * 5.2, ppm * 2.6, 0, 0, TAU); ctx.stroke(); ctx.restore(); }
-    if (g.tideFx) { const k = Math.min(1, g.tideFx.t / 1.2) * Math.min(1, (4.2 - g.tideFx.t) / 1); ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.globalCompositeOperation = 'screen'; ctx.fillStyle = `rgba(40,110,200,${(0.55 * k).toFixed(3)})`; ctx.fillRect(0, 0, this.W, this.H); ctx.globalCompositeOperation = 'source-over'; const tt = g.tideFx.t, m0 = g.earl.inSub ? g.sub : g.earl; for (const d0 of [0, 0.5]) { const kk = Math.min(1, Math.max(0, (tt - d0) / 1.6)); if (kk <= 0 || kk >= 1) continue; ctx.strokeStyle = `rgba(150,210,255,${(0.75 * (1 - kk)).toFixed(3)})`; ctx.lineWidth = 6 * (1 - kk) + 1; ctx.beginPath(); ctx.arc(S(m0.x), Sy(m0.y), kk * Math.hypot(this.W, this.H) * 0.8, 0, TAU); ctx.stroke(); } ctx.restore(); if (fx) fx.redTint = (fx.redTint || 0) * (1 - k); }
+    if (g.tideFx) { const k = Math.min(1, g.tideFx.t / 1.2) * Math.min(1, (4.2 - g.tideFx.t) / 1); ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.globalCompositeOperation = 'screen'; ctx.fillStyle = `rgba(40,110,200,${(0.55 * k).toFixed(3)})`; ctx.fillRect(0, 0, this.W, this.H); ctx.globalCompositeOperation = 'source-over'; ctx.restore(); /* (7.6.7) no drawn rings: the burst carries them */ if (fx) fx.redTint = (fx.redTint || 0) * (1 - k); }
     // (5.7.0) the title's dive: once it is deep, a long shape passes slowly under the view, and if nothing is touched
     // for a while, a red eye opens in the dark at the lower right and watches
     if (g.mode === 'menu') {
@@ -1691,6 +1730,65 @@ export class Renderer {
       const rg = ctx.createRadialGradient(cx, cy, Math.min(this.W, this.H) * 0.1, cx, cy, Math.max(this.W, this.H) * 0.75);
       rg.addColorStop(0, `rgba(110,4,10,${(0.42 * k).toFixed(3)})`); rg.addColorStop(1, `rgba(150,6,12,${(0.62 * k).toFixed(3)})`);
       ctx.fillStyle = rg; ctx.fillRect(0, 0, this.W, this.H);
+      ctx.restore();
+    }
+    // (7.6.7, owner) the burst that opens every skill: no drawn circle but a lens rolling out from him. In a band round
+    // its front the water is magnified, as through thick glass (the frame already drawn, copied and scaled up about him,
+    // inside the band), and the front catches light, unevenly round its way, brightest just ahead of the bend and fading
+    // behind. Rare reaches a few metres; exotic and up send a second, weaker wave after it; legendary crosses the screen;
+    // a Heart first pulls the water in toward him and darkens it, then bursts out with the brightest light in the game
+    if (g.mode === 'play' && g.bursts && g.bursts.length) {
+      const bc = this.burstC || (this.burstC = document.createElement('canvas')); if (bc.width !== this.c.width || bc.height !== this.c.height) { bc.width = this.c.width; bc.height = this.c.height; }
+      const bx = bc.getContext('2d'); bx.setTransform(1, 0, 0, 1, 0, 0); bx.globalCompositeOperation = 'copy'; bx.drawImage(this.c, 0, 0); bx.globalCompositeOperation = 'source-over';
+      const diag = Math.hypot(this.W, this.H), PEAK = { rare: 0.32, exotic: 0.42, legendary: 0.58, mythical: 0.9 };
+      // a soft lens: within a ring (or a disc, r0 = 0) the water faded out and the same water, scaled about him, faded in
+      // under one smooth mask and added back, an exact blend with no edge anywhere; only the box round the ring is worked
+      const mk = this.burstM || (this.burstM = document.createElement('canvas')), lc = this.burstL || (this.burstL = document.createElement('canvas'));
+      for (const c2 of [mk, lc]) if (c2.width !== this.c.width || c2.height !== this.c.height) { c2.width = this.c.width; c2.height = this.c.height; }
+      const mx2 = mk.getContext('2d'), lx2 = lc.getContext('2d');
+      const lens = (cx, cy, r0, r1, sc, stops) => {
+        const x0 = Math.max(0, Math.floor(cx - r1)), y0 = Math.max(0, Math.floor(cy - r1)), x1 = Math.min(this.c.width, Math.ceil(cx + r1)), y1 = Math.min(this.c.height, Math.ceil(cy + r1)), bw = x1 - x0, bh = y1 - y0; if (bw <= 0 || bh <= 0 || r1 <= r0) return;
+        mx2.setTransform(1, 0, 0, 1, 0, 0); mx2.globalCompositeOperation = 'source-over'; mx2.clearRect(x0, y0, bw, bh);
+        const gm = mx2.createRadialGradient(cx, cy, r0, cx, cy, r1); for (const [o, a] of stops) gm.addColorStop(o, `rgba(0,0,0,${a})`); mx2.fillStyle = gm; mx2.fillRect(x0, y0, bw, bh);
+        lx2.setTransform(1, 0, 0, 1, 0, 0); lx2.globalCompositeOperation = 'source-over'; lx2.clearRect(x0, y0, bw, bh);
+        lx2.save(); lx2.beginPath(); lx2.rect(x0, y0, bw, bh); lx2.clip(); lx2.translate(cx, cy); lx2.scale(sc, sc); lx2.translate(-cx, -cy); lx2.drawImage(bc, 0, 0); lx2.restore();
+        lx2.globalCompositeOperation = 'destination-in'; lx2.drawImage(mk, x0, y0, bw, bh, x0, y0, bw, bh); lx2.globalCompositeOperation = 'source-over';
+        ctx.globalCompositeOperation = 'destination-out'; ctx.drawImage(mk, x0, y0, bw, bh, x0, y0, bw, bh);
+        ctx.globalCompositeOperation = 'lighter'; ctx.drawImage(lc, x0, y0, bw, bh, x0, y0, bw, bh); ctx.globalCompositeOperation = 'source-over';
+      };
+      ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0);
+      for (const B of g.bursts) {
+        const cx = S(B.x), cy = Sy(B.y), C = hexToRgb(B.tier === 'mythical' ? '#ffd8a0' : (ACCENT[B.fam] || '#e8dcc0')), pull = B.pull || 0;
+        if (B.t < pull) { // the Heart's breath in: the water drawn toward him and darkening
+          const k = B.t / pull, sc = 1 - 0.05 * Math.sin(k * Math.PI / 2);
+          lens(cx, cy, 0, Math.min(this.W, this.H) * 0.6, sc, [[0, 1], [0.55, 0.85], [1, 0]]);
+          const dg = ctx.createRadialGradient(cx, cy, ppm * 0.8, cx, cy, diag * 0.55); dg.addColorStop(0, `rgba(0,0,0,${(0.15 * k).toFixed(3)})`); dg.addColorStop(0.35, `rgba(0,0,0,${(0.5 * k).toFixed(3)})`); dg.addColorStop(1, `rgba(0,0,0,${(0.25 * k).toFixed(3)})`);
+          ctx.fillStyle = dg; ctx.fillRect(0, 0, this.W, this.H);
+          const hg = ctx.createRadialGradient(cx, cy, 0, cx, cy, ppm * 1.4); hg.addColorStop(0, `rgba(${C[0]},${C[1]},${C[2]},${(0.6 * k * k).toFixed(3)})`); hg.addColorStop(1, `rgba(${C[0]},${C[1]},${C[2]},0)`);
+          ctx.globalCompositeOperation = 'lighter'; ctx.fillStyle = hg; ctx.fillRect(cx - ppm * 1.4, cy - ppm * 1.4, ppm * 2.8, ppm * 2.8); ctx.globalCompositeOperation = 'source-over';
+          continue;
+        }
+        const tt = B.t - pull, reach = B.reach ? B.reach * ppm : diag * (B.tier === 'mythical' ? 1.2 : 0.85);
+        const waves = (B.second ? [[0, 1], [0.2, 0.55]] : [[0, 1]]).map(([d0, wk]) => { const k = (tt - d0) / B.dur; if (k <= 0 || k >= 1) return null;
+          const R = Math.max(ppm * 0.3, reach * (1 - Math.pow(1 - k, 2.4))), w = Math.max(ppm * 0.5, reach * (B.reach ? 0.26 : 0.07)) * (0.6 + 0.4 * wk); return { k, wk, R, w, lw: Math.max(ppm * 0.3, w * 0.55), fade: Math.pow(1 - k, 1.15) * wk }; }).filter(Boolean);
+        // the bends first, every wave (so a later one never wipes an earlier one's light): the band magnified most at its
+        // middle and less toward its edges, in nested steps, so it has no seam
+        for (const V of waves) lens(cx, cy, Math.max(0, V.R - V.w), V.R + V.w, 1 + B.mag * V.fade, [[0, 0], [0.5, 1], [1, 0]]);
+        // then the light on each front, uneven round the way, and a little light left in the water behind it, fading inward
+        ctx.globalCompositeOperation = 'lighter';
+        if (B.tier === 'mythical' && tt < 0.5) { const f = 1 - tt / 0.5; ctx.fillStyle = `rgba(${C[0]},${C[1]},${C[2]},${(0.3 * f * f).toFixed(3)})`; ctx.fillRect(0, 0, this.W, this.H); } // (the Heart's flash: the brightest light in the game, gone in half a second)
+        for (const V of waves) { const { R, lw } = V;
+          const pk = PEAK[B.tier] * V.fade, lg = ctx.createRadialGradient(cx, cy, Math.max(0, R - lw), cx, cy, R + lw * 0.35);
+          lg.addColorStop(0, `rgba(${C[0]},${C[1]},${C[2]},0)`); lg.addColorStop(0.78, `rgba(${C[0]},${C[1]},${C[2]},${pk.toFixed(3)})`); lg.addColorStop(1, `rgba(${C[0]},${C[1]},${C[2]},0)`);
+          // (one smooth ring, then made brighter and dimmer round its way by an angular mask: no slices, no ticks)
+          { const r1 = R + lw * 0.4, x0 = Math.max(0, Math.floor(cx - r1)), y0 = Math.max(0, Math.floor(cy - r1)), x1 = Math.min(this.c.width, Math.ceil(cx + r1)), y1 = Math.min(this.c.height, Math.ceil(cy + r1)), bw = x1 - x0, bh = y1 - y0;
+            if (bw > 0 && bh > 0) { lx2.setTransform(1, 0, 0, 1, 0, 0); lx2.globalCompositeOperation = 'source-over'; lx2.clearRect(x0, y0, bw, bh); lx2.fillStyle = lg; lx2.beginPath(); lx2.arc(cx, cy, r1, 0, TAU); lx2.arc(cx, cy, Math.max(0, R - lw), 0, TAU, true); lx2.fill('evenodd');
+              if (lx2.createConicGradient) { const cg = lx2.createConicGradient(B.x * 3.1 % TAU + tt * 0.5, cx, cy), s2 = B.y * 1.7 % TAU; for (let i = 0; i <= 24; i++) { const am = i / 24 * TAU, nz = 0.3 + 0.7 * (0.5 + 0.5 * Math.sin(am * 3)) * (0.6 + 0.4 * Math.sin(am * 5 - tt * 1.3 + s2)); cg.addColorStop(i / 24, `rgba(0,0,0,${nz.toFixed(3)})`); } lx2.globalCompositeOperation = 'destination-in'; lx2.fillStyle = cg; lx2.fillRect(x0, y0, bw, bh); lx2.globalCompositeOperation = 'source-over'; }
+              ctx.drawImage(lc, x0, y0, bw, bh, x0, y0, bw, bh); } }
+          if (B.tier === 'legendary' || B.tier === 'mythical') { const ig = ctx.createRadialGradient(cx, cy, R * 0.35, cx, cy, Math.max(R * 0.35 + 1, R - lw * 0.5)); ig.addColorStop(0, `rgba(${C[0]},${C[1]},${C[2]},0)`); ig.addColorStop(1, `rgba(${C[0]},${C[1]},${C[2]},${(0.14 * pk).toFixed(3)})`); ctx.fillStyle = ig; ctx.beginPath(); ctx.arc(cx, cy, Math.max(1, R - lw * 0.5), 0, TAU); ctx.fill(); }
+        }
+        ctx.globalCompositeOperation = 'source-over';
+      }
       ctx.restore();
     }
     if (fx.ghost > 0.01) {

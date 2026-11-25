@@ -449,6 +449,29 @@ export class Fauna {
   }
 
   // keep about a dozen lone glowing animals around the view in the deep (fewer just below 220 m)
+  // (7.6.7, owner) Lure, Tidecall and Bloodmoon: n fish of the kinds that live at this depth (never hunters, never over
+  // 2 m (what a net or trawl can take), never the reef's residents), exotics and legendaries at the call's own odds, each starting just past the view's
+  // edge on its own bearing and given his place as a home to swim in to and mill round. Returns the fish made
+  callSchool(cam, x, y, n, exoP, legP, rnd = Math.random, skip = null) {
+    const W = this.W, floor = W.floorAt(x);
+    const cands = SWIMMERS.filter((s) => !HOME[s.id] && !PREDATORS.has(s.id) && !(skip && skip(s)) && s.len <= 2 && s.id !== 188 && y >= s.dmin && y <= s.dmax && !(OFFSHORE.has(s.id) && floor < 90) && habitatOk(s, x, y, W) && climateOk(s.id, x) && this.depthPref(s, x, y, this.night) > 0);
+    if (!cands.length) return [];
+    const by = { exotic: [], legendary: [], rest: [] };
+    for (const c of cands) { const R = (rarityOf(c) || {}).id; (R === 'exotic' ? by.exotic : R === 'legendary' ? by.legendary : by.rest).push(c); }
+    const pick = (L) => { let tot = 0; const w = L.map((c) => { const v = weightOf(c) * this.depthPref(c, x, y, this.night) + 1e-6; tot += v; return v; }); let r = rnd() * tot; for (let i = 0; i < L.length; i++) { r -= w[i]; if (r <= 0) return L[i]; } return L[0]; };
+    const home = { x, y, kind: 'call' }, out = [];
+    for (let i = 0; i < n; i++) {
+      const q = rnd(), L = q < legP && by.legendary.length ? by.legendary : q < legP + exoP && by.exotic.length ? by.exotic : by.rest.length ? by.rest : cands;
+      const sp = pick(L), a = rnd() * Math.PI * 2, rx = cam.w / 2 + 3 + rnd() * 4, ry = cam.h / 2 + 3 + rnd() * 4;
+      const k = Math.min(rx / Math.max(1e-3, Math.abs(Math.cos(a))), ry / Math.max(1e-3, Math.abs(Math.sin(a)))); // just past the view's edge on this bearing
+      const fx = clamp(cam.x + Math.cos(a) * k, 3, 4960), fy = clamp(cam.y + Math.sin(a) * k, 1, W.floorAt(fx) - 0.6);
+      const f = this.makeFish(sp, fx, fy, Math.cos(a) > 0 ? -1 : 1, this.groupId++, true);
+      if (!f) continue;
+      f.home = home; f.homeR = 2.5 + rnd() * 4; f.hide = false; f.tT = 0; f.called = true; f.speed = Math.max(f.cruise * 3, 3.2); // (it rushes in, then slows to its own pace round him)
+      this.list.push(f); out.push(f);
+    }
+    return out;
+  }
   spawnGlimmer(cam, night) {
     // (3.0.22) the twilight's loose filler: lone lanternfish, hatchetfish, bristlemouths, firefly squid, krill
     // and shrimp scattered all through the water (not only in schools), so a rare fish is one among many
