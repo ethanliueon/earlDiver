@@ -917,6 +917,7 @@ export function drawBoatRadar(ctx, u, t, dim = 0) {
   ctx.fillStyle = `rgb(${c},${Math.round(212 * (1 - dim))},${c2})`; ctx.fillRect((4 - 5 * rad) * u, -50 * u, 10 * rad * u + 0.6 * u, 1.2 * u);
 }
 export function drawBoat(ctx, Lp, t, sub, mirrored = false, opts = {}) {
+  void 0;
   // A small, hard-worked dive-support boat, bow to the left: a flared bow and a curved sheer line,
   // a red boot-top at the waterline, rub rail, plating seams and rust; a wheelhouse with framed
   // windows; a mast with radar, antennas and lights; an exhaust stack; deck clutter; and at the
@@ -1046,7 +1047,7 @@ export function drawBoat(ctx, Lp, t, sub, mirrored = false, opts = {}) {
   // exhaust stack with a wisp of smoke
   ctx.fillStyle = '#2a2826'; ctx.fillRect(12 * u, -38 * u, 3 * u, 6 * u);
   ctx.fillStyle = '#8a2a20'; ctx.fillRect(12 * u, -38 * u, 3 * u, 1 * u);
-  for (let k = 0; k < 4; k++) {
+  if (!opts.noSmoke) for (let k = 0; k < 4; k++) { /* (7.6.25) a baked boat leaves the smoke out: it is drawn live over her, every frame */
     const p = ((t * 0.25 + k / 4) % 1);
     ctx.fillStyle = `rgba(90,90,92,${(0.25 * (1 - p)).toFixed(3)})`;
     ctx.beginPath(); ctx.arc((13.5 + p * 8) * u, (-39 - p * 10) * u, (1 + p * 3) * u, 0, TAU); ctx.fill();

@@ -263,7 +263,11 @@ export class Renderer {
     const cam = this.cam;
     cam.w = this.viewW; cam.h = this.H / ppm; cam.ppm = ppm;
     g.viewBox = [cam.x - cam.w / 2, cam.x + cam.w / 2, cam.y - cam.h / 2, cam.y + cam.h / 2]; // what is on screen, in metres (the monster only reacts to a lamp it can be seen in)
-    const lookX = e.vx * 0.9, lookY = e.vy * 0.6;
+    // (7.6.25, owner) the look-ahead follows his speed smoothed over about half a second, with a small dead zone: taken raw,
+    // the speed's frame-to-frame wobble (the swell, a nudge off the hull) shook the whole view, so the boat and the sub
+    // seemed to jiggle and the marine snow to jump
+    { const LV = this.lookV || (this.lookV = { x: 0, y: 0 }), a = 1 - Math.exp(-dt * 2.2), dz = (v) => (Math.abs(v) < 0.25 ? 0 : v - Math.sign(v) * 0.25); LV.x += (dz(e.vx || 0) - LV.x) * a; LV.y += (dz(e.vy || 0) - LV.y) * a; }
+    const lookX = this.lookV.x * 0.9, lookY = this.lookV.y * 0.6;
     let tx = e.x + lookX, ty = e.y + lookY;
     ty = Math.max(ty, -cam.h * 0.18); // let a little sky show near the surface
     // (5.7.0) the title: the camera starts at the boat and sinks slowly past her keel into the dark, over a minute
@@ -605,8 +609,8 @@ export class Renderer {
     this.trapLabels = [];
     const night = g.day && g.day.light < 0.3;
     // (7.6.23, owner) the shipyard barge off the Margaret's bow, a picture painted once (barge_draw.js), riding the swell
-    { const bx = yardX(); if (bx > x0 - 12 && bx < x1 + 12) { const B = BARGE, pic = bargePicture(!!night), sc = ppm / B.PPM, bob = Math.sin(t * 0.9) * 0.05, roll = Math.sin(t * 0.7 + 1) * 0.008;
-        ctx.save(); ctx.translate(S(bx), Sy(bob)); ctx.rotate(roll); ctx.drawImage(pic, -7 * ppm, -B.WL * ppm, B.W * ppm, B.H * ppm); ctx.restore(); void sc; } }
+    { const bx = yardX(); if (bx > x0 - 12 && bx < x1 + 12) { const B = BARGE, pic = bargePicture(!!night, ppm), sc = ppm / B.PPM, bob = Math.sin(t * 0.9) * 0.05, roll = Math.sin(t * 0.7 + 1) * 0.008;
+        ctx.save(); ctx.translate(Math.round(S(bx)), Math.round(Sy(bob))); ctx.rotate(roll); ctx.drawImage(pic, Math.round(-7 * ppm), Math.round(-B.WL * ppm), pic.width, pic.height); ctx.restore(); void sc; } }
     for (const pt of SAIL) if ((pt.id === 'home' || pt.id === 'dave' || pt.id === 'station' || pt.id === 'cave') /* (7.4.27, owner) buoys only at the shops: the others' chains read as a black line down the screen */ && pt.x > x0 - 6 && pt.x < x1 + 6 && y0 < 4 + 400) drawSailBuoy(ctx, S, Sy, ppm, t, pt, surfY, g.world.floorAt(pt.x), y1, night); // (6.8.1) the sail points' buoys
     for (const tr of g.traps || []) {
       if (tr.x < x0 - 10 || tr.x > x1 + 10) continue;
@@ -863,7 +867,7 @@ export class Renderer {
       // repainted a few times a second (the radar turning, the lights) or when she turns, the light changes or a door
       // lights up; each frame that picture is rocked, darkened for the hour and scaled into place. It was drawn
       // stroke by stroke at full size every frame, the costliest thing on the screen on a phone
-      const REF = 40, Rw = Math.ceil(14 * REF * 1.3), Rh = Math.ceil(14 * REF * 0.75);
+      const REF = Math.max(16, Math.round(ppm * 4) / 4) /* (7.6.25, owner) painted at the screen's own scale: shrunk from a larger picture each frame, its fine grain shimmered as she moved */, Rw = Math.ceil(14 * REF * 1.3), Rh = Math.ceil(14 * REF * 0.75);
       const bcos = Math.cos(BOAT.yaw || 0), bsx = Math.sign(bcos || 1) * Math.max(0.06, Math.abs(bcos));
       const dimB = 1 - (0.22 + 0.78 * Math.sqrt(dayEff)), door = !!(g.tut && g.tut.door);
       const bc = this.boatC || (this.boatC = document.createElement('canvas'));
@@ -873,14 +877,15 @@ export class Renderer {
         const bctx = bc.getContext('2d');
         bctx.setTransform(1, 0, 0, 1, 0, 0); bctx.clearRect(0, 0, Rw, Rh); bctx.globalCompositeOperation = 'source-over';
         bctx.translate(Rw * 0.45, Rh * 0.82);
-        this.boatCrane = drawBoat(bctx, 14 * REF, t, g.sub, bsx < 0, { noRoll: true, noRadar: true });
+        this.boatCrane = drawBoat(bctx, 14 * REF, t, g.sub, bsx < 0, { noRoll: true, noRadar: true, noSmoke: true });
         bctx.setTransform(1, 0, 0, 1, 0, 0); bctx.globalCompositeOperation = 'source-atop'; bctx.drawImage(this.boatWear(Rw, Rh, bsx < 0), 0, 0);
         if (dimB > 0.01) { bctx.fillStyle = `rgba(4,6,10,${dimB.toFixed(3)})`; bctx.fillRect(0, 0, Rw, Rh); }
         bctx.globalCompositeOperation = 'source-over';
         this.boatK = { flip: bsx < 0, door, dim: dimB, docked: g.sub.docked, t };
       }
       const kB = ppm / REF; crane = this.boatCrane ? { craneTip: [this.boatCrane.craneTip[0] * kB, this.boatCrane.craneTip[1] * kB] } : null;
-      ctx.save(); ctx.scale(bsx, 1); ctx.rotate(boatRock(t)); ctx.drawImage(bc, -Rw * 0.45 * kB, -Rh * 0.82 * kB, Rw * kB, Rh * kB); drawBoatRadar(ctx, 0.14 * ppm, t, dimB); /* (7.4.0) smooth, every frame */ this.boatWays(ctx, g, t, 0.14 * ppm, Math.sqrt(dayEff)); ctx.restore(); // (3.0.0) turned with her heading
+      ctx.save(); ctx.scale(bsx, 1); ctx.rotate(boatRock(t)); ctx.drawImage(bc, Math.round(-Rw * 0.45 * kB), Math.round(-Rh * 0.82 * kB), Rw * kB, Rh * kB);
+      { const u = 0.14 * ppm, sh = 1 - dimB; for (let k = 0; k < 4; k++) { const p = ((t * 0.25 + k / 4) % 1); ctx.fillStyle = `rgba(${Math.round(90 * sh)},${Math.round(90 * sh)},${Math.round(92 * sh)},${(0.25 * (1 - p)).toFixed(3)})`; ctx.beginPath(); ctx.arc((13.5 + p * 8) * u, (-39 - p * 10) * u, (1 + p * 3) * u, 0, TAU); ctx.fill(); } } /* (7.6.25, owner) the stack's smoke drawn every frame, not baked with her four times a second */ drawBoatRadar(ctx, 0.14 * ppm, t, dimB); /* (7.4.0) smooth, every frame */ this.boatWays(ctx, g, t, 0.14 * ppm, Math.sqrt(dayEff)); ctx.restore(); // (3.0.0) turned with her heading
       this.boatFrame = { x: boatX, y: boatY, roll, rock: boatRock(t), sx: bsx, k: 0.14 * ppm, a: roll + boatRock(t), lit: 0.35 + 0.65 * Math.sqrt(dayEff) }; // (2.5.0: Earl on deck is drawn in this frame; the deck stations are gone)
       if (dayEff < 0.5) {
         // the cabin light stays on at night

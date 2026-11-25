@@ -6,9 +6,11 @@
 export const BARGE = { PPM: 64, W: 14, H: 8, WL: 5.4, X0: 1 }; // metres; WL: the waterline from the picture's top; X0: the hull's left end
 
 const cache = {};
-export function bargePicture(night = false) {
-  const key = night ? 'n' : 'd'; if (cache[key]) return cache[key];
-  const { PPM: k, W, H, WL } = BARGE, c = document.createElement('canvas'); c.width = Math.round(W * k); c.height = Math.round(H * k);
+export function bargePicture(night = false, ppm = BARGE.PPM) {
+  /* (7.6.25, owner) painted at the screen's own scale (kept for the last two), so it is never shrunk each frame and shimmers */
+  const kq = Math.max(12, Math.round(ppm * 4) / 4), key = (night ? 'n' : 'd') + kq; if (cache[key]) return cache[key];
+  for (const k0 of Object.keys(cache)) if (!k0.endsWith(String(kq))) delete cache[k0];
+  const k = kq, { W, H, WL } = BARGE, c = document.createElement('canvas'); c.width = Math.round(W * k); c.height = Math.round(H * k);
   const x = c.getContext('2d'); x.scale(k, k); x.lineJoin = 'round'; x.lineCap = 'round';
   let sd = 7; const rnd = () => ((sd = (sd * 16807) % 2147483647) / 2147483647);
   const L0 = 1, L1 = 13, deck = WL - 1.0, keel = WL + 1.15;

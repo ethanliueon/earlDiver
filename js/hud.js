@@ -343,7 +343,7 @@ export class Hud {
     // the near ring: the three things done most (always there, greyed when they can't be done); the top row: the
     // rarer ones, small, beside pause and the bag
     // (5.5) the tutorial's own action (its F, or the observe button) keeps its button up even while it hides prompts
-    const ta = g.tutAction && !g.tutAction.cabinOnly ? String(g.tutAction.key).toLowerCase() : null;
+    const ta = g.tutAction && !g.tutAction.cabinOnly && g.tutAction.id !== 'cabin' /* (7.6.25, owner) no glove at the cabin door: the door glows */ ? String(g.tutAction.key).toLowerCase() : null;
     // (5.6) as a mobile RPG's skills: four fixed coins in an arc round the big button (one that cannot be used now is
     // dimmed, never moved), and a quiet row of small round icons along the bottom for the rest
     // (5.7.1) the same four in the sub as in the water, each doing its own job there: the sub's slot lets him out (in
