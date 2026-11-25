@@ -297,6 +297,13 @@ last desktop build is kept on the branch `desktop-4.25.5`).
 - (7.6.33, owner) The legendary wake is 26-40 marks, never a plain circle: streaks (motes), tiny fish (Magnetic), bells
   with threads (Kinship), blinking almonds (Eye of the Sea), wobbling bubble clusters (Second Wind), ember slivers and ash
   flakes (Faithless), stretched smoky flecks (Phantom). Dauntless's rings fewer and lighter (heat).
+- (7.6.35, owner) The name (title_art.js, baked into assets/loading/title.png by calling `paintTitle` at 1640 x 440, t 2,
+  dpr 2): pairs kerned by eye (KERN), painted bone with fine grain, small chips worn from the edges, a lit top lip and a
+  darker foot; the deep getting in from the C on (its own layer, breathing slowly on the title): olive to drowned green to
+  near-black teal by the S H, silt rising from the feet, rust crust and barnacles at the corners, dark threads creeping in
+  from the fish's side, a few cold pricks of light; light through the surface a broken net of wavering lines (never
+  rings); a tight contact shadow. The hatchetfish's light organs pale bone, its fins and teeth silver (no cyan). On the
+  loading screen the subtitle sits lower, centred under the word.
 - **(7.6.28, 7.6.33, owner) Saves carry over**: a change must not wipe or break the owner's saves (economy.js `migrate` fills
   anything new from a fresh profile), and the game quietly keeps the last version's save beside each slot
   (`earl.save.slotN.prev`; economy.js `restorePrevSave`). No backup or restore buttons (7.6.34, owner: unnecessary). Superseded:

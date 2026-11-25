@@ -17,17 +17,20 @@ const G = {
   S: [['path', 'M54 14 C46 2 10 0 10 26 C10 50 50 46 50 74 C50 100 14 102 4 86']],
 };
 const WIDTH = { H: 60, A: 60, T: 58, C: 62, E: 54, F: 48, I: 26, S: 58 }; // (advances set by eye, so the gaps look even)
+// (7.6.35, owner) pairs kerned by eye: the T's stem stands in the middle of its bar, the A is narrow at the top, so the
+// word read "HA TCHE TFISH"; these pull the open pairs together so it reads as one
+const KERN = { AT: -7, TC: -4, ET: -2, TF: -3, HE: 3 };
 
 let cache = null;
 function letters(scale) {
   if (cache && cache.scale === scale) return cache;
-  const word = 'HATCHETFISH', gap = 9, total = [...word].reduce((a, ch) => a + WIDTH[ch] + gap, -gap);
+  const word = 'HATCHETFISH', gap = 9, kern = (i) => (i + 1 < word.length ? KERN[word[i] + word[i + 1]] || 0 : 0), total = [...word].reduce((a, ch, i) => a + WIDTH[ch] + gap + kern(i), -gap);
   const pad = 24, cw = Math.ceil((total + pad * 2) * scale), ch = Math.ceil((100 + pad * 2) * scale);
   const c = document.createElement('canvas'); c.width = cw; c.height = ch; const x = c.getContext('2d');
   let sd = 1234; const r = () => ((sd = (sd * 16807) % 2147483647) / 2147483647);
   x.translate(pad * scale, pad * scale); x.scale(scale, scale);
   x.lineCap = 'butt'; x.lineJoin = 'miter';
-  let ox = 0;
+  let ox = 0, ci = 0;
   for (const chr of word) {
     x.save(); x.translate(ox, (r() - 0.5) * 3); x.rotate((r() - 0.5) * 0.03); // each letter set by hand: a little off true
     const strokes = G[chr];
@@ -49,16 +52,47 @@ function letters(scale) {
       if (s[0] === 'arc' || s[0] === 'path' || Math.abs(s[0] - s[2]) > 2) continue;
       for (const yy of [s[1], s[3]]) { const dir = yy < 50 ? 1 : -1, fw = W0 * (0.85 + r() * 0.2); x.beginPath(); x.moveTo(s[0] - fw, yy); x.lineTo(s[0] + fw, yy); x.lineTo(s[0] + W0 * 0.5, yy + dir * 7); x.lineTo(s[0] - W0 * 0.5, yy + dir * 7); x.closePath(); x.fill(); }
     }
-    x.restore(); ox += WIDTH[chr] + gap;
+    x.restore(); ox += WIDTH[chr] + gap + kern(ci); ci++;
   }
   x.setTransform(1, 0, 0, 1, 0, 0);
-  // wear: the paint gone in small chips and specks; a darker inner edge where it is thickest
+  // (7.6.35, owner) the surface, painted: no sprayed dots. The paint worn back at the edges in uneven chips (more where the
+  // letters are older, toward the right), a fine grain through it, a pale lip along the tops where light from above
+  // catches, and each letter darkening toward its foot
+  const mask = document.createElement('canvas'); mask.width = cw; mask.height = ch; mask.getContext('2d').drawImage(c, 0, 0);
+  const md = mask.getContext('2d').getImageData(0, 0, cw, ch).data, solid = (px, py) => px >= 0 && py >= 0 && px < cw && py < ch && md[((py | 0) * cw + (px | 0)) * 4 + 3] > 128;
+  const edge = (px, py, d) => solid(px, py) && (!solid(px + d, py) || !solid(px - d, py) || !solid(px, py + d) || !solid(px, py - d));
+  const fAt = (px) => { const u = px / cw; return u < 0.3 ? 0 : Math.min(1, Math.pow((u - 0.3) / 0.62, 1.3)); }; // how far the deep has got in, from the C on
   x.globalCompositeOperation = 'destination-out';
-  for (let i = 0; i < 260; i++) { const px = r() * cw, py = r() * ch, rr = (0.3 + r() * r() * 1.4) * scale; x.globalAlpha = 0.25 + r() * 0.45; x.beginPath(); x.ellipse(px, py, rr * 1.4, rr, r() * 3, 0, Math.PI * 2); x.fill(); }
+  for (let i = 0; i < 2600; i++) { const px = r() * cw, py = r() * ch, f = fAt(px); if (!edge(px, py, 1.2 * scale)) continue; if (r() > 0.12 + 0.5 * f) continue;
+    const rr = (0.35 + r() * r() * (0.9 + 1.6 * f)) * scale, n = 7 + (r() * 4 | 0); x.globalAlpha = 0.7 + r() * 0.3; x.beginPath();
+    for (let k = 0; k < n; k++) { const a = k / n * Math.PI * 2, q = rr * (0.5 + r() * 0.7); k ? x.lineTo(px + Math.cos(a) * q, py + Math.sin(a) * q) : x.moveTo(px + Math.cos(a) * q, py + Math.sin(a) * q); } x.closePath(); x.fill(); } // chips bitten from the edges
   x.globalAlpha = 1; x.globalCompositeOperation = 'source-atop';
-  const gg = x.createLinearGradient(0, 0, 0, ch); gg.addColorStop(0, 'rgba(255,250,232,0.18)'); gg.addColorStop(0.5, 'rgba(0,0,0,0)'); gg.addColorStop(1, 'rgba(40,30,16,0.25)'); x.fillStyle = gg; x.fillRect(0, 0, cw, ch);
+  const gg = x.createLinearGradient(0, 0, 0, ch); gg.addColorStop(0, 'rgba(255,250,232,0.12)'); gg.addColorStop(0.45, 'rgba(0,0,0,0)'); gg.addColorStop(1, 'rgba(46,36,20,0.38)'); x.fillStyle = gg; x.fillRect(0, 0, cw, ch);
+  { const id = x.getImageData(0, 0, cw, ch), d = id.data, cell = Math.max(1, Math.round(0.7 * scale)), nz = (a, b) => { const v = Math.sin(a * 127.1 + b * 311.7) * 43758.5453; return v - Math.floor(v); };
+    for (let py = 0; py < ch; py++) for (let px = 0; px < cw; px++) { const o = (py * cw + px) * 4; if (!d[o + 3]) continue; const g2 = 0.95 + 0.06 * nz((px / cell) | 0, (py / cell) | 0) + 0.03 * nz(px, py); d[o] *= g2; d[o + 1] *= g2; d[o + 2] *= g2; }
+    x.putImageData(id, 0, 0); } // the grain
+  { const lip = document.createElement('canvas'); lip.width = cw; lip.height = ch; const lx = lip.getContext('2d'); lx.drawImage(c, 0, 0); lx.globalCompositeOperation = 'source-in'; lx.fillStyle = 'rgb(255,248,226)'; lx.fillRect(0, 0, cw, ch);
+    lx.globalCompositeOperation = 'destination-out'; lx.drawImage(mask, 0, 2.2 * scale); x.globalCompositeOperation = 'source-atop'; x.globalAlpha = 0.45; x.drawImage(lip, 0, 0); x.globalAlpha = 1; } // the lit top lip
   x.globalCompositeOperation = 'source-over';
-  cache = { c, scale, cw, ch };
+  // (7.6.35, owner) the deep getting into it, on a layer of its own (so it can breathe on the title): from the C on the
+  // bone sinks through olive and drowned green to near black teal by the S H; silt stains rise from the feet; rust crust
+  // and small barnacles gather at the corners; fine dark threads creep across the last letters toward the fish; and a
+  // few sharp pricks of cold light show only in the darkest letters. All inside the letters' own shape
+  const inf = document.createElement('canvas'); inf.width = cw; inf.height = ch; const ix = inf.getContext('2d');
+  { const hg = ix.createLinearGradient(cw * 0.28, 0, cw * 0.97, 0); hg.addColorStop(0, 'rgba(96,100,64,0)'); hg.addColorStop(0.35, 'rgba(92,98,62,0.38)'); hg.addColorStop(0.7, 'rgba(36,62,54,0.66)'); hg.addColorStop(1, 'rgba(12,30,32,0.86)'); ix.fillStyle = hg; ix.fillRect(0, 0, cw, ch);
+    for (let sx = 0; sx < cw; sx += 3) { const f = fAt(sx); if (f <= 0) continue; const hh = ch * (0.18 + 0.4 * f) * (0.75 + 0.5 * Math.abs(Math.sin(sx * 0.037) * Math.sin(sx * 0.011 + 1.3))), sg = ix.createLinearGradient(0, ch - pad * scale * 0.9, 0, ch - pad * scale * 0.9 - hh);
+      sg.addColorStop(0, `rgba(48,40,26,${(0.55 * f).toFixed(3)})`); sg.addColorStop(1, 'rgba(48,40,26,0)'); ix.fillStyle = sg; ix.fillRect(sx, 0, 3.4, ch); } // silt stains rising
+    for (let i = 0; i < 1800; i++) { const px = r() * cw, py = r() * ch, f = fAt(px); if (f <= 0.05 || r() > f * f || !edge(px, py, 3 * scale)) continue;
+      if (r() < 0.55) { const rr = (1 + r() * 2.4) * scale; ix.fillStyle = `rgba(${110 + (r() * 30 | 0)},${60 + (r() * 20 | 0)},${34 + (r() * 12 | 0)},${(0.35 + 0.35 * r()).toFixed(3)})`; ix.beginPath(); ix.ellipse(px, py, rr * 1.5, rr, r() * 3, 0, Math.PI * 2); ix.fill(); } // rust crust
+      else { const rr = (0.9 + r() * 1.5) * scale; ix.fillStyle = 'rgba(176,170,146,0.85)'; ix.beginPath(); ix.ellipse(px, py, rr, rr * 0.8, 0, 0, Math.PI * 2); ix.fill(); ix.fillStyle = 'rgba(20,22,18,0.8)'; ix.beginPath(); ix.ellipse(px, py - rr * 0.1, rr * 0.42, rr * 0.3, 0, 0, Math.PI * 2); ix.fill(); ix.strokeStyle = 'rgba(230,226,206,0.5)'; ix.lineWidth = Math.max(0.5, rr * 0.25); ix.beginPath(); ix.arc(px, py, rr * 0.85, Math.PI * 1.1, Math.PI * 1.7); ix.stroke(); } } // a barnacle: a pale cone, its dark mouth, light on its rim
+    ix.lineCap = 'round';
+    for (let i = 0; i < 14; i++) { let px = cw * (0.97 - r() * 0.3), py = ch * (0.15 + r() * 0.7), a = Math.PI + (r() - 0.5) * 1.4; const L = (40 + r() * 90) * scale, w0 = (0.8 + r() * 0.9) * scale; // threads creeping in from the fish's side
+      ix.strokeStyle = `rgba(10,18,16,${(0.55 + 0.3 * r()).toFixed(3)})`; for (let s2 = 0; s2 < L; s2 += 2 * scale) { const k = s2 / L; a += (r() - 0.5) * 0.5; const nx = px + Math.cos(a) * 2 * scale, ny = py + Math.sin(a) * 2 * scale; ix.lineWidth = w0 * (1 - k * 0.8); ix.beginPath(); ix.moveTo(px, py); ix.lineTo(nx, ny); ix.stroke(); px = nx; py = ny; if (r() < 0.04) { let bx = px, by = py, ba = a + (r() < 0.5 ? 0.9 : -0.9); for (let q = 0; q < 8; q++) { const bx2 = bx + Math.cos(ba) * 1.6 * scale, by2 = by + Math.sin(ba) * 1.6 * scale; ix.lineWidth = w0 * 0.4 * (1 - q / 8); ix.beginPath(); ix.moveTo(bx, by); ix.lineTo(bx2, by2); ix.stroke(); bx = bx2; by = by2; ba += (r() - 0.5) * 0.6; } } } }
+    ix.globalCompositeOperation = 'lighter';
+    for (let i = 0; i < 400; i++) { const px = r() * cw, py = r() * ch, f = fAt(px); if (f < 0.6 || r() > (f - 0.6) * 1.2 || !solid(px, py)) continue; const L = (1.2 + r() * 2.2) * scale, an = (r() - 0.5) * 0.6; ix.strokeStyle = `rgba(196,226,200,${(0.5 + 0.4 * r()).toFixed(3)})`; ix.lineWidth = Math.max(0.6, 0.45 * scale); ix.beginPath(); ix.moveTo(px - Math.cos(an) * L, py - Math.sin(an) * L); ix.lineTo(px + Math.cos(an) * L, py + Math.sin(an) * L); ix.stroke(); } // cold pricks of light
+    ix.globalCompositeOperation = 'destination-in'; ix.drawImage(c, 0, 0); ix.globalCompositeOperation = 'source-over'; }
+  const base = c;
+  cache = { c: base, inf, scale, cw, ch };
   return cache;
 }
 
@@ -125,14 +159,20 @@ export function paintTitle(ctx, W, H, t = 0, dpr = 1) {
     for (let y = 0; y < lh; y += sl) {
       const off = Math.sin(y / (14 * dpr) + t * 1.4) * 1.6 * dpr + Math.sin(y / (37 * dpr) - t * 0.6) * 1.1 * dpr;
       lx2.drawImage(L.c, 0, (y / lh) * L.ch, L.cw, (sl / lh) * L.ch, lx + off, ly + y, lw, sl);
+      lx2.globalAlpha = 0.86 + 0.14 * Math.sin(t * 0.22); lx2.drawImage(L.inf, 0, (y / lh) * L.ch, L.cw, (sl / lh) * L.ch, lx + off, ly + y, lw, sl); lx2.globalAlpha = 1; // (7.6.35) the deep in it, breathing slowly
     }
     lx2.save(); lx2.globalCompositeOperation = 'source-atop';
     const wg = lx2.createLinearGradient(0, ly, 0, ly + lh); wg.addColorStop(0, 'rgba(60,110,120,0.12)'); wg.addColorStop(1, 'rgba(12,40,58,0.5)'); lx2.fillStyle = wg; lx2.fillRect(0, 0, W, H);
     lx2.strokeStyle = 'rgba(240,250,236,0.16)'; lx2.lineWidth = 1.2 * dpr;
-    for (let i = 0; i < 26; i++) { const cx = ((i * 97 + t * 18 * dpr) % (W + 80)) - 40, cy = ly + ((i * 53) % 100) / 100 * lh, rr = (14 + (i * 7) % 16) * dpr; lx2.beginPath(); lx2.ellipse(cx, cy, rr, rr * 0.4, Math.sin(t * 0.3 + i) * 0.4, 0, Math.PI * 1.6); lx2.stroke(); }
+    // (7.6.35, owner) light through the surface: a broken net of thin wavering lines drifting slowly over the letters,
+    // never rings
+    lx2.strokeStyle = 'rgba(240,250,236,0.11)'; lx2.lineWidth = 1 * dpr;
+    for (let i = 0; i < 9; i++) { const y0 = ly + (i + 0.5) / 9 * lh; lx2.beginPath(); let pen = false;
+      for (let x0 = lx; x0 <= lx + lw; x0 += 6 * dpr) { const yy = y0 + Math.sin(x0 / (23 * dpr) + t * 0.5 + i * 1.7) * 7 * dpr + Math.sin(x0 / (9 * dpr) - t * 0.8 + i) * 2 * dpr, on = Math.sin(x0 / (41 * dpr) + i * 2.3 + t * 0.3) > -0.2;
+        if (on) { pen ? lx2.lineTo(x0, yy) : lx2.moveTo(x0, yy); pen = true; } else pen = false; } lx2.stroke(); }
     lx2.restore();
     // (7.0.2) a soft shadow under the letters, cast down and a little right, so they stand off the sea behind
-    ctx.save(); ctx.globalAlpha = 0.62; ctx.filter = `brightness(0) blur(${(5 * dpr).toFixed(1)}px)`; ctx.drawImage(lay, 2 * dpr, 5 * dpr); ctx.restore();
+    ctx.save(); ctx.globalAlpha = 0.5; ctx.filter = `brightness(0) blur(${(2.2 * dpr).toFixed(1)}px)`; ctx.drawImage(lay, 1.5 * dpr, 3.5 * dpr); ctx.restore(); // (7.6.35) a tighter contact shadow
     ctx.save(); ctx.globalAlpha = 0.35; ctx.filter = `brightness(0) blur(${(1.2 * dpr).toFixed(1)}px)`; ctx.drawImage(lay, 0.8 * dpr, 2 * dpr); ctx.restore(); // and a tight one at their edge
     ctx.drawImage(lay, 0, 0);
     // (7.0.2) the hatchetfish after the word, facing it, wholly seen: hanging in the water, bobbing and turning a little
