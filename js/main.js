@@ -39,7 +39,7 @@ import { pictureOf, hourglassURL } from './catalog.js';
 import { kitOf } from './items.js';
 import { ITEMS, ownsItem, giveItem, putOn, takeOff, instOf, isOn, removeItem, sellValue, lockerFree, skillLv, setOn, totals } from './items.js';
 import { LEGENDARY } from './specimens.js';
-import { readSlot, setSlot, getSlot, lastSlot, flushSave, SLOTS, SUB_AIR, exportSave, importSave, hasPrevSave, restorePrevSave } from './economy.js';
+import { readSlot, setSlot, getSlot, lastSlot, flushSave, SLOTS, SUB_AIR } from './economy.js';
 import { rollChestAll } from './chests.js';
 import { setDiverLook } from './earl_draw.js'; // (6.7.0)
 import { isTestStore } from './purchases.js';
@@ -290,7 +290,6 @@ const ui = new UI({
       ui.showGains([{ kind: 'pet', id }]); });
     return true;
   },
-  exportSave: () => { if (profile) saveProfile(profile); return exportSave(); }, importSave: (t) => importSave(t), hasPrevSave: () => hasPrevSave(), restorePrevSave: () => restorePrevSave(), // (7.6.33, owner)
   onRedeem: (raw) => { const P = profile; if (!P) return 'Start a dive first'; const k = normCode(raw); if (!k) return 'Type a code'; const C = CODES[k]; if (!C) return 'That code is not recognised';
     P.codes = P.codes || []; if (P.codes.includes(k)) return 'Already redeemed on this diver';
     if (C.pearls) P.pearls = (P.pearls || 0) + C.pearls; if (C.cash) P.cash = (P.cash || 0) + C.cash; if (C.item && ITEMS[C.item]) for (let i = 0; i < (C.n || 1); i++) giveItem(P, C.item);

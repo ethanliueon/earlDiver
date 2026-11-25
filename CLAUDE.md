@@ -298,8 +298,8 @@ last desktop build is kept on the branch `desktop-4.25.5`).
   with threads (Kinship), blinking almonds (Eye of the Sea), wobbling bubble clusters (Second Wind), ember slivers and ash
   flakes (Faithless), stretched smoky flecks (Phantom). Dauntless's rings fewer and lighter (heat).
 - **(7.6.28, 7.6.33, owner) Saves carry over**: a change must not wipe or break the owner's saves (economy.js `migrate` fills
-  anything new from a fresh profile). Settings, Save: Back up save (the save as one line of text, copied) and Restore save
-  (paste one back, or take the copy the game keeps of the last version's save, `earl.save.slotN.prev`). Superseded:
+  anything new from a fresh profile), and the game quietly keeps the last version's save beside each slot
+  (`earl.save.slotN.prev`; economy.js `restorePrevSave`). No backup or restore buttons (7.6.34, owner: unnecessary). Superseded:
   **Never care about saves unless the owner asks (7.4.12, owner).** This is not a packaged game: the owner is the only
   player, and test saves may be wiped or changed at any time. Write no migration code, no "keep what they already
   have" handling, no compatibility for old save fields, and don't spend time on it or mention it in plans. A change

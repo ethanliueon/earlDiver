@@ -368,7 +368,6 @@ export class UI {
     $('inventory').addEventListener('click', (ev) => { const tw = ev.target.closest && ev.target.closest('[data-tw]'); if (tw) { const P = this.h.getProfile(); P.trawlPick = tw.dataset.tw; this.h.onSaveProfile && this.h.onSaveProfile(); this.renderInventory(); return; } }, true);
     $('inventory').addEventListener('click', (ev) => { if (ev.target === $('inventory') && performance.now() - (this.dragEndAt || 0) > 400) this.toggleInventory(false); }); // (5.15.3) not the click that ends a drag off the panel
     $('set-graphics').addEventListener('click', () => { setSetting('fast', !SETTINGS.fast); this.renderSettings(); });
-    $('set-backup').addEventListener('click', () => this.saveBox('out')); $('set-restore').addEventListener('click', () => this.saveBox('in')); // (7.6.33, owner) the save copied out and pasted back
     $('set-units').addEventListener('click', () => { setUnits(imperial() ? 'metric' : 'imperial'); this.renderSettings(); }); // (6.0.3)
     $('set-uisize').addEventListener('click', () => { const order = ['small', 'normal', 'large'], i = order.indexOf(uiSizeName()); setUiSize(order[(i + 1) % 3]); this.renderSettings(); }); // (5.15.7)
     $('set-fullscreen').addEventListener('click', () => { $('fullscreen').click(); setTimeout(() => this.renderSettings(), 250); });
@@ -1592,27 +1591,9 @@ export class UI {
     row('flashing', 'Softer flashes', !!(g && g.reduceFlash), 'gentler lights from the thing in the deep');
     $('set-units').innerHTML = `<span>Units<em>metres and kilograms, or feet and pounds</em></span><b class="set-pick">${imperial() ? 'Imperial' : 'Metric'}</b>`; // (6.0.3)
     { const nm = uiSizeName(); $('set-uisize').innerHTML = `<span>Button size<em>the controls on screen, larger or smaller</em></span><b class="set-pick">${nm[0].toUpperCase() + nm.slice(1)}</b>`; } // (5.15.7) Small / Normal / Large, a tap steps through them
-    $('set-backup').innerHTML = `<span>Back up save<em>a copy of this diver as text</em></span><b class="set-pick">Copy</b>`; $('set-restore').innerHTML = `<span>Restore save<em>paste a copy, or the last version's</em></span><b class="set-pick">Paste</b>`;
     $('set-graphics').innerHTML = `<span>Battery saver<em>30 frames a second</em></span>${sw(!!SETTINGS.fast)}` /* (7.5.0, owner) named for what it does */;
   }
   // (7.6.21, owner) a small plate to type a code into; the game says what it gave, or why not
-  // (7.6.33, owner) Back up: the save as one line of text, copied to the clipboard and shown to copy by hand. Restore: paste
-  // one in (or take the copy the game kept from the last version) and the game starts again from it
-  saveBox(mode) {
-    let el = $('savebox'); if (!el) { el = document.createElement('div'); el.id = 'savebox'; el.className = 'rd-like'; document.body.appendChild(el); }
-    const H = this.h, close = () => { el.hidden = true; };
-    if (mode === 'out') { const t = H.exportSave ? H.exportSave() : null;
-      el.innerHTML = `<div class="rd-plate"><h3>Back up save</h3><textarea class="sb-text" readonly>${t || ''}</textarea><p class="rd-msg${t ? ' ok' : ''}"></p><div class="rd-btns"><button class="rd-go">Copy</button><button class="rd-no">Close</button></div></div>`;
-      const ta = el.querySelector('.sb-text'), msg = el.querySelector('.rd-msg'), copy = () => { if (!t) { msg.textContent = 'No save yet'; return; } ta.select(); let ok = false; try { ok = document.execCommand('copy'); } catch (e) { ok = false; } if (navigator.clipboard) navigator.clipboard.writeText(t).then(() => { msg.textContent = 'Copied'; }, () => { if (!ok) msg.textContent = 'Select the text and copy it'; }); else msg.textContent = ok ? 'Copied' : 'Select the text and copy it'; };
-      el.querySelector('.rd-go').addEventListener('click', copy); copy();
-    } else { const prev = H.hasPrevSave && H.hasPrevSave();
-      el.innerHTML = `<div class="rd-plate"><h3>Restore save</h3><textarea class="sb-text" placeholder="Backup"></textarea><p class="rd-msg"></p><div class="rd-btns">${prev ? '<button class="sb-prev">Last version\'s</button>' : ''}<button class="rd-go">Restore</button><button class="rd-no">Close</button></div></div>`;
-      const ta = el.querySelector('.sb-text'), msg = el.querySelector('.rd-msg'); ta.addEventListener('keydown', (ev) => ev.stopPropagation());
-      const done = () => { msg.textContent = 'Restored'; msg.classList.add('ok'); setTimeout(() => location.reload(), 600); };
-      el.querySelector('.rd-go').addEventListener('click', () => { if (H.importSave && H.importSave(ta.value)) done(); else { msg.textContent = 'Not a save'; msg.classList.remove('ok'); } });
-      const pb = el.querySelector('.sb-prev'); if (pb) pb.addEventListener('click', () => { if (H.restorePrevSave && H.restorePrevSave()) done(); }); }
-    el.querySelector('.rd-no').addEventListener('click', close); el.hidden = false;
-  }
   redeemBox() {
     let el = $('redeem'); if (!el) { el = document.createElement('div'); el.id = 'redeem'; el.innerHTML = '<div class="rd-plate"><h3>Redeem code</h3><input class="rd-in" maxlength="24" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="Code"><p class="rd-msg"></p><div class="rd-btns"><button class="rd-go">Redeem</button><button class="rd-no">Close</button></div></div>'; document.body.appendChild(el);
       const inp = el.querySelector('.rd-in'), msg = el.querySelector('.rd-msg');
