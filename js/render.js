@@ -182,6 +182,37 @@ function drawWhaleFall(ctx, S, Sy, ppm, F, t, glow) {
 // (7.6.8, owner) Siphon's change: how much of him, and how much of the squid, is drawn now
 const SIPH_FO = 0.24, SIPH_FI = 0.32;
 function siphMix(Q) { if (!Q) return [1, 0]; const J = Q.A.dur, t = Q.t; if (t < SIPH_FO) { const k = t / SIPH_FO; return [1 - k, k]; } if (t < SIPH_FO + J) return [0, 1]; const k = Math.min(1, (t - SIPH_FO - J) / SIPH_FI); return [k, 1 - k]; }
+// (7.6.28, owner) a god ray, never a flat strip: a shaft of light made of several thin, very faint wedges of different
+// widths and slants overlapping, each widening as it falls with soft sides, the whole fading in from nothing at the top and
+// out to nothing below. The shape is worked out once per seed into a small grey picture; each frame it is copied onto a
+// small canvas, broken along its length by slowly drifting bands (light through moving surface water) and tinted, then
+// laid over the scene, scaled up and leaning as it sways
+const RAY_TW = 96, RAY_TH = 192, RAY_TEX = [];
+function rayTex(seed) {
+  if (RAY_TEX[seed]) return RAY_TEX[seed];
+  let sd = seed * 7919 + 13; const rnd = () => ((sd = (sd * 16807) % 2147483647) / 2147483647);
+  const n = 9 + Math.floor(rnd() * 4), W = [];
+  // fanned from a narrow source: each wedge leaves near the middle at the top and leans out its own way; a few broad faint
+  // ones make the body, the rest thin and a little brighter, so single rays can be told apart inside it
+  for (let i = 0; i < n; i++) { const thin = i >= 3; W.push({ cx: 0.5 + (rnd() - 0.5) * 0.08, dx: (rnd() - 0.5) * (thin ? 0.8 : 0.3), top: 0.008 + rnd() * 0.025, bot: thin ? 0.025 + rnd() * 0.07 : 0.18 + rnd() * 0.2, a: thin ? 0.08 + rnd() * 0.12 : 0.05 + rnd() * 0.05, y0: rnd() * 0.1, y1: 0.5 + rnd() * 0.5 }); }
+  const c = document.createElement('canvas'); c.width = RAY_TW; c.height = RAY_TH; const x = c.getContext('2d'), d = x.createImageData(RAY_TW, RAY_TH), A = d.data;
+  for (let py = 0; py < RAY_TH; py++) { const v = py / (RAY_TH - 1);
+    for (let px = 0; px < RAY_TW; px++) { const u = px / (RAY_TW - 1); let sum = 0;
+      for (const w of W) { if (v < w.y0 || v > w.y1) continue; const k = (v - w.y0) / (w.y1 - w.y0), hw = w.top + (w.bot - w.top) * k, cx = w.cx + w.dx * k, q = 1 - Math.abs(u - cx) / hw; if (q <= 0) continue;
+        const along = Math.min(1, k / 0.18) * Math.pow(1 - k, 1.3); sum += w.a * q * q * (3 - 2 * q) * along; }
+      const o = (py * RAY_TW + px) * 4; A[o] = A[o + 1] = A[o + 2] = 255; A[o + 3] = Math.min(255, Math.round(sum * 255 * 2.2)); } }
+  x.putImageData(d, 0, 0); return (RAY_TEX[seed] = c);
+}
+function godRay(ctx, rc, x, y, len, w, tilt, col, a, t, seed) {
+  if (a <= 0.002) return; const tex = rayTex(seed), bx = rc.getContext('2d');
+  bx.setTransform(1, 0, 0, 1, 0, 0); bx.globalCompositeOperation = 'copy'; bx.globalAlpha = 1; bx.drawImage(tex, 0, 0);
+  // the drifting bands: a vertical mask, bright and dim in turn, sliding slowly down and breathing
+  bx.globalCompositeOperation = 'destination-in'; const bg = bx.createLinearGradient(0, 0, 0, RAY_TH), ph = (t * 0.07 + seed * 0.31) % 1;
+  for (let i = 0; i <= 12; i++) { const v = i / 12, b = 0.55 + 0.45 * Math.sin((v - ph) * Math.PI * 2 * 3.2 + seed) * Math.sin((v + ph * 0.6) * Math.PI * 2 * 1.3 + 1.7); bg.addColorStop(v, `rgba(0,0,0,${Math.max(0.15, Math.min(1, b)).toFixed(3)})`); }
+  bx.fillStyle = bg; bx.fillRect(0, 0, RAY_TW, RAY_TH);
+  bx.globalCompositeOperation = 'source-in'; bx.fillStyle = `rgb(${col[0]},${col[1]},${col[2]})`; bx.fillRect(0, 0, RAY_TW, RAY_TH);
+  ctx.save(); ctx.translate(x, y); ctx.rotate(tilt); ctx.globalAlpha = Math.min(1, a); ctx.drawImage(rc, -w / 2, 0, w, len); ctx.restore();
+}
 export class Renderer {
   constructor(canvas) {
     this.c = canvas; this.ctx = canvas.getContext('2d');
@@ -1593,10 +1624,12 @@ export class Renderer {
       ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0);
       ctx.globalCompositeOperation = 'soft-light'; ctx.fillStyle = `rgba(${C[0]},${C[1]},${C[2]},${(fade * (0.32 + 0.1 * F.lv) * (0.65 + 0.35 * beat)).toFixed(3)})`; ctx.fillRect(0, 0, this.W, this.H);
       ctx.globalCompositeOperation = 'lighter';
-      if (F.lv >= 2) for (let i = 0; i < F.lv + 1; i++) { const Ci = PAL[(pi0 + i * 2) % PAL.length], x = this.W * (0.18 + i * 0.64 / F.lv) + Math.sin(F.t * 0.7 + i * 2.1) * this.W * 0.07, tilt = Math.sin(F.t * 0.5 + i * 1.7) * 0.28, a = fade * (0.1 + 0.05 * F.lv) * (0.5 + 0.5 * beat);
-        ctx.save(); ctx.translate(x, -this.H * 0.05); ctx.rotate(tilt); const sw = this.W * (0.05 + 0.02 * F.lv), lg = ctx.createLinearGradient(-sw, 0, sw, 0); lg.addColorStop(0, `rgba(${Ci[0]},${Ci[1]},${Ci[2]},0)`); lg.addColorStop(0.5, `rgba(${Ci[0]},${Ci[1]},${Ci[2]},${a.toFixed(3)})`); lg.addColorStop(1, `rgba(${Ci[0]},${Ci[1]},${Ci[2]},0)`);
-        ctx.fillStyle = lg; ctx.beginPath(); ctx.moveTo(-sw * 0.35, 0); ctx.lineTo(sw * 0.35, 0); ctx.lineTo(sw, this.H * 1.2); ctx.lineTo(-sw, this.H * 1.2); ctx.closePath(); ctx.fill();
-        ctx.restore(); }
+      // (7.6.28, owner) the shafts are god rays (godRay above): two (Revel+) or three (Carnival) wide, soft shafts from above,
+      // swaying slowly, their colour soaked toward the water's own blue so they tint it instead of striping it
+      if (F.lv >= 2) { const rc = this.rayC || (this.rayC = Object.assign(document.createElement('canvas'), { width: RAY_TW, height: RAY_TH })), nS = F.lv === 2 ? 2 : 3;
+        for (let i = 0; i < nS; i++) { const Ci = PAL[(pi0 + i * 2) % PAL.length], Cw = [Math.round(Ci[0] * 0.6 + 70 * 0.4), Math.round(Ci[1] * 0.6 + 120 * 0.4), Math.round(Ci[2] * 0.6 + 140 * 0.4)];
+          const x = this.W * ((i + 0.5) / nS) + Math.sin(F.t * 0.23 + i * 2.1) * this.W * 0.09, tilt = 0.16 * Math.sin(F.t * 0.17 + i * 1.7) + (i - (nS - 1) / 2) * 0.14, w = this.W * (0.55 + 0.12 * F.lv) * (0.85 + 0.15 * Math.sin(i * 3.1)), len = this.H * 1.45;
+          godRay(ctx, rc, x, -this.H * 0.12, len, w, tilt, Cw, fade * (0.55 + 0.12 * F.lv) * (0.8 + 0.2 * beat), F.t + i * 7, i % 3); } }
       const nL = [0, 3, 5, 8][F.lv], R0 = ppm * (e.inSub ? 7 : 3.2);
       for (let i = 0; i < nL; i++) { const Ci = PAL[i % PAL.length], a = i / nL * TAU + F.t * (0.25 + (i % 3) * 0.05), rr = R0 * (0.8 + 0.35 * Math.sin(i * 2.3 + F.t * 0.4)), x = mx + Math.cos(a) * rr * 1.25, y = my + Math.sin(a) * rr * 0.7 + Math.sin(F.t * 1.3 + i) * ppm * 0.25, pulse = 0.6 + 0.4 * Math.cos(F.t * Math.PI * 2 * 1.9 + i * 0.9), sz = ppm * (0.2 + 0.03 * F.lv);
         const pool = ctx.createRadialGradient(x, y, 0, x, y, ppm * (1.6 + 0.3 * F.lv)); pool.addColorStop(0, `rgba(${Ci[0]},${Ci[1]},${Ci[2]},${(0.2 * fade * pulse).toFixed(3)})`); pool.addColorStop(1, `rgba(${Ci[0]},${Ci[1]},${Ci[2]},0)`); ctx.fillStyle = pool; ctx.fillRect(x - ppm * 3, y - ppm * 3, ppm * 6, ppm * 6);

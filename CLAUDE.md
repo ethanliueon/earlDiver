@@ -273,7 +273,8 @@ last desktop build is kept on the branch `desktop-4.25.5`).
   without a go.
 - **Don't break anything:** after a change, the full touch tutorial (deck to shop), new game, and title screen at both
   phone sizes must still pass. Phones load the game in a turned frame (index.html's shell); tests use `?noshell`.
-- **Never care about saves unless the owner asks (7.4.12, owner).** This is not a packaged game: the owner is the only
+- **(7.6.28, owner) Saves now carry over**: the owner's test saves take time to set up, so a change must not wipe or break them (how is being agreed). Superseded:
+  **Never care about saves unless the owner asks (7.4.12, owner).** This is not a packaged game: the owner is the only
   player, and test saves may be wiped or changed at any time. Write no migration code, no "keep what they already
   have" handling, no compatibility for old save fields, and don't spend time on it or mention it in plans. A change
   that breaks an old save is fine; a new game is the answer.
@@ -426,5 +427,8 @@ last desktop build is kept on the branch `desktop-4.25.5`).
 - (7.6.27, owner) The money and pearls plate is one L-shaped piece: the money's row full width, the pearls' row only as
   wide as its own plate was, one dark well following it. A Heart's radar ripple is bright enough to see: the scope's glass
   flashes, then three bands run out to the rim over 2.4 s.
+- (7.6.28, owner) Revel's and Carnival's shafts are god rays (render.js `godRay`): each one many faint wedges fanned from a
+  narrow top, thin single rays inside a broad faint body, soft sides, fading in at the top and out below, broken along
+  their length by slowly drifting bands, tinted toward the water's blue; two (Revel+) or three (Carnival), wide, swaying.
 
 - **Before release**: see `docs/RELEASE.md` (remove the test shop, connect real purchases, new redeem codes).
