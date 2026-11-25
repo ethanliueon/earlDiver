@@ -1,5 +1,7 @@
 # Next (start when the owner says "go")
 
+Done in 7.6.24: seabed textures by zone (1) and Shoal circling him (2).
+
 ## 1. Seabed textures by zone (agreed, owner)
 Pre-made seamless PNGs, one per part of the map, made by a script in `tools/` (like `tools/seabed_tex.py`), each blended
 into the next over a few tens of metres so no seam shows. Each is one image laid by multiplying, so it costs nothing per

@@ -111,6 +111,7 @@ export function updateHunters(g, dt) {
 
     // (7.6.15, owner) Shoal: a hunter coming in to strike meets the school first. It takes a mouthful of fish instead of him
     // (or the sub) and breaks off; the school thins; the seadevils' bite sends it off for longer
+    { const SF = g.shoalFx; if (SF && SF.used < SF.guard && SF.t < SF.dur && at.s !== 'idle' && at.s !== 'leave' && d < (e.inSub ? 24 : 15)) SF.threat = { x: c.x, y: c.y, t: SF.t }; } /* (7.6.24, owner) the school sees it coming and goes out to meet it */
     { const SF = g.shoalFx; if (SF && SF.used < SF.guard && SF.t < SF.dur && (at.s === 'windup' || at.s === 'charge' || at.s === 'lunge' || at.s === 'bite' || at.s === 'gape' || at.s === 'rise' || at.s === 'ram' || at.s === 'bump') && d < (e.inSub ? 16 : 9)) {
       SF.used++; SF.hit = { t: SF.t, x: c.x + (c.dir > 0 ? 1 : -1) * c.len * 0.6, y: c.y, lv: SF.lv }; c.jaw = 1; at.s = 'leave'; at.t = 0; at.cool = SF.lv >= 3 ? 90 : 40; g.events && g.events.push('swerve'); continue; } }
     // (7.6.7, owner) Revel's lantern light: a hunter that bites keeps its distance while it burns (never the thing)

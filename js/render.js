@@ -1556,10 +1556,16 @@ export class Renderer {
       // (7.6.15) a strike taken: the school bursts open round the hunter's mouth (fish flung out, bubbles, a flash of scales)
       if (F.hit && F.t - F.hit.t < 0.9) { const hk = (F.t - F.hit.t) / 0.9; for (const f of F.fishN) { const dx = f.x - F.hit.x, dy = f.y - F.hit.y, dd = Math.hypot(dx, dy) || 1; if (dd < 4) { f.vx += dx / dd * (1 - hk) * 9 * dt; f.vy += dy / dd * (1 - hk) * 9 * dt; } } if (!F.hit.bub) { F.hit.bub = 1; for (let i = 0; i < 18; i++) g.bubbles && g.bubbles.push({ x: F.hit.x + (Math.random() - 0.5) * 1.2, y: F.hit.y + (Math.random() - 0.5) * 0.8, r: 0.02 + Math.random() * 0.08, w: Math.random() * 6, t: 0 }); } }
       if (F.fishN && F.used && F.lostTo !== F.used) { F.lostTo = F.used; const keep = Math.max(3, Math.round(F.fishN.length * (1 - 0.55 / F.guard))); F.fishN.splice(keep); }
-      const FF = F.fishN; for (const f of FF) { const tx2 = F.cx + f.oa * SL * ch - f.oc * SW * shd, ty2 = F.cy + f.oa * SL * shd + f.oc * SW * ch;
+      // (7.6.24, owner) once it has arrived the school circles him: each fish its own place on a loose ring round him (or the
+      // sub), the ring turning slowly; when a hunter comes in, the school surges out toward it, between it and him
+      const ringK = smoothstep(1.4, 3.2, F.t), R0 = (e.inSub ? 6.2 : 2.3) * (1 + 0.12 * F.lv), thr = F.threat && F.t - F.threat.t < 1.6 ? F.threat : null;
+      const FF = F.fishN; for (const f of FF) { let tx2 = F.cx + f.oa * SL * ch - f.oc * SW * shd, ty2 = F.cy + f.oa * SL * shd + f.oc * SW * ch;
+        if (ringK > 0) { const th = f.ph + F.t * (0.55 + 0.1 * f.oc) * (F.lv % 2 ? -1 : 1), rr = R0 * (0.8 + 0.45 * Math.abs(f.oa) + 0.15 * Math.sin(F.t * 0.7 + f.ph)); let rx = m.x + Math.cos(th) * rr, ry = m.y + Math.sin(th) * rr * 0.62;
+          if (thr) { const tk = Math.max(0, 1 - (F.t - thr.t) / 1.6); rx += (thr.x - m.x) * 0.55 * tk + Math.cos(th) * 0.6; ry += (thr.y - m.y) * 0.55 * tk; }
+          tx2 += (rx - tx2) * ringK; ty2 += (ry - ty2) * ringK; }
         let ax = (tx2 - f.x) * 2.2 + (F.vx - f.vx) * 1.6 + Math.sin(F.t * 1.3 + f.ph) * 0.5, ay = (ty2 - f.y) * 2.2 + (F.vy - f.vy) * 1.6 + Math.cos(F.t * 1.1 + f.ph * 1.7) * 0.35;
         for (const o of FF) { if (o === f) continue; const dx = f.x - o.x, dy = f.y - o.y, d2 = dx * dx + dy * dy; if (d2 < sep * sep && d2 > 1e-6) { const d = Math.sqrt(d2), k = (sep - d) / sep * 6; ax += dx / d * k; ay += dy / d * k; } }
-        f.vx += ax * dt; f.vy += ay * dt; const spd = Math.hypot(f.vx, f.vy), mx2 = Math.hypot(F.vx, F.vy) * 1.6 + 1.2; if (spd > mx2) { f.vx *= mx2 / spd; f.vy *= mx2 / spd; } f.x += f.vx * dt; f.y += f.vy * dt; }
+        f.vx += ax * dt; f.vy += ay * dt; const spd = Math.hypot(f.vx, f.vy), mx2 = Math.max(Math.hypot(F.vx, F.vy) * 1.6 + 1.2, ringK * (thr ? 7 : 3.2)); if (spd > mx2) { f.vx *= mx2 / spd; f.vy *= mx2 / spd; } f.x += f.vx * dt; f.y += f.vy * dt; }
       ctx.save(); for (const f of FF) { const x = S(f.x), y = Sy(f.y), fh = Math.atan2(f.vy * 0.7, f.vx), right = Math.cos(fh) >= 0, angf = clamp(Math.atan2(Math.sin(fh), Math.abs(Math.cos(fh))), -0.6, 0.6);
           ctx.save(); ctx.translate(x, y); ctx.globalAlpha = fade; if (right) { ctx.rotate(angf); ctx.scale(-1, 1); } else ctx.rotate(-angf); drawSpecies(ctx, sp, Lp * f.sz, F.t * 4 + f.ph, 1, f.ph); ctx.restore();
           const fl = turn * (0.5 + 0.5 * Math.sin(f.ph * 3 + F.t * 5)); if (fl > 0.35) { ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = fade * Math.min(1, (fl - 0.35) * 2.5); const fg = ctx.createRadialGradient(x, y, 0, x, y, Lp * 0.45); fg.addColorStop(0, 'rgba(236,244,244,0.85)'); fg.addColorStop(1, 'rgba(236,244,244,0)'); ctx.fillStyle = fg; ctx.beginPath(); ctx.ellipse(x, y, Lp * 0.45, Lp * 0.16, -fh, 0, TAU); ctx.fill(); ctx.restore(); } }
@@ -2544,11 +2550,19 @@ export class Renderer {
     }
     // (7.4.17, owner) the painted sand itself (assets/textures/seabed.png), multiplied over the floor's colour, pinned to
     // the world; strongest in the shallows, where the bottom is seen close and lit (a phone draws it too: this is baked)
-    { const img = this.seabedImg || (this.seabedImg = (() => { const im = new Image(); im.onload = () => { im.ok = true; if (this.floorCache) this.floorCache.ppm = 0; }; im.src = 'assets/textures/seabed.png'; return im; })());
-      if (img.ok) { const pat = this.seabedPat || (this.seabedPat = ctx.createPattern(img, 'repeat')), k = 3.2 * ppm / img.width;
-        pat.setTransform(new DOMMatrix([k, 0, 0, k, S(0) % (img.width * k), Sy(0)]));
-        ctx.save(); ctx.globalCompositeOperation = 'multiply'; ctx.globalAlpha = 0.85 - 0.55 * smoothstep(20, 500, V ? V.midD : camY); ctx.fillStyle = pat;
-        if (area) ctx.fillRect(area[0], area[1], area[2], area[3]); else ctx.fillRect(0, 0, W, H); ctx.restore(); } }
+    // (7.6.24, owner) one texture per zone of the sea (the sandy shelf, the kelp floor, the slope's silt, the deep plain's ooze,
+    // the trench's rock), each by how much of that zone the floor below is in, blended across the boundaries in narrow
+    // upright strips (only when the floor is baked, so nothing of it is done per frame)
+    { const ZT = this.seabedZ || (this.seabedZ = ['', '_kelp', '_slope', '_ooze', '_trench'].map((sfx) => { const im = new Image(); im.onload = () => { im.ok = true; if (this.floorCache) this.floorCache.ppm = 0; }; im.src = `assets/textures/seabed${sfx}.png`; return { im, pat: null }; }));
+      const kx0 = EAST + 788, kx1 = EAST + 907, ss = smoothstep;
+      const wts = (x) => { const d = Math.max(0, g.world.floorAt(x)), kelp = ss(kx0 - 15, kx0, x) * (1 - ss(kx1, kx1 + 15, x)) * (1 - ss(40, 70, d)),
+          shelf = (1 - ss(30, 70, d)) * (1 - kelp), slope = ss(30, 70, d) * (1 - ss(300, 520, d)), oz = ss(300, 520, d) * (1 - ss(2000, 2900, d)), tr = ss(2000, 2900, d), sm = shelf + kelp + slope + oz + tr || 1;
+        return [shelf / sm, kelp / sm, slope / sm, oz / sm, tr / sm]; };
+      const k = 3.2 * ppm / 512, alpha = 0.85 - 0.5 * smoothstep(20, 600, V ? V.midD : camY), sw = Math.max(6, Math.round(W / 90));
+      ctx.save(); ctx.globalCompositeOperation = 'multiply';
+      for (let zi = 0; zi < ZT.length; zi++) { const Z = ZT[zi]; if (!Z.im.ok) continue; if (!Z.pat) Z.pat = ctx.createPattern(Z.im, 'repeat'); Z.pat.setTransform(new DOMMatrix([k, 0, 0, k, S(0) % (512 * k), Sy(0)])); ctx.fillStyle = Z.pat;
+        for (let px = 0; px < W; px += sw) { const wx = x0 + (px + sw / 2) / ppm, w = wts(wx)[zi]; if (w < 0.02) continue; ctx.globalAlpha = alpha * w; ctx.fillRect(px, 0, sw + 0.5, H); } }
+      ctx.restore(); }
     // rock and sediment: large mottling and a fine grain, pinned to the world so they never swim
     if (!this.phone) this.texture(ctx, 'rock', 19, 0.22 + 0.25 * smoothstep(30, 400, camY), 'soft-light', S(0), Sy(0), area);
     if (ppm > 14 && !this.lite) this.texture(ctx, 'grain', 2.7, 0.3, 'soft-light', S(0.37), Sy(0.61), area);
