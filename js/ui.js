@@ -1403,7 +1403,7 @@ export class UI {
   // the pop-up: the thing on its own (if he has it on), or side by side with what he has on of that kind
   itemPop(P, g, free) {
     const K = kitOf(P), q = K.items.find((x) => x.u === this.lkSel); if (!q) { this.lkSel = null; return ''; }
-    const K0 = K, onSet0 = new Set(Object.values(K.on)); // (7.4.11) for the scrolls' Combine
+    const K0 = K; // (7.4.11) for the scrolls' Combine
     if (q.isNew) { delete q.isNew; this.h.onSaveProfile && this.h.onSaveProfile(); }
     const it = ITEMS[q.id], on = K.on[it.kind] === q.u, seller = this.h.canSellGear && this.h.canSellGear();
     const curQ = !on && K.on[it.kind] ? K.items.find((x) => x.u === K.on[it.kind]) : null, cur = curQ ? ITEMS[curQ.id] : null, M = MEASURES[it.kind];
@@ -1430,11 +1430,12 @@ export class UI {
         + (rows ? `<table class="ip-vs"><thead><tr><th></th><td>${cur ? cur.name : '—'}</td><td>${it.name}</td></tr></thead><tbody>${rows}</tbody></table>` : '');
       if (free) acts += `<button data-lk="on:${q.u}">Put it on</button>`;
       // (7.4.11, owner) three of the same scroll at the same rarity, none of them on: they combine into one of the next rarity
-      if (it.kind === 'ability') { const NX = { rare: 'exotic', exotic: 'legendary', legendary: 'mythical' }[it.rarity], /* (7.4.15) three legendaries make the mythical */ nId = NX && `ab_${it.fam}_${NX}`, spare = K0.items.filter((x) => x.id === q.id && !onSet0.has(x.u)).length;
-        if (nId && ITEMS[nId] && spare >= 3) acts += `<button data-lk="combine:${q.id}">Combine 3 → <span style="color:${RARITY[NX].col}">${ITEMS[nId].name}</span></button>`; }
       if (seller) acts += `<button class="sell" data-lk="${it.kind === 'ability' ? 'sellscroll' : 'sellgear'}:${q.u}">Sell, ${money(sellValue(q), false)}</button>`;
       else acts += '<small>Sell it on the Margaret, at the station, or to Dave.</small>';
     }
+    // (7.5.6, owner) a scroll always shows its Combine 3, worn or not: greyed with how many he has until there are three
+    if (it.kind === 'ability') { const NX = { rare: 'exotic', exotic: 'legendary', legendary: 'mythical' }[it.rarity], /* (7.4.15) three legendaries make the mythical */ nId = NX && `ab_${it.fam}_${NX}`, have = K0.items.filter((x) => x.id === q.id).length;
+      if (nId && ITEMS[nId]) acts += `<button data-lk="combine:${q.id}"${have >= 3 ? '' : ' disabled'}>Combine 3${have >= 3 ? '' : ` (${have}/3)`} → <span style="color:${RARITY[NX].col}">${ITEMS[nId].name}</span></button>`; }
     return `<div class="item-pop"><div class="ip-box r-${it.rarity}"><button class="ip-close" aria-label="Close">×</button>${body}<div class="lk-acts">${acts}</div></div></div>`;
   }
   equipWire(P, g) {

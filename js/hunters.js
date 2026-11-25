@@ -214,9 +214,8 @@ export function updateHunters(g, dt) {
         toEarl(9);
         g.threat = c;
         if (d < 2.5 + c.len * 0.15) {
-          // (claude-polish) a pod takes turns: one ram, then none for two minutes (two orcas took 60 % of a
-          // first sub's hull in a second)
-          if (e.inSub && g.time - (g.lastRamT ?? -999) < 120) { leave(rng.range(20, 40)); break; }
+          // (7.5.6, owner) every orca that slams into the hull does its damage (a two-minute rest for the pod after the
+          // first ram let the others hit for nothing)
           if (e.inSub) { g.damageSub(A.hull, c.sp); g.lastRamT = g.time; }
           else if (A.dmg) g.hurt(A.dmg, c.sp, 'whale');
           leave(rng.range(60, 120));

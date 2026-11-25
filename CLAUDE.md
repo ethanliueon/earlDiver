@@ -303,3 +303,7 @@ last desktop build is kept on the branch `desktop-4.25.5`).
 - (7.5.4, owner) An observed animal's name fades out once the animal is off the screen (never held at the edge).
 - (7.5.5, owner) Gear and chests sell from the bag anywhere in play. Rare and up, every scroll and every chest ask first
   ("Sell Gulper's Throat?" / "Legendary net", Keep / Sell, $...); a common or uncommon sells on a tap.
+- (7.5.6, owner) A scroll's card always shows Combine 3 (greyed with "(1/3)" until three are owned; the worn one counts and
+  the new scroll goes on in its place). Every orca ram damages the hull (no rest for the pod). At a hole in the sub's hull
+  the interact button is a painted spanner (hold it to mend). Dash charges: rare 2, exotic 2, legendary 3, mythical 5,
+  each used within 20 s of the last; a segment each round the skill button shows how many are left.

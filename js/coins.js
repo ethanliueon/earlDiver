@@ -489,6 +489,21 @@ const ART = {
     x.strokeStyle = '#2a2418'; x.lineWidth = 5; x.beginPath(); x.moveTo(-31, -3); x.lineTo(31, -3); x.stroke(); x.strokeStyle = '#8a7650'; x.lineWidth = 2.4; x.stroke(); // the rim
     x.fillStyle = '#7a8a8a'; x.strokeStyle = '#0b0c0a'; x.lineWidth = 1.6; x.beginPath(); x.ellipse(10, -7, 9, 3.5, -0.2, 0, TAU); x.fill(); x.stroke(); x.fillStyle = '#8a6a5a'; x.beginPath(); x.ellipse(-8, -6, 7, 3, 0.3, 0, TAU); x.fill(); x.stroke(); // a fish's tail and back over the rim
   },
+  // (7.5.6, owner) the hand at a hole in the sub's hull: a worn steel spanner, laid on the slant, an open jaw at its head
+  // and a ring at its foot, lit along its upper edge, rust in the grip
+  repair(x) {
+    x.lineCap = 'round'; x.lineJoin = 'round'; x.save(); x.rotate(-0.72);
+    const shaft = new Path2D('M-30 -5.5H22V5.5H-30Z'), head = new Path2D('M18 -15C30 -20 44 -14 46 -4H34L30 0L34 4H46C44 14 30 20 18 15C14 8 14 -8 18 -15Z');
+    x.save(); x.translate(3, 4); x.fillStyle = 'rgba(0,0,0,0.45)'; x.fill(shaft); x.fill(head); x.beginPath(); x.arc(-36, 0, 13, 0, TAU); x.fill(); x.restore();
+    const gs = x.createLinearGradient(0, -14, 0, 14); gs.addColorStop(0, '#b4b2a2'); gs.addColorStop(0.45, '#83826f'); gs.addColorStop(1, '#4c4c40');
+    x.fillStyle = gs; x.strokeStyle = '#0b0c0a'; x.lineWidth = 3.2;
+    x.beginPath(); x.arc(-36, 0, 13, 0, TAU); x.fill(); x.stroke(); x.fill(shaft); x.stroke(shaft); x.fill(head); x.stroke(head);
+    x.fillStyle = '#1a1a14'; x.beginPath(); x.arc(-36, 0, 6.2, 0, TAU); x.fill(); x.strokeStyle = 'rgba(0,0,0,0.6)'; x.lineWidth = 1.4; x.stroke(); // the ring's eye
+    x.fillStyle = 'rgba(0,0,0,0.3)'; x.beginPath(); x.roundRect(-20, -2, 36, 4, 2); x.fill(); // the groove down the shaft
+    x.strokeStyle = 'rgba(255,250,228,0.38)'; x.lineWidth = 1.6; x.beginPath(); x.moveTo(-28, -4.2); x.lineTo(20, -4.2); x.moveTo(20, -13); x.quadraticCurveTo(32, -17, 42, -8); x.stroke(); x.beginPath(); x.arc(-36, 0, 11, Math.PI * 1.1, Math.PI * 1.7); x.stroke(); // light on its upper edges
+    x.fillStyle = 'rgba(130,70,30,0.55)'; for (const [a, b, r] of [[-14, 3, 3], [4, -2, 2.4], [-24, 1, 2]]) { x.beginPath(); x.ellipse(a, b, r * 1.6, r, 0, 0, TAU); x.fill(); } // rust in the grip
+    x.restore();
+  },
   // the sub's hatch, seen from above on her conning tower: a round lid of olive steel on its hinge, the handwheel on it
   hatch(x) {
     x.fillStyle = 'rgba(0,0,0,0.45)'; x.beginPath(); x.arc(2, 4, 38, 0, TAU); x.fill();

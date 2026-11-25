@@ -987,10 +987,11 @@ function buy(kind) {
     return false;
   } else if (kind.startsWith('combine:')) { // (7.4.11, owner) three of a scroll at one rarity, none worn, become one of the next rarity
     const id = kind.slice(8), it = ITEMS[id], NX = it && NEXT_TIER[it.rarity], nId = NX && `ab_${it.fam}_${NX}`; // (7.4.15) three legendaries make the mythical
-    const spare = kitOf(P).items.filter((x) => x.id === id && !isOn(P, x));
-    if (!nId || !ITEMS[nId] || spare.length < 3) return false;
-    for (const x of spare.slice(0, 3)) removeItem(P, x.u);
-    giveItem(P, nId); ui.lkSel = null; ui.showGains([{ kind: 'item', id: nId, how: 'Combined' }]); ok = true;
+    const all = kitOf(P).items.filter((x) => x.id === id).sort((a, b) => isOn(P, a) - isOn(P, b)); // (7.5.6, owner) the worn one too, used last
+    if (!nId || !ITEMS[nId] || all.length < 3) return false;
+    const used = all.slice(0, 3), wasOn = used.some((x) => isOn(P, x)); if (wasOn) { const w = used.find((x) => isOn(P, x)); buy('off:' + ITEMS[w.id].kind); }
+    for (const x of used) removeItem(P, x.u);
+    { const nq = giveItem(P, nId); if (wasOn && nq) { putOn(P, nq.u); applyKit(e, P); } } /* the new one goes on where the old one was */ ui.lkSel = null; ui.showGains([{ kind: 'item', id: nId, how: 'Combined' }]); ok = true;
   } else if (kind.startsWith('sellgear:')) { // (7.5.5, owner) rare and up, and every chest, asked first; a common or uncommon sells on a tap
     const q = instOf(P, kind.slice(9)); if (!q || isOn(P, q)) return false; const it = ITEMS[q.id], v = sellValue(q);
     if (it.kind === 'chest' || !['common', 'uncommon'].includes(it.rarity)) { const R = RARITY[it.rarity];
@@ -1723,7 +1724,7 @@ function promptFor(t) {
     else if (t.kind === 'guardian') p = 'F  Guardian jellyfish';
     else if (t.kind === 'creature') { p = g.journal.has(t.sp.id) ? `${t.sp.name}` : 'F  Observe'; if (g.journal.has(t.sp.id)) { const R = rarityOf(t.sp); g.promptName = { text: t.sp.name, col: R ? R.col : null, legend: !!(R && R.id === 'legendary') || LEGENDARY.has(t.sp.id) }; } } // (4.12.0) its name in its rarity's colour
   }
-  { const pi = !e.inSub && !g.sub.imploded ? patchNear() : -1; // a damaged patch within reach: hold R
+  { const pi = !e.inSub && !g.sub.imploded ? patchNear() : -1; g.repairNear = pi >= 0; // a damaged patch within reach: hold R (the hand becomes the spanner, hud.js)
     if (pi >= 0) p = g.repair && g.repair.i === pi ? (g.promptBar = g.repair.t / REPAIR_TIME, 'Repairing') : (p ? p + '   ·   ' : '') + 'Hold R  Repair';
     else if (!e.inSub && !g.sub.imploded && (g.sub.patches || []).length && dist(e.x, e.y, g.sub.x, g.sub.y) < 9) p = (p ? p + '   ·   ' : '') + 'The sub needs repairs: swim to a hole'; }
   if (canPlant(t)) p = g.plant ? (g.promptBar = g.plant / PLANT_TIME, 'Planting coral') : 'Hold F  Plant a coral fragment';
@@ -2207,9 +2208,10 @@ function dashTo(wx, wy) {
   for (let d = 0.4; d <= L; d += 0.4) { const px = M.x + dx / L * d, py = M.y + dy / L * d; if (g.world.rockAt(px, py, r) || py > g.world.floorAt(px) - r) { x1 = M.x + dx / L * Math.max(0, d - 0.8); y1 = M.y + dy / L * Math.max(0, d - 0.8); break; } }
   g.dashAim = null; renderer.aimZoom = 1;
   const S = abilityState(g); S.def = A; S.activeT = A.dur; S.maxT = A.dur; S.at = g.time;
-  if (A.charges) { // (7.4.15) Rift: the first dash leaves one more (for 20 s); the rest starts after the second
-    if (S.charges > 0) { S.charges = 0; S.chargeT = 0; P.abilReadyAt = Date.now() + (A.dur + A.cd) * 1000; }
-    else { S.charges = A.charges - 1; S.chargeT = 20; P.abilReadyAt = 0; mythFire(A); hud.toast(`${A.name}: one more dash`, 'note'); }
+  if (A.charges) { // (7.4.15) Rift: the first dash leaves more. (7.5.6, owner) every dash has charges: each dash leaves the rest for 20 s; the rest starts after the last
+    S.chargeMax = A.charges;
+    if (S.charges > 0) { S.charges--; S.chargeT = 20; if (S.charges <= 0) { S.charges = 0; S.chargeT = 0; P.abilReadyAt = Date.now() + (A.dur + A.cd) * 1000; } }
+    else { S.charges = A.charges - 1; S.chargeT = 20; P.abilReadyAt = 0; if (A.tier === 'mythical') mythFire(A); }
   } else P.abilReadyAt = Date.now() + (A.dur + A.cd) * 1000;
   saveProfile(P);
   g.dashMove = { x0: M.x, y0: M.y, x1, y1, t: 0, dur: A.dur, tier: A.dash };

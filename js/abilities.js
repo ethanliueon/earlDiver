@@ -20,11 +20,11 @@ export const ABILITY_DEFS = {
     legendary: { name: 'Apex', dur: 10, cd: 3600, reach: 2.5, sure: true, bless: true, line: 'For 10 s the net reaches two and a half times as far and cannot miss. What it catches comes back whole, and Blessed.' },
     mythical: { name: 'Leviathan Heart', dur: 12, cd: 2400, reach: 3, sure: true, bless: true, multi: 3, line: 'For 12 s the net reaches three times as far, cannot miss, and takes up to three animals a swing. All come back whole, and Blessed.' },
   },
-  dash: {
-    rare: { name: 'Dash', dur: 0.3, cd: 45, dash: 1, zoom: 1, line: 'Tap where to go, and you are there in an instant.' },
-    exotic: { name: 'Dash+', dur: 0.3, cd: 120, dash: 2, zoom: 1.4, line: 'Tap where to go, with the water opened wider round you.' },
-    legendary: { name: 'Undertow', dur: 0.35, cd: 900, dash: 3, zoom: 2, line: 'Tap where to go: the sea opens far round you, and bends as you pass.' },
-    mythical: { name: 'Riven Heart', dur: 0.35, cd: 1200, dash: 3, zoom: 2.2, charges: 2, line: 'Two dashes before it rests: tap where to go, and again. The sea opens far round you, and tears as you pass.' },
+  dash: { // (7.5.6, owner) charges: rare 2, exotic 2, legendary 3, mythical 5 dashes, then the rest
+    rare: { name: 'Dash', dur: 0.3, cd: 45, dash: 1, zoom: 1, charges: 2, line: 'Two dashes before it rests: tap where to go, and you are there in an instant.' },
+    exotic: { name: 'Dash+', dur: 0.3, cd: 120, dash: 2, zoom: 1.4, charges: 2, line: 'Two dashes before it rests: tap where to go, with the water opened wider round you.' },
+    legendary: { name: 'Undertow', dur: 0.35, cd: 900, dash: 3, zoom: 2, charges: 3, line: 'Three dashes before it rests: tap where to go, the sea opening far round you and bending as you pass.' },
+    mythical: { name: 'Riven Heart', dur: 0.35, cd: 1200, dash: 3, zoom: 2.2, charges: 5, line: 'Five dashes before it rests: tap where to go, and again. The sea opens far round you, and tears as you pass.' },
   },
   flare: {
     rare: { name: 'Flare', dur: 20, cd: 300, light: 1, line: '20 s of light 28 m round you. The thing does not see it.' },

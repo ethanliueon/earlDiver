@@ -390,6 +390,7 @@ export class Hud {
         const tgt = tm.find((m) => m.key === (hu ? 'u' : 'f')), ctxIcon = tgt && { ladder: 'ladder', winch: 'basket', sub: 'hatch', door: 'cabin' }[tgt.what];
         // (6.3.0) an animal not yet observed, in reach (and nothing else to do here): the slot becomes the eye. Nothing is
         // drawn round the animal: the eye on this button is the only sign
+        if (g.repairNear && !e.inSub) return { key: 'r', icon: 'repair', on: true, lit: true, inter: true }; // (7.5.6, owner) at a hole in the sub's hull the hand is the spanner: held, he mends it
         if (!hon && g.obsTarget && !e.inSub && !g.tutQuiet) return { key: 'obs', icon: 'eye', on: true, lit: true, inter: true }; // (7.4.0) not in the sub trip: it would pull him off the step
         // (7.3.9, owner) close to his pet, the hand becomes the pet: a press tells it to stay or to follow again
         if (!hon && !g.anyTarget && !(g.prompt && /(^|·\s*)(Hold )?[FR]  /.test(g.prompt)) && g.petC && P.pet && !e.inSub && Math.hypot(g.petC.x - e.x, g.petC.y - e.y) < 2.5 + (g.petC.len || 0)) return { key: 'petstay', icon: 'pet', on: true, lit: true, inter: true };
@@ -528,6 +529,14 @@ e.inSub ? [
       if (a.abil && AB.tier === 'legendary') legendMotes(ctx, x, y, r * 1.8, r * 1.8, g.time, 3);
       if (a.abil && AB.tier === 'mythical') { ctx.save(); ctx.globalCompositeOperation = 'lighter'; for (let i = 0; i < 11; i++) { const ph = (g.time * (0.22 + (i % 4) * 0.05) + i * 0.091) % 1, px = x + Math.sin(i * 2.4 + g.time * 0.7) * r * 0.75, py = y + r * 0.7 - ph * r * 2;
         ember(ctx, px, py, Math.max(4, r * 0.2), Math.max(1.2, r * 0.05), -Math.PI / 2 + Math.sin(g.time * 2 + i) * 0.3, Math.sin(Math.PI * ph) * 0.8); } ctx.restore(); } // (7.4.15, 7.4.24) a mythical's embers, slivers not dots // (5.9.1) a legendary's sparks; (5.10.8) fewer, closer
+      // (7.5.6, owner) a dash's charges, once one is used: a segment each round the button, the ones left lit in bone, the
+      // used ones dark; the lit ones thin as the 20 s to use them runs out
+      if (a.abil && AB && AB.dash && AB.charges && ABS.charges > 0) { const N = AB.charges, left = ABS.charges, gap = 0.16, seg = TAU / N, R1 = r * 1.16, k = clamp((ABS.chargeT || 0) / 20, 0, 1);
+        ctx.save(); ctx.lineCap = 'butt';
+        for (let i = 0; i < N; i++) { const a0 = -Math.PI / 2 + i * seg + gap / 2, a1 = a0 + seg - gap, lit = i < left;
+          ctx.strokeStyle = 'rgba(6,8,8,0.7)'; ctx.lineWidth = 5.2 * u; ctx.beginPath(); ctx.arc(x, y, R1, a0, a1); ctx.stroke();
+          ctx.strokeStyle = lit ? `rgba(232,224,198,${(0.55 + 0.4 * k).toFixed(3)})` : 'rgba(120,116,100,0.28)'; ctx.lineWidth = (lit ? 1.6 + 1.8 * k : 1.6) * u; ctx.beginPath(); ctx.arc(x, y, R1, a0, a1); ctx.stroke(); }
+        ctx.restore(); }
       if (a.abil) { const cdl = cooldownLeft(P), tot = (AB.dur || 0) + (AB.cd || 0);
         if (ABS.activeT > 0) { ctx.strokeStyle = AB.tier === 'mythical' ? 'rgba(236,120,84,0.8)' : AB.tier === 'legendary' ? 'rgba(220,180,110,0.75)' : 'rgba(226,220,196,0.7)'; ctx.lineWidth = 2.2 * u; ctx.beginPath(); ctx.arc(x, y, r * 1.08, -Math.PI / 2, -Math.PI / 2 + TAU * (ABS.activeT / Math.max(0.01, ABS.maxT))); ctx.stroke(); }
         else if (cdl > 0 && tot > 0 && !(AB.charges && ABS.charges > 0)) { ctx.fillStyle = 'rgba(4,6,6,0.6)'; ctx.beginPath(); ctx.moveTo(x, y); ctx.arc(x, y, r * 0.92, -Math.PI / 2, -Math.PI / 2 + TAU * Math.min(1, cdl / tot)); ctx.closePath(); ctx.fill();
