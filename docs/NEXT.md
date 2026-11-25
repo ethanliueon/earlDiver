@@ -1,0 +1,21 @@
+# Next (start when the owner says "go")
+
+## 1. Seabed textures by zone (agreed, owner)
+Pre-made seamless PNGs, one per part of the map, made by a script in `tools/` (like `tools/seabed_tex.py`), each blended
+into the next over a few tens of metres so no seam shows. Each is one image laid by multiplying, so it costs nothing per
+frame. Zones, shallow to deep:
+- **Sandy shelf** (0 to ~40 m): pale sand, ripple marks, shell grit, scattered pebbles.
+- **Kelp floor**: darker sand with holdfast scars, drift weed, more shell.
+- **Slope mud** (the drop): grey-brown silt, fewer shells, small slumps and burrow holes.
+- **Deep ooze** (plain and whale fall): soft fine ooze, worm tracks, sparse sea-snow speckle.
+- **Trench rock**: dark broken rock and gravel, mineral streaks; the seep and vents tinted where they are.
+Then: a lighter second line of seabed behind the near one, for depth (also from the 7.4.29 suggestions).
+
+## Waiting (owner's call)
+- The portrait: a full redesign from reference images (long session, later).
+- The main storyline (docs/PLAN_STORY.md, docs/STORY_PLAN.md).
+- Shoal's school wrapping round him rather than in front.
+- An animal's last sale price on its journal page.
+- A fresh first-hour playthrough; measuring the pearl economy; a review of the skill families; a test that fires every
+  skill at every tier.
+- Release: see docs/RELEASE.md.
