@@ -9,15 +9,17 @@
 //   Faithless     ash and embers
 //   (a Legendary that isn't a net)  plain motes
 import { TAU, hexToRgb, clamp } from './util.js';
+import { ember } from './scrolls.js';
 
+// (7.6.33, owner) more of them, so the wake reads as meant (30-40), and never a plain circle
 const STYLE = {
-  magnetic: { n: 12, size: 0.05, a: 0.34 },
-  kinship: { n: 9, size: 0.06, a: 0.3 },
-  eye: { n: 10, size: 0.035, a: 0.45 },
-  secondwind: { n: 12, size: 0.045, a: 0.3 },
-  phantom: { n: 14, size: 0.06, a: 0.3 },
-  faithless: { n: 14, size: 0.03, a: 0.4 },
-  motes: { n: 10, size: 0.035, a: 0.3 },
+  magnetic: { n: 30, size: 0.05, a: 0.34 },
+  kinship: { n: 26, size: 0.06, a: 0.3 },
+  eye: { n: 32, size: 0.035, a: 0.45 },
+  secondwind: { n: 34, size: 0.045, a: 0.32 },
+  phantom: { n: 38, size: 0.06, a: 0.32 },
+  faithless: { n: 40, size: 0.03, a: 0.42 },
+  motes: { n: 34, size: 0.035, a: 0.32 },
 };
 const rnd = (a, b) => a + Math.random() * (b - a);
 
@@ -65,32 +67,38 @@ export class Wake {
     const st = STYLE[this.kind] || STYLE.motes, c = hexToRgb(col || '#c8d8d0'), rgba = (a) => `rgba(${c[0]},${c[1]},${c[2]},${a.toFixed(3)})`;
     const A = st.a * (lit ? 1 : 0.6);
     ctx.save();
-    if (this.kind === 'phantom') {
-      // dark flecks: drawn as shadow, not light
-      for (const q of this.p) { const r = st.size * ppm * (0.7 + 0.3 * Math.sin(q.ph * 2)); ctx.fillStyle = `rgba(6,8,16,${(A * 0.9).toFixed(3)})`; ctx.beginPath(); ctx.ellipse(S(q.x), Sy(q.y), r * 1.4, r, Math.atan2(q.vy, q.vx), 0, TAU); ctx.fill(); }
+    // (7.6.33, owner) every mark drawn as a thing, stretched a little along the way it moves, its brightness its own
+    const dirOf = (q) => { const v = Math.hypot(q.vx, q.vy); return [Math.atan2(q.vy, q.vx), Math.min(2.6, 1 + v * 0.5)]; };
+    if (this.kind === 'phantom') { // dark smoky flecks, tapered at both ends, drawn as shadow
+      for (const q of this.p) { const [ang, str] = dirOf(q), r = st.size * ppm * (0.7 + 0.3 * Math.sin(q.ph * 2)), x = S(q.x), y = Sy(q.y);
+        ctx.save(); ctx.translate(x, y); ctx.rotate(ang); ctx.fillStyle = `rgba(6,8,16,${(A * (0.6 + 0.3 * Math.sin(q.ph))).toFixed(3)})`;
+        ctx.beginPath(); ctx.moveTo(-r * 1.6 * str, 0); ctx.quadraticCurveTo(-r * 0.2, -r * 0.7, r * 1.1, -r * 0.1); ctx.quadraticCurveTo(r * 0.3, r * 0.5, -r * 1.6 * str, 0); ctx.fill(); ctx.restore(); }
       ctx.restore(); return;
     }
     ctx.globalCompositeOperation = 'lighter';
     for (const q of this.p) {
-      const x = S(q.x), y = Sy(q.y), r = Math.max(1, st.size * ppm);
+      const x = S(q.x), y = Sy(q.y), r = Math.max(1, st.size * ppm), [ang, str] = dirOf(q), tw = 0.6 + 0.4 * Math.sin(q.ph * 2.3 + q.d * 7);
       if (this.kind === 'magnetic') { // a tiny fish, nose to where it's going
-        ctx.save(); ctx.translate(x, y); ctx.rotate(Math.atan2(q.vy, q.vx)); ctx.fillStyle = rgba(A);
-        ctx.beginPath(); ctx.ellipse(0, 0, r, r * 0.38, 0, 0, TAU); ctx.fill();
-        ctx.beginPath(); ctx.moveTo(-r * 0.8, 0); ctx.lineTo(-r * 1.5, -r * 0.4); ctx.lineTo(-r * 1.5, r * 0.4); ctx.closePath(); ctx.fill(); ctx.restore();
-      } else if (this.kind === 'kinship') { // a little bell with a thread
+        ctx.save(); ctx.translate(x, y); ctx.rotate(ang); ctx.fillStyle = rgba(A * tw);
+        ctx.beginPath(); ctx.moveTo(r, 0); ctx.quadraticCurveTo(0, -r * 0.42, -r * 0.8, 0); ctx.quadraticCurveTo(0, r * 0.42, r, 0); ctx.fill();
+        ctx.beginPath(); ctx.moveTo(-r * 0.75, 0); ctx.lineTo(-r * 1.4, -r * 0.38); ctx.lineTo(-r * 1.25, 0); ctx.lineTo(-r * 1.4, r * 0.38); ctx.closePath(); ctx.fill(); ctx.restore();
+      } else if (this.kind === 'kinship') { // a little bell, pulsing, trailing a thread
         const pulse = 0.8 + 0.2 * Math.sin(q.ph * 3);
-        ctx.fillStyle = rgba(A * 0.8); ctx.beginPath(); ctx.ellipse(x, y, r * pulse, r * 0.7, 0, Math.PI, TAU); ctx.fill();
-        ctx.strokeStyle = rgba(A * 0.45); ctx.lineWidth = Math.max(0.6, r * 0.12); ctx.beginPath(); ctx.moveTo(x, y); ctx.quadraticCurveTo(x + Math.sin(q.ph) * r, y + r * 1.5, x - q.vx * 4, y + r * 2.6); ctx.stroke();
-      } else if (this.kind === 'eye') { // a spark that opens and closes
-        const open = Math.max(0, Math.sin(q.ph * 1.6)); if (open < 0.05) continue;
-        ctx.fillStyle = rgba(A * open); ctx.beginPath(); ctx.ellipse(x, y, r * 1.3, r * 0.55 * open, 0, 0, TAU); ctx.fill();
-        ctx.fillStyle = rgba(A * open * 0.4); ctx.beginPath(); ctx.arc(x, y, r * 2.6, 0, TAU); ctx.fill();
-      } else if (this.kind === 'secondwind') { // a small bubble
-        ctx.strokeStyle = rgba(A); ctx.lineWidth = Math.max(0.7, r * 0.18); ctx.beginPath(); ctx.arc(x, y - Math.sin(q.ph) * r, r * (0.7 + 0.3 * Math.sin(q.ph * 0.7)), 0, TAU); ctx.stroke();
-      } else if (this.kind === 'faithless') { // ash and embers: most grey, a few warm
-        const ember = q.side > 0.5, fl = 0.6 + 0.4 * Math.sin(q.ph * 4);
-        ctx.fillStyle = ember ? rgba(A * fl) : `rgba(150,140,130,${(A * 0.5).toFixed(3)})`; ctx.beginPath(); ctx.arc(x, y, r * (ember ? 1 : 0.8), 0, TAU); ctx.fill();
-      } else { ctx.fillStyle = rgba(A * (0.7 + 0.3 * Math.sin(q.ph * 2))); ctx.beginPath(); ctx.arc(x, y, r, 0, TAU); ctx.fill(); }
+        ctx.fillStyle = rgba(A * 0.8 * tw); ctx.beginPath(); ctx.moveTo(x - r * pulse, y); ctx.bezierCurveTo(x - r * pulse, y - r * 0.9, x + r * pulse, y - r * 0.9, x + r * pulse, y); ctx.quadraticCurveTo(x, y - r * 0.25, x - r * pulse, y); ctx.fill();
+        ctx.strokeStyle = rgba(A * 0.4); ctx.lineWidth = Math.max(0.6, r * 0.12); ctx.beginPath(); ctx.moveTo(x, y); ctx.quadraticCurveTo(x + Math.sin(q.ph) * r, y + r * 1.5, x - q.vx * 4, y + r * 2.6); ctx.stroke();
+      } else if (this.kind === 'eye') { // an almond of light that opens and closes
+        const open = Math.max(0, Math.sin(q.ph * 1.6)); if (open < 0.05) continue; const w = r * 1.5, h = r * 0.6 * open;
+        ctx.fillStyle = rgba(A * open); ctx.beginPath(); ctx.moveTo(x - w, y); ctx.quadraticCurveTo(x, y - h * 1.6, x + w, y); ctx.quadraticCurveTo(x, y + h * 1.6, x - w, y); ctx.fill();
+      } else if (this.kind === 'secondwind') { // a little cluster of bubbles, each a wobbling, uneven skin with a bright crescent
+        const n = 1 + Math.floor((q.d * 7) % 3);
+        for (let k = 0; k < n; k++) { const bx = x + (k ? Math.sin(q.ph + k * 2.1) * r * 1.3 : 0), by = y - Math.sin(q.ph) * r - k * r * 1.1, rr = r * (k ? 0.5 : 0.8) * (0.8 + 0.2 * Math.sin(q.ph * 0.7 + k)), sq = 1 + 0.12 * Math.sin(q.ph * 3 + k);
+          ctx.strokeStyle = rgba(A * 0.75 * tw); ctx.lineWidth = Math.max(0.6, rr * 0.16); ctx.beginPath(); ctx.ellipse(bx, by, rr * sq, rr / sq, q.ph * 0.3, 0, TAU); ctx.stroke();
+          ctx.strokeStyle = rgba(A * tw); ctx.lineWidth = Math.max(0.6, rr * 0.22); ctx.beginPath(); ctx.ellipse(bx, by, rr * sq * 0.7, rr / sq * 0.7, 0, Math.PI * 1.1, Math.PI * 1.55); ctx.stroke(); }
+      } else if (this.kind === 'faithless') { // embers rising as slivers, and grey flakes of ash turning
+        if (q.side > 0.5) ember(ctx, x, y, r * 3.2 * str, Math.max(0.8, r * 0.5), -Math.PI / 2 + Math.sin(q.ph) * 0.4, A * 1.6 * tw);
+        else { ctx.save(); ctx.translate(x, y); ctx.rotate(q.ph * 0.8); ctx.fillStyle = `rgba(150,140,130,${(A * 0.45 * tw).toFixed(3)})`; ctx.beginPath(); ctx.moveTo(-r, -r * 0.3); ctx.lineTo(r * 0.6, -r * 0.6); ctx.lineTo(r, r * 0.4); ctx.lineTo(-r * 0.4, r * 0.5); ctx.closePath(); ctx.fill(); ctx.restore(); }
+      } else { // a mote: a tiny sharp streak along its way
+        const L = r * 1.6 * str; ctx.strokeStyle = rgba(A * tw); ctx.lineCap = 'round'; ctx.lineWidth = Math.max(0.7, r * 0.45); ctx.beginPath(); ctx.moveTo(x - Math.cos(ang) * L, y - Math.sin(ang) * L); ctx.lineTo(x + Math.cos(ang) * L * 0.3, y + Math.sin(ang) * L * 0.3); ctx.stroke(); }
     }
     // the uncatchable school
     for (const q of this.fish) {

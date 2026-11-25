@@ -2285,3 +2285,13 @@ html body #workshop .yd-refit { box-sizing: border-box; max-width: 100%; }
 html body #workshop .yd-refits { grid-template-columns: repeat(3, minmax(0, 1fr)); } @media (max-width: 1000px) { html body #workshop .yd-refits { grid-template-columns: minmax(0, 1fr); } }
 /* (7.6.30) the wait for the next charge, quiet beside the count */
 html body #inventory .ip-col .ld-head .ld-next { margin-left: auto; margin-right: 10px; font: 500 12px 'Barlow Semi Condensed', sans-serif; letter-spacing: 0.02em; text-transform: none; color: rgba(226, 220, 200, 0.55); }
+/* (7.6.33, owner) the save copied out and pasted back: the redeem box's plate, a text well inside */
+html body #savebox { position: fixed; inset: 0; z-index: 9600; display: flex; align-items: center; justify-content: center; background: rgba(4, 8, 6, 0.55); }
+html body #savebox[hidden] { display: none; }
+html body #savebox .rd-plate { width: min(460px, 86vw); padding: 18px 22px; color: #e6dec6; background: url("../assets/ui/olive/tile.png") 0 0 / 512px 512px; border: 30px solid transparent; border-image: url("../assets/ui/olive/panel.png") 60 fill / 30px stretch; box-sizing: border-box; }
+html body #savebox h3 { margin: 0 0 12px; font: 600 22px var(--o-text, sans-serif); }
+html body #savebox .sb-text { width: 100%; height: 86px; box-sizing: border-box; padding: 8px 10px; resize: none; font: 500 12px var(--o-num, monospace); color: #d8d0b8; background: rgba(0, 0, 0, 0.35); border: 0; border-radius: 3px; box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.7); word-break: break-all; }
+html body #savebox .rd-msg { min-height: 20px; margin: 8px 0; font: 500 15px var(--o-text, sans-serif); color: #d8a890; }
+html body #savebox .rd-msg.ok { color: #b8d090; }
+html body #savebox .rd-btns { display: flex; gap: 10px; justify-content: flex-end; }
+html body #savebox .rd-btns button { border: 12px solid transparent; border-image: var(--o-btn) 28 fill / 12px stretch; background: none; color: #2e2618; font: 600 16px var(--o-text, sans-serif); padding: 2px 10px; }

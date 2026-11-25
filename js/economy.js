@@ -555,8 +555,19 @@ export function readSlot(n) {
   catch (e) { return { state: 'damaged' }; }
 }
 export function deleteSlot(n) { try { localStorage.removeItem(SLOT_KEY(n)); } catch (e) { /* storage unavailable */ } if (curSlot === n) pending = null; }
+// (7.6.33, owner) saves carry over: the first time a new version writes a slot, the old version's save is kept beside it
+// (restorable from Settings), and the save can be copied out as one line of text and pasted back in
+const PREV_KEY = (n) => `earl.save.slot${n}.prev`, SAVE_TAG = 'HFSAVE1:', prevChecked = new Set();
+export function exportSave() { flushSave(); const n = curSlot || lastSlot() || 1; try { const raw = localStorage.getItem(SLOT_KEY(n)); return raw ? SAVE_TAG + btoa(unescape(encodeURIComponent(raw))) : null; } catch (e) { return null; } }
+export function importSave(text) {
+  try { let t = String(text || '').trim(); if (t.startsWith(SAVE_TAG)) t = decodeURIComponent(escape(atob(t.slice(SAVE_TAG.length).replace(/\s+/g, ''))));
+    const data = JSON.parse(t); if (!migrate(data)) return false; const n = curSlot || lastSlot() || 1; pending = null; if (pendingT) { clearTimeout(pendingT); pendingT = null; }
+    localStorage.setItem(SLOT_KEY(n), JSON.stringify(data)); setSlot(n); return true; } catch (e) { return false; } }
+export function hasPrevSave() { try { return !!localStorage.getItem(PREV_KEY(curSlot || lastSlot() || 1)); } catch (e) { return false; } }
+export function restorePrevSave() { const n = curSlot || lastSlot() || 1; try { const raw = localStorage.getItem(PREV_KEY(n)); if (!raw) return false; pending = null; localStorage.setItem(SLOT_KEY(n), raw); return true; } catch (e) { return false; } }
 function write(p) {
   if (!curSlot || !p) return;
+  if (!prevChecked.has(curSlot)) { prevChecked.add(curSlot); try { const old = localStorage.getItem(SLOT_KEY(curSlot)); if (old) { const d = JSON.parse(old); if (d && d.game !== GAME_VERSION) localStorage.setItem(PREV_KEY(curSlot), old); } } catch (e) { /* nothing to keep */ } } // once a session
   try { localStorage.setItem(SLOT_KEY(curSlot), JSON.stringify({ format: SAVE_FORMAT, game: GAME_VERSION, saved: Date.now(), profile: p })); }
   catch (e) { /* storage full or unavailable: the game goes on */ }
 }

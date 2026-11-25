@@ -1714,7 +1714,7 @@ export class Renderer {
       const close = F.end > 0 ? Math.min(1, F.end / 0.9) : 0, shut = close > 0 ? Math.pow(1 - close, 2.2) : 1;
       const sc = ease * over * shut, R0 = [2.2, 3.0, 3.8, 4.6][TI] * ppm * (1.08 - 0.32 * k), ry = 1, R = R0 * sc; // (7.4.22, owner) Hadal Heart the largest at 4.6 m; the nearer the limit, the more the water closes it in
       const sp = 1 + 2.5 * dk, rimR = (a) => R * (1 + (0.011 * Math.sin(a * 3 + tt * 0.9 * sp + 1.3) + 0.008 * Math.sin(a * 5 - tt * 0.7 * sp + 0.4) + 0.008 * Math.sin(a * 7 - tt * 1.7 * sp) + 0.005 * Math.sin(a * 13 + tt * 2.9 * sp) + 0.016 * dk * Math.sin(a * 19 + tt * 2.6) + 0.01 * dk * Math.sin(a * 31 - tt * 3.4)) * (0.9 + 1.8 * dk) - (0.03 + 0.07 * dk) * Math.pow(Math.max(0, -Math.sin(a)), 2) * (0.6 + 0.2 * TI)); /* always shifting; past 80 % warping and shuddering */ // an uneven edge, flattened from above where the weight is; near the limit it warps and shudders
-      const ring = (f, scl = 1) => { ctx.beginPath(); for (let i = 0; i <= 64; i++) { const a = i / 64 * TAU, r = f(a) * scl; i ? ctx.lineTo(mx + Math.cos(a) * r, my + Math.sin(a) * r * ry) : ctx.moveTo(mx + Math.cos(a) * r, my + Math.sin(a) * r * ry); } ctx.closePath(); };
+      const ring = (f, scl = 1) => { ctx.beginPath(); for (let i = 0; i <= 40; i++) { const a = i / 40 * TAU, r = f(a) * scl; i ? ctx.lineTo(mx + Math.cos(a) * r, my + Math.sin(a) * r * ry) : ctx.moveTo(mx + Math.cos(a) * r, my + Math.sin(a) * r * ry); } ctx.closePath(); };
       ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0);
       if (R > 2) {
         // the lens: the water inside bent outward a little (the scene under it drawn again, magnified, clipped to the field)
@@ -1744,7 +1744,7 @@ export class Renderer {
             try { ctx.drawImage(ctx.canvas, mx - w3 / 2, my - h3 / 2, w3, h3, mx - w3 * sq / 2, my - h3 * sq / 2, w3 * sq, h3 * sq); } catch (er) { /* skipped */ }
             ctx.fillStyle = `rgba(72,92,122,${((0.05 + 0.03 * TI) * vis).toFixed(3)})`; ctx.fillRect(mx - w3 / 2, my - h3 / 2, w3, h3); ctx.restore(); ctx.restore(); } }
         // the pressure closing in: wavy rings travelling inward from the water outside and flattening against the rim
-        const nR = 5 + TI * 5, per = (2.0 - TI * 0.25) * (1 - 0.6 * dk); // (7.4.22) faster the nearer the limit
+        const nR = 4 + TI * 3, /* (7.6.33) heat: fewer rings, each of fewer points */ per = (2.0 - TI * 0.25) * (1 - 0.6 * dk); // (7.4.22) faster the nearer the limit
         for (let j = 0; j < nR; j++) { const ph = ((tt / per + j / nR) % 1), rr = 1 + (1 - ph) * (1.3 + 0.25 * TI), al = Math.pow(ph, 1.4) * (0.22 + 0.14 * TI) * vis * shut;
           ctx.strokeStyle = `rgba(88,108,138,${(al * 0.8).toFixed(3)})`; ctx.lineWidth = Math.max(0.8, (0.6 + TI * 0.25) * (0.5 + ph) * (1 + 0.6 * k)) * (ppm / 30); // (7.4.24) thinner, and more of them
           ring((a) => rimR(a) * (1 + (0.03 + 0.06 * dk) * (1 - ph) * Math.sin(a * 7 + j * 3 + tt * (1.5 + 1.2 * dk))), rr); ctx.stroke(); }
