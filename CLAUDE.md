@@ -286,6 +286,9 @@ last desktop build is kept on the branch `desktop-4.25.5`).
   (fauna.js `echoContacts`), which become the real animal when he comes near. Plain dots: bone for Echo and Echo+, exotic
   purple and legendary amber from Fathom up. The thing's red dot is always shown. Gust 15 / 20 / 30 s. Net reach: Vigor
   2x, Vigor+ 3x, Apex 5x, Leviathan Heart 8x.
+- (7.6.31, owner) The Lighthouse keeps its old beams (owner: "a light, not a beam of light"; god-ray beams were tried and
+  rejected). Pharos Heart's beams and pulse run only for its first 10 s, then ease away over 1.5 s (g.beamK, g.pulseK)
+  and its steady light stays to the end.
 - **(7.6.28, owner) Saves now carry over**: the owner's test saves take time to set up, so a change must not wipe or break them (how is being agreed). Superseded:
   **Never care about saves unless the owner asks (7.4.12, owner).** This is not a packaged game: the owner is the only
   player, and test saves may be wiped or changed at any time. Write no migration code, no "keep what they already

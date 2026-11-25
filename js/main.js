@@ -6,7 +6,7 @@ import { watchPanels, platesReady } from './reveal.js'; // (6.5.0) no panel seen
 import { installFatFinger } from './fatfinger.js';
 import { coinURL, tileURL } from './coins.js';
 installFatFinger();
-import { clamp, lerp, dist, makeRng, formatTime, TAU } from './util.js';
+import { clamp, lerp, dist, makeRng, formatTime, TAU, smoothstep } from './util.js';
 import { markOf, SUB_MARKS, BOAT_U, BOAT_LADDER, BOAT_DOOR, deckLine } from './earl_draw.js';
 import { generateWorld, RESOURCES, BOAT, BOAT_HOME, BOAT_MIN, BOAT_MAX, WORLD_W, ISLE, CAVE, CANYON, WHALE_FALL, SEEP, TRENCH, boatDock, SAIL, SAIL_OFF, yardX } from './world.js';
 import { SPECIES, SPECIES_BY_ID } from './species.js';
@@ -2467,6 +2467,10 @@ function tickAbility(dt) {
   { const L0 = Math.max(on && A.light ? A.light : 0, on2 && A2.light ? A2.light : 0, g.mythT > 0 ? MYTH.light : 0, g.siphon ? g.siphon.A.siphon.light : 0);
     // (7.6.29, owner) nothing snaps off: when a skill's light ends (or drops a level) it keeps its last strength and fades
     // to the new one over a second and a half (g.abilOutK, multiplied into every light the skills draw)
+    if (L0 >= 2 && !(g.lhOn)) g.lhAt = g.time; g.lhOn = L0 >= 2;
+    // (7.6.31, owner) Pharos Heart (light 3 and over): its beams sweep and the light pulses for its first 10 s only, then
+    // both ease away (a second and a half) and its steady light stays to the end; the Lighthouse keeps both throughout
+    { const since = g.time - (g.lhAt ?? g.time), k3 = (g.abilLightHold || L0) >= 3 ? 1 - smoothstep(10, 11.5, since) : 1; g.beamK = k3; g.pulseK = k3; }
     if (L0 >= (g.abilLightHold || 0)) { g.abilLightHold = L0; g.abilOutK = 1; g.abilLight = L0; }
     else { g.abilOutK = Math.max(0, (g.abilOutK ?? 1) - dt / 1.5); g.abilLight = g.abilLightHold; if (g.abilOutK <= 0) { g.abilLightHold = L0; g.abilLight = L0; g.abilOutK = 1; } } }
   { const lh = !!(((on && A.light >= 2) || (on2 && A2.light >= 2)) && (g.lightFade ?? 1) > 0.5); if (document.documentElement.classList.contains('lighthouse') !== lh) document.documentElement.classList.toggle('lighthouse', lh); } /* (5.16.0) Lighthouse: the HUD comes to life */
