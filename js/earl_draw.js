@@ -197,7 +197,7 @@ export function drawEarl(ctx, L, kick, moving, lampCol, rim, gear) {
     const shX = 27 * u, shY = near ? 2 * u : -0.5 * u;
     let upA = (1 - m) * (Math.PI - 0.32 + sc * 0.12) + m * (Math.PI * 0.7);
     let foreA = (1 - m) * (Math.PI - 0.95 + sc * 0.25) + m * (Math.PI * 0.12);
-    if (restArms && !pose) { upA = Math.PI - 0.13 + sc * 0.03; foreA = Math.PI - 0.04 + sc * 0.03; }
+    if (restArms && !pose) { upA = Math.PI - 0.5 + sc * 0.06; foreA = Math.PI - 0.22 + sc * 0.08; } /* (7.4.26, owner) hands held a little below the body, sculling, so they show: laid flat along his sides they vanished into the suit */
     if (gear && gear.walk != null && !pose) { const sw = Math.sin(kick + phase) * 0.38 * gear.walk; upA = Math.PI - 0.06 + sw; foreA = upA - 0.18 - Math.max(0, -sw) * 0.5; } // swinging against the legs
     if (gear && gear.climb != null && !pose) { const r = Math.sin(gear.climb + phase + Math.PI) * 0.5 + 0.5; upA = 0.55 - r * 0.5; foreA = upA - 0.35 + r * 0.25; } // reaching up for the rungs, one hand then the other
     if (pose) { upA = pose.upA; foreA = pose.foreA; }
@@ -968,6 +968,27 @@ export function drawBoat(ctx, Lp, t, sub, mirrored = false, opts = {}) {
     ctx.strokeStyle = '#2a2826'; ctx.lineWidth = 0.4 * u; ctx.beginPath(); ctx.moveTo(x * u, -10.5 * u); ctx.lineTo(x * u, -8 * u); ctx.stroke();
     ctx.fillStyle = '#141414'; ctx.beginPath(); ctx.ellipse(x * u, -6 * u, 1.4 * u, 2.2 * u, 0, 0, TAU); ctx.fill();
     ctx.fillStyle = '#2c2c2c'; ctx.beginPath(); ctx.ellipse(x * u, -6 * u, 0.6 * u, 1.1 * u, 0, 0, TAU); ctx.fill();
+  }
+  // (7.4.26, owner) the sell door: a closed steel door in her side by the stern, where the catch is handed over, a brass
+  // plate on it lettered SELL. Always there (the tutorial's sale points at it)
+  {
+    const x0 = 28.6 * u, x1 = 35.4 * u, y0 = -9.9 * u, y1 = -2.6 * u, r = 1.2 * u;
+    ctx.fillStyle = '#4a4740'; ctx.beginPath(); ctx.roundRect(x0 - 0.5 * u, y0 - 0.5 * u, x1 - x0 + 1 * u, y1 - y0 + 1 * u, r + 0.4 * u); ctx.fill(); // the frame
+    const dg = ctx.createLinearGradient(x0, 0, x1, 0); dg.addColorStop(0, '#6f6c62'); dg.addColorStop(0.35, '#8b887c'); dg.addColorStop(1, '#5a5850');
+    ctx.fillStyle = dg; ctx.beginPath(); ctx.roundRect(x0, y0, x1 - x0, y1 - y0, r); ctx.fill();
+    ctx.strokeStyle = 'rgba(20,18,14,0.7)'; ctx.lineWidth = 0.28 * u; ctx.stroke();
+    ctx.strokeStyle = 'rgba(230,224,206,0.28)'; ctx.lineWidth = 0.2 * u; ctx.beginPath(); ctx.moveTo(x0 + r, y0 + 0.25 * u); ctx.lineTo(x1 - r, y0 + 0.25 * u); ctx.stroke(); // its top edge catching the light
+    ctx.fillStyle = 'rgba(28,26,22,0.8)'; for (const [rx, ry] of [[x0 + 0.6 * u, y0 + 0.6 * u], [x1 - 0.6 * u, y0 + 0.6 * u], [x0 + 0.6 * u, y1 - 0.6 * u], [x1 - 0.6 * u, y1 - 0.6 * u]]) { ctx.beginPath(); ctx.arc(rx, ry, 0.22 * u, 0, TAU); ctx.fill(); } // rivets
+    ctx.strokeStyle = '#2a2824'; ctx.lineWidth = 0.5 * u; ctx.lineCap = 'round'; for (const yy of [y0 + 2.2 * u, y1 - 1.7 * u]) { ctx.beginPath(); ctx.moveTo(x1 - 1.0 * u, yy); ctx.lineTo(x1 - 1.0 * u, yy + 0.9 * u); ctx.stroke(); } ctx.lineCap = 'butt'; // the dogs that hold it shut
+    ctx.fillStyle = 'rgba(130,70,34,0.45)'; ctx.fillRect(x0 + 1.3 * u, y1, 0.5 * u, 1.6 * u); // rust run from the sill
+    const px = (x0 + x1) / 2 - 0.3 * u, py = y0 + 2.6 * u, pw = 4.9 * u, ph = 2.2 * u;
+    const bg2 = ctx.createLinearGradient(0, py - ph / 2, 0, py + ph / 2); bg2.addColorStop(0, '#c9a560'); bg2.addColorStop(1, '#8a6a32');
+    ctx.fillStyle = '#2c2416'; ctx.beginPath(); ctx.roundRect(px - pw / 2 - 0.15 * u, py - ph / 2 - 0.15 * u, pw + 0.3 * u, ph + 0.3 * u, 0.35 * u); ctx.fill();
+    ctx.fillStyle = bg2; ctx.beginPath(); ctx.roundRect(px - pw / 2, py - ph / 2, pw, ph, 0.3 * u); ctx.fill(); // the brass plate
+    ctx.save(); ctx.translate(px, py + 0.05 * u); if (mirrored) ctx.scale(-1, 1);
+    ctx.font = `700 ${1.7 * u}px "Barlow Semi Condensed", "Arial Narrow", sans-serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; if ('letterSpacing' in ctx) ctx.letterSpacing = `${0.22 * u}px`;
+    ctx.fillStyle = 'rgba(255,236,190,0.35)'; ctx.fillText('SELL', 0, 0.08 * u); ctx.fillStyle = '#3a2a12'; ctx.fillText('SELL', 0, 0); // engraved
+    if ('letterSpacing' in ctx) ctx.letterSpacing = '0px'; ctx.restore();
   }
   // the boarding ladder over her side: hooked on the rail, its feet in the water. (5.9.3) Painted the old ochre of
   // working gear, chipped to the bronze under it, with dark edges, so it reads against the white hull from a distance

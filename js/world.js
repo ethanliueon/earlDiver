@@ -259,7 +259,8 @@ export function generateWorld(seed) {
   for (let x = EAST + 790; x < EAST + 905; x += rng.range(0.9, 2.4)) {
     const d = W.floorAt(x);
     if (d < 6) continue;
-    const h = clamp(d - rng.range(0, 3), 4, 36) * rng.range(0.8, 1.02);
+    const h = Math.min(clamp(d - rng.range(0, 3), 4, 36) * rng.range(0.8, 1.02), d - 3.5); /* (7.4.26, owner) the tallest tops 2 m clear of the Margaret's keel (about 1.2 m down): never up against her */
+    if (h < 2) continue;
     W.kelp.push({ x, base: d, h, phase: rng() * 6.28, sp: 1, harvested: false, lean: rng.range(-0.15, 0.15), species: rng() < 0.85 ? 118 : 119 });
   }
   W.inKelp = (x, y) => {

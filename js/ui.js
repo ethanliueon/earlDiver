@@ -47,7 +47,7 @@ import { lockerTexture } from './textures.js';
 import { gaugeFace, gaugeNeedle, gaugeGlass } from './gauge_art.js';
 import { daveTalkPlate } from './dave_art.js';
 import { ChestReveal, chestsOf, oddsText, chestPicture, chestOddsHtml } from './chests.js';
-import { petsHtml, petStars, storeHtml, eventsHtml, calWeek, untilTomorrow, testHtml } from './store.js';
+import { petsHtml, petStars, storeHtml, eventsHtml, calWeek, untilTomorrow, testHtml, giftWait, hms } from './store.js';
 import { isTestStore } from './purchases.js';
 import { startTitleArt } from './title_art.js'; // (7.0.0) the name as artwork // (6.9.0) the Test tab, behind ?dev
 import { tankPicture, tankZoom } from './journal_tank.js';
@@ -452,6 +452,17 @@ export class UI {
       const sk = SKINS[L.skin] || SKINS[2], lg = (x0, y0, x1, y1, st) => { const g = x.createLinearGradient(x0, y0, x1, y1); st.forEach(([o, c]) => g.addColorStop(o, c)); return g; };
       { const sh = new Path2D(); sh.moveTo(-10, 540); sh.lineTo(-10, 470); sh.bezierCurveTo(60, 420, 140, 396, 200, 392); sh.lineTo(320, 390); sh.bezierCurveTo(400, 400, 470, 440, 530, 500); sh.lineTo(530, 540); sh.closePath();
         x.fillStyle = lg(0, 0, 520, 0, [[0, '#0a0c0e'], [0.45, '#1e2328'], [0.8, '#2e353b'], [1, '#161a1e']]); x.fill(sh);
+        /* (7.4.26, owner) the suit as a body under it, not a flat cut-out: light from the front and above rounds the near shoulder (a soft highlight
+           on its top, falling off over the curve), the chest turns down into shade, the far shoulder sinks into the dark, and a rim of
+           cold light from behind catches the far edge */
+        x.save(); x.clip(sh);
+        { const hl = x.createRadialGradient(410, 420, 8, 400, 440, 190); hl.addColorStop(0, 'rgba(160,174,180,0.5)'); hl.addColorStop(0.45, 'rgba(120,134,140,0.2)'); hl.addColorStop(1, 'rgba(110,124,130,0)'); x.fillStyle = hl; x.fillRect(0, 380, 540, 170);
+          const hl2 = x.createRadialGradient(130, 430, 6, 130, 440, 140); hl2.addColorStop(0, 'rgba(120,134,140,0.12)'); hl2.addColorStop(1, 'rgba(120,134,140,0)'); x.fillStyle = hl2; x.fillRect(0, 380, 300, 170);
+          x.fillStyle = lg(0, 410, 0, 545, [[0, 'rgba(0,0,0,0)'], [0.55, 'rgba(0,0,0,0.25)'], [1, 'rgba(0,0,0,0.6)']]); x.fillRect(-10, 380, 550, 170); // turning down and away into shade
+          x.fillStyle = lg(0, 0, 220, 0, [[0, 'rgba(0,0,0,0.45)'], [1, 'rgba(0,0,0,0)']]); x.fillRect(-10, 380, 240, 170); // the far shoulder in the dark
+          const ao = x.createRadialGradient(262, 405, 20, 262, 410, 120); ao.addColorStop(0, 'rgba(0,0,0,0.45)'); ao.addColorStop(1, 'rgba(0,0,0,0)'); x.fillStyle = ao; x.fillRect(120, 380, 290, 120); }
+        x.restore();
+        x.strokeStyle = 'rgba(120,150,170,0.28)'; x.lineWidth = 2.5; x.beginPath(); x.moveTo(-6, 468); x.bezierCurveTo(60, 422, 130, 400, 190, 394); x.stroke(); // rim light along the far shoulder
         x.strokeStyle = 'rgba(160,170,170,0.18)'; x.lineWidth = 3; x.beginPath(); x.moveTo(330, 394); x.bezierCurveTo(400, 404, 456, 436, 500, 480); x.stroke(); // the near shoulder's lit edge
         // (7.1.3) a real wetsuit: a raised shoulder panel of thicker neoprene, its seams glued and stitched, creases where
         // the suit bends at the shoulder, the texture of the rubber
@@ -470,9 +481,9 @@ export class UI {
       // (7.1.6) the neck runs down into the suit: a column from under the skull and jaw that widens into the shoulders
       // (no floating stub); a snug neoprene roll collar wraps its foot, lit along its top, shaded in its fold, one with the
       // suit's shoulders (no dark hole); a soft shadow under the jaw and where the collar meets the skin
-      { const nw = L.sex === 'f' ? 40 : 50, nk = new Path2D(); nk.moveTo(258 - nw, 296); nk.bezierCurveTo(254 - nw, 330, 246 - nw, 366, 226 - nw, 410); nk.lineTo(296 + nw, 410); nk.bezierCurveTo(272 + nw, 366, 262 + nw, 330, 264 + nw, 306); nk.closePath();
+      { const nw = L.sex === 'f' ? 40 : 50, nk = new Path2D(); nk.moveTo(236 - nw, 250); nk.bezierCurveTo(222 - nw, 320, 226 - nw, 366, 214 - nw, 410); /* (7.4.26, owner) its back edge starts up under the skull, so no notch shows below the ear */ nk.lineTo(296 + nw, 410); nk.bezierCurveTo(272 + nw, 366, 262 + nw, 330, 264 + nw, 296); nk.lineTo(236 - nw, 250); nk.closePath();
         x.fillStyle = lg(200, 0, 330, 0, [[0, sk[2] || sk[1]], [0.6, sk[1]], [1, sk[0]]]); x.fill(nk);
-        x.fillStyle = lg(0, 296, 0, 350, [[0, 'rgba(20,10,4,0.5)'], [1, 'rgba(20,10,4,0)']]); x.fill(nk); // the jaw's shadow on the neck
+        { const js = x.createRadialGradient(300, 300, 6, 296, 306, 62); js.addColorStop(0, 'rgba(20,10,4,0.42)'); js.addColorStop(1, 'rgba(20,10,4,0)'); x.save(); x.clip(nk); x.fillStyle = js; x.fillRect(200, 250, 200, 140); x.restore(); } // the jaw's shadow, only under the jaw (across the whole neck it read as a dark wedge under the ear)
         x.fillStyle = lg(190, 0, 250, 0, [[0, 'rgba(20,10,4,0.35)'], [1, 'rgba(20,10,4,0)']]); x.fill(nk); // the back of the neck turning away
         x.strokeStyle = 'rgba(40,20,10,0.22)'; x.lineWidth = 3; x.beginPath(); x.moveTo(236, 312); x.quadraticCurveTo(258, 350, 292, 386); x.stroke(); // the neck's muscle
         const cw = nw + 16, ct = 372, col = new Path2D(); // the roll collar, hugging the neck
@@ -560,7 +571,7 @@ export class UI {
     // (6.5.0) a day tapped: a chest shows its odds (the shop's table, by its data-rates); anything else its card
     const d = ev.target.closest('[data-evday]'); if (d && !d.dataset.rates) { const r = calWeek(this.h.getProfile())[+d.dataset.evday]; this.previewCard(r.k === 'cash' ? { kind: 'cash', n: r.v } : r.k === 'glow' ? { kind: 'supply', id: r.adv ? 'glowAdv' : 'necklace', n: r.v } : r.k === 'trap' ? { kind: 'trap', id: r.v } : r.k === 'coin' ? { kind: 'coin', n: r.v } : { kind: 'item', id: 'chest_' + r.v }); } });
     // the countdown beside the greyed Claim, kept current while the screen is open
-    if (el.id === 'events') setInterval(() => { if (el.hidden) return; const w = el.querySelector('.ev-wait'); if (w) { const t = untilTomorrow(); if (t < 1000) this.toggleEvents(true); else { const h = Math.floor(t / 3600e3), m = Math.floor((t % 3600e3) / 60e3), txt = h ? `${h} h ${m} min` : `${m} min`; if (w.textContent !== txt) w.textContent = txt; } } }, 1000); }
+    if (el.id === 'events') setInterval(() => { if (el.hidden) return; const w = el.querySelector('.ev-wait'); if (w) { const P0 = window.__earl && window.__earl.profile, t = P0 ? giftWait(P0) : 0; if (t <= 0) this.toggleEvents(true); else { const txt = hms(t); if (w.textContent !== txt) w.textContent = txt; } } }, 1000); }
   // (3.0.0) one of the old one's things, or a bundle, seen from where Earl is: what it is, and her price
   oldCard(html) {
     let el = document.getElementById('oldcard');
@@ -2080,7 +2091,7 @@ export class UI {
       if (!items.length && lastSale.length) { // (7.4.0, owner) just sold: what went, stamped Sold, and its total (it read "Nothing to sell")
         const tot = lastSale.reduce((a, r) => a + r.each * (r.n || 1), 0);
         html = `<div class="sold-last"><div class="sl-grid">${lastSale.map((r) => { const P2 = boardPic(r);
-          return `<div class="sl-tile sold${P2 ? ' ' + P2.hab : ''}"><div class="sl-main"><span class="sl-pic">${P2 ? `<img src="${P2.pic}" alt="">` : '<i class="sl-good"></i>'}</span><b${P2 ? ` style="color:${P2.rc}"` : ''}>${r.label}</b>${(r.n || 1) > 1 ? `<em class="sl-n">×${r.n}</em>` : ''}<span class="sl-price">${money(r.each * (r.n || 1))}</span></div></div>`; }).join('')}</div><div class="sold-foot"><span class="sold-stamp">Sold</span><b>${money(tot)}</b></div></div>`;
+          return `<div class="sl-tile sold${P2 ? ' ' + P2.hab : ''}"><div class="sl-main"><span class="sl-pic">${P2 ? `<img src="${P2.pic}" alt="">` : '<i class="sl-good"></i>'}</span><b${P2 ? ` style="color:${P2.rc}"` : ''}>${r.label}</b>${(r.n || 1) > 1 ? `<em class="sl-n">×${r.n}</em>` : ''}<span class="sl-price">${money(r.each * (r.n || 1))}</span></div></div>`; }).join('')}</div><div class="sold-foot"><span class="sold-for">Sold for</span><b>${money(tot)}</b></div></div>`;
       } else if (!items.length) html = `<div class="sell-none"><img src="${pictureOf('bag', ITEMS.mesh || 'mesh', 220, 132, true)}" alt=""><b>Bag empty</b></div>`; // (7.0.0) centred in the panel, an empty catch bag above the line
       else {
         // (5.1) one grid of what he brought up, each thing a tile with its picture and price: tap a tile to sell it,
@@ -2464,7 +2475,7 @@ export class UI {
     const d = new Date();
     const head = `<div class="slip-head">BAYSIDE MARINE BUYERS<br><small>receipt, ${d.toLocaleDateString()} ${d.toTimeString().slice(0, 5)}</small></div>`;
     const lines = sale.lines.map((l) => `<div class="slip-line${l.coins ? ' coins' : ''}"><span>${l.n > 1 ? l.n + ' × ' : ''}${l.label}</span><b>${l.coins ? `${COIN}${l.coins}` : money(l.total)}</b></div>`);
-    lines.push(`<div class="slip-total"><span>Total</span><b>${money(sale.total)}</b></div><div class="slip-stamp">PAID</div>`);
+    lines.push(`<div class="slip-total"><span>Total</span><b>${money(sale.total)}</b></div><div class="slip-foot">PAID IN CASH<br>thank you, come again</div>`);
     el.innerHTML = head;
     let i = 0;
     const g = this.h.getGame();

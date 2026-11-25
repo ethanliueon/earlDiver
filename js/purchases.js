@@ -36,7 +36,10 @@ const TEST = {
 const api = () => native() || TEST;
 // (7.4.13, owner) the game is phone-only: no web build. The shop's Test tab (free cash, items, resets) shows only with
 // ?dev in the address, which the App Store app never has; for the owner's own testing
-export const isTestStore = () => typeof location !== 'undefined' && /[?&]dev\b/.test(location.search);
+// (7.4.26, owner) the Test tab back for everyone while the game is in testing. Set TEST_STORE to false for the
+// App Store build (then only ?dev shows it)
+export const TEST_STORE = true;
+export const isTestStore = () => TEST_STORE || (typeof location !== 'undefined' && /[?&]dev\b/.test(location.search));
 export async function priceOf(key) { const P = PRODUCTS[key]; if (!P) return ''; try { return (await api().price(P.id)) || P.fallback; } catch (e) { return P.fallback; } }
 export async function buy(key) { const P = PRODUCTS[key]; if (!P) return { ok: false, why: 'unknown' }; try { return await api().buy(P.id); } catch (e) { return { ok: false, why: String(e && e.message || e) }; } }
 export async function adReady(placement) { try { return !!(await api().adReady(placement)); } catch (e) { return false; } }

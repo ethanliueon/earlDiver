@@ -266,6 +266,16 @@ last desktop build is kept on the branch `desktop-4.25.5`).
   player, and test saves may be wiped or changed at any time. Write no migration code, no "keep what they already
   have" handling, no compatibility for old save fields, and don't spend time on it or mention it in plans. A change
   that breaks an old save is fine; a new game is the answer.
-- **Never commit keys** (the Freesound key is an environment secret). There is no developer cheat in the shipped game (the X key was removed in 5.10.10); since 6.9.0 the shop has a **Test** tab (cash, pearls, chests, abilities, any item, resets); since 7.4.13 it shows only with `?dev` in the address (purchases.js `isTestStore()`), never in the App Store app. There is no web build: the game is phone-only. Tests set money and gear through `window.__earl`.
+- **Never commit keys** (the Freesound key is an environment secret). There is no developer cheat in the shipped game (the X key was removed in 5.10.10); since 6.9.0 the shop has a **Test** tab (cash, pearls, chests, abilities, any item, resets); since 7.4.26 it shows for everyone again while the game is in testing (owner): purchases.js `TEST_STORE = true`; **set it to false for the App Store build** (then only `?dev` shows it). There is no web build: the game is phone-only. Tests set money and gear through `window.__earl`.
 - In code comments, say what a thing does and why, tagged with the version: `// (5.9.7) ...`. Inline comments in
   the middle of a line use `/* */`, never `//`.
+
+### 7.4.26 notes (owner's playtest)
+- Every tappable thing on screen has the same press: it sinks and brightens, a soft ring spreads from the fingertip, a short vibration (main.js `PRESSABLE`); the screens with no sound of their own (new diver, its keyboard, slots, title) also click.
+- Two hands: the left half of the screen grows the stick; a finger on the right half turns the diver's lamp toward it, always in front of him (touch.js `lamp`, main.js `g.lampA/lampK`, render.js `lampAngle`). A quick tap there is still a tap on the world.
+- Sales happen at the **Sell door** on the Margaret's hull by the stern (earl_draw.js), not the winch. No rubber stamps (SOLD/PAID) anywhere: a receipt ends as a till's does.
+- The daily gift comes 24 h after the last claim, timed by the server's clock (store.js `serverNow`, the Date header of the game's own host) and counts down in h/min/s.
+- The shop is one size on every tab; pets are one list (no Exclusive tab).
+- A step that must be done before anything else (getting into the sub, the trawl lesson) darkens the screen's edges (`g.tutVig`). The trawl lesson's net stays open until its jellyfish is in.
+- `tools/tests/phone.cjs` walks to the cabin door and presses the button like a player; it passes when it reaches "Get in the sub" (`reached the sub trip`) with only the three cloud 404s.
+- Mid-line comments are `/* */` only: a `//` mid-line hid the line that tells the game the sub trip had started (so the sub could not be tapped).

@@ -653,6 +653,13 @@ export class Renderer {
       ctx.shadowBlur = 0; ctx.fillStyle = 'rgba(20,16,8,0.75)'; ctx.beginPath(); ctx.arc(0, -pr * 1.7, pr * 0.38, 0, TAU); ctx.fill(); ctx.restore();
       drawPrompt(ctx, m.name, px, py + bob - pr * 3.4, 0.9, { size: 15, shade: false, col: '#ece6d2' });
     }
+    // (7.4.26, owner) a step that must be done before anything else (getting into the sub): the screen's edges darkened
+    // a little, breathing, so the eye goes to the middle and the chevrons
+    { const want = g.mode === 'play' && g.tutVig ? 1 : 0; this.tutVigK = (this.tutVigK || 0) + (want - (this.tutVigK || 0)) * Math.min(1, (g.dt || 0.016) * 3);
+      if (this.tutVigK > 0.01) { const W0 = this.c.width, H0 = this.c.height, k = this.tutVigK * (0.85 + 0.15 * Math.sin(g.time * 2)), R = Math.hypot(W0, H0) / 2;
+        const vg = ctx.createRadialGradient(W0 / 2, H0 / 2, R * 0.3, W0 / 2, H0 / 2, R);
+        vg.addColorStop(0, 'rgba(6,9,6,0)'); vg.addColorStop(0.5, `rgba(6,9,6,${(0.42 * k).toFixed(3)})`); vg.addColorStop(1, `rgba(4,6,4,${(0.78 * k).toFixed(3)})`);
+        ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.globalAlpha = 1; ctx.globalCompositeOperation = 'source-over'; ctx.fillStyle = vg; ctx.fillRect(0, 0, W0, H0); ctx.restore(); } }
     const guide = g.tut && g.tut.to ? g.tut : g.devGuide ? { to: g.devGuide.c, fish: g.devGuide.c } : g.markGuide ? { to: g.markGuide } : null; // (4.9.0) or the developer's trail to a legend (X)
     // (5.6.8) on a phone, once the thing to tap is in reach its brackets say it all: no trail or ring on top of them
     if (guide && g.mode === 'play' && !(!guide.fish /* (7.1.0) a fish to catch keeps its ring */ && g.tapMarks && g.tapMarks.some((m) => m.what !== 'winch' || (g.tutAction && String(g.tutAction.key).toLowerCase() === 'u')))) {
@@ -1489,7 +1496,7 @@ export class Renderer {
         const TT = { rare: { bow: 52, tail: 34, bub: 8, spark: 0, w: 1 }, exotic: { bow: 62, tail: 46, bub: 20, spark: 7, w: 1.3 }, legendary: { bow: 105, tail: 80, bub: 38, spark: 30, w: 1.7 }, mythical: { bow: 125, tail: 100, bub: 46, spark: 44, w: 1.9 } }[em.tier] || { bow: 52, tail: 34, bub: 8, spark: 0, w: 1 };
         // (7.4.0, owner) the sub's own shape: the bow wave off its nose (about 4.2 m ahead of its middle on a 9 m hull), the wake off
         // its propeller (4.6 m behind), spread over the hull's height, not a diver's outline round its middle
-        const sz = em.inSub ? 1.5 : 1, head = em.inSub ? 4.2 : 0.9, fins = em.inSub ? 4.6 : 1.05, cap = 620, k = em.kS;
+        const sz = em.inSub ? 1.5 : 1, head = em.inSub ? 4.2 : 0.9, fins = em.inSub ? 4.6 : 1.05, cap = 900, k = em.kS;
         const add = (q) => { if (P.length < cap) P.push(q); };
         const bow = (n) => { for (let i = 0; i < n; i++) { // thrown aside ahead of his head: wider the further out, faster the nearer the line
           const g2 = (rnd() + rnd() + rnd() - 1.5) / 1.5, across = g2 * 0.75 * sz * TT.w, side = Math.sign(across) || (rnd() < 0.5 ? -1 : 1), ahead = head + (0.15 + rnd() * rnd() * 1.6) * sz;
@@ -1503,8 +1510,12 @@ export class Renderer {
           add({ x: m.x - dx * (fins + rnd() * 0.4) + nx * j, y: m.y - dy * (fins + rnd() * 0.4) + ny * j, vx: -dx * 0.5 + (rnd() - 0.5) * 0.5, vy: -dy * 0.5 - 0.25, age: 0, life: 1.2 + rnd() * 1.4, k: 1, r: 0.5 + rnd() * rnd() * 2.2 * (em.inSub ? 1.4 : 1), a: 1 }); } };
         const spark = (n) => { for (let i = 0; i < n; i++) { const back = rnd() * 2.2 * sz, j = (rnd() + rnd() - 1) * 0.9 * sz * TT.w; // stirred up along him and in his wake
           add({ x: m.x - dx * back + nx * j, y: m.y - dy * back + ny * j, vx: (rnd() - 0.5) * 0.3, vy: (rnd() - 0.5) * 0.3, age: 0, life: 0.5 + rnd() * 0.9, k: 3, r: 0.6 + rnd() * 0.8, a: 0.5 + rnd() * 0.5 }); } };
+        // (7.4.26, owner) the meteor's head: water packed right at his nose and streaming back past him, close and dense, so
+        // the front of him reads as the leading point of the rush
+        const nose = (n) => { for (let i = 0; i < n; i++) { const g3 = (rnd() + rnd() - 1) * 0.32 * sz, ahead = head * 0.85 + rnd() * rnd() * 0.45 * sz, side = Math.sign(g3) || 1, sv = (0.3 + rnd() * 0.9) * TT.w;
+          add({ x: m.x + dx * ahead + nx * g3, y: m.y + dy * ahead + ny * g3, vx: -dx * sp * (0.12 + rnd() * 0.18) + nx * side * sv, vy: -dy * sp * (0.12 + rnd() * 0.18) + ny * side * sv, age: 0, life: 0.25 + rnd() * 0.5, k: 0, r: 0.2 + rnd() * rnd() * 0.9, a: 0.45 + rnd() * 0.55 }); } };
         const acc = (key, rate) => { this[key] = (this[key] || 0) + rate * dt; const n = Math.floor(this[key]); this[key] -= n; return n; };
-        bow(acc('spBow', TT.bow * k)); tail(acc('spTail', TT.tail * k)); bub(acc('spBub', TT.bub * (0.4 + 0.6 * k))); if (TT.spark) spark(acc('spSpark', TT.spark * k));
+        bow(acc('spBow', TT.bow * k)); nose(acc('spNose', TT.bow * 1.1 * k)); tail(acc('spTail', TT.tail * k)); bub(acc('spBub', TT.bub * (0.4 + 0.6 * k))); if (TT.spark) spark(acc('spSpark', TT.spark * k));
         if (em.at != null && this.sprintBurstAt !== em.at) { this.sprintBurstAt = em.at; // the kick: water and bubbles burst from his fins
           const nb = em.tier === 'mythical' ? 84 : em.tier === 'legendary' ? 70 : em.tier === 'exotic' ? 42 : 24;
           for (let i = 0; i < nb; i++) { const an = Math.atan2(-dy, -dx) + (rnd() - 0.5) * 2.6, v = (0.8 + rnd() * 2.2) * TT.w;
@@ -1847,6 +1858,8 @@ export class Renderer {
 
   lampAngle(g, e, head) {
     const natural = e.facing > 0 ? e.angle + head.beamA : Math.PI - e.angle - head.beamA;
+    // (7.4.26, owner) the lamp turned by the right hand: eased toward where the finger is, never behind him
+    if (g.aim == null && (g.lampK || 0) > 0.001 && g.lampA != null) { const fwd = e.facing > 0 ? 0 : Math.PI; let d = ((g.lampA - fwd + Math.PI * 3) % (Math.PI * 2)) - Math.PI; d = clamp(d, -1.35, 1.35); const want = fwd + d; let dd = ((want - natural + Math.PI * 3) % (Math.PI * 2)) - Math.PI; return natural + dd * g.lampK; }
     if (g.aim == null) return natural;
     let a = g.aim;
     const fwd = e.facing > 0 ? 0 : Math.PI;

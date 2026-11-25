@@ -35,6 +35,10 @@ require('fs').mkdirSync(OUT, { recursive: true });
     if (s.tut !== 'on') { console.log('tutorial left at step', i, s.tut); break; }
     if (s.line !== last) { last = s.line; console.log(`[${i}] ${s.vv} "${s.line}" key=${s.tutKey} act=${s.act} hole=${!!s.hole} bag=${s.bag} cash=${s.cash} marks=${s.marks}`); if (!seen.has(s.line)) { seen.add(s.line); await shot(s.line.replace(/[^a-z]+/gi, '_').slice(0, 30)); await check(); } }
     if (/sub trip|Get in the sub|drive/i.test(s.line)) { console.log('reached the sub trip'); break; }
+    // (7.4.26) in the cabin with the way out asked for: walk to the door and press the hand button, as a player would
+    if (/^Out on deck$/.test(s.line) && s.cabin) {
+      await E(async () => { const c = window.__earl.ui.cabin; for (let x = c.x; x >= 0; x -= 0.01) { c.x = x; c.goal = null; await new Promise((r) => setTimeout(r, 30)); if (c.near() === 'door') break; } });
+      await wait(900); if (await tapHud('f')) { await wait(1200); continue; } }
     // 0. a tutorial card with its own button: tap it
     if (await E(() => { const c = document.querySelector('#tut-spot .ts-card'); return !!(c && getComputedStyle(c).display !== 'none' && c.querySelector('button')); })) { if (!seen.has('card')) { seen.add('card'); await shot('tour-card'); } await tapEl('#tut-spot .ts-card button'); await wait(900); continue; }
     // 1. the spotlight on a page or panel: tap the lit thing

@@ -201,8 +201,8 @@ export function updateCapture(g, dt) {
   cap.t += dt;
   // (7.4.0, owner) the net: what the hoop actually passes over on its way, frame by frame (the drawn hoop, g.toolTip)
   if (cap.kind === 'net' && !cap.done && g.toolTip && cap.t > cap.dur * 0.15) {
-    const at = { x: g.toolTip.x, y: g.toolTip.y, r: hoopReach(g, cap.def, cap.tier) }, L0 = cap.lock;
-    if (L0 && L0.c && !L0.c.dead && Math.hypot(L0.c.x - at.x, L0.c.y - at.y) - L0.len * 0.4 <= at.r) cap.hit = Object.assign({}, L0, { x: L0.c.x, y: L0.c.y });
+    const at = { x: g.toolTip.x, y: g.toolTip.y, r: hoopReach(g, cap.def, cap.tier) * 1.6 + 0.3 }, L0 = cap.lock; /* (7.4.26, owner) more forgiving: what the hoop comes near, not only what it passes exactly over */
+    if (L0 && L0.c && !L0.c.dead && Math.hypot(L0.c.x - at.x, L0.c.y - at.y) - L0.len * 0.5 <= at.r * 1.15) cap.hit = Object.assign({}, L0, { x: L0.c.x, y: L0.c.y });
     else if (!cap.hit) { const f = findCatch(g, at); if (f && f.ok) cap.hit = f; else if (f && !cap.why) cap.why = f; }
   }
   if (!cap.done && cap.t >= cap.dur * cap.resolveAt) {
@@ -522,7 +522,7 @@ export function updateSubNet(g, dt, canTake) {
         n.got.push({ sp, len, variant: st.variant, y: st.y, fromFloor: true });
       }
     }
-    if (n.pt >= (n.T.tow || TOW_MAX) && !(g.lesson && g.lesson.kind === 'trawl')) { n.phase = 'purse'; n.pt = 0; } // (4.12.2) in the lesson it stays out until it is closed
+    if (n.pt >= (n.T.tow || TOW_MAX) && !(g.trawlOnly && !g.trawlOnly.netted)) { /* (7.4.26, owner) in the lesson it stays open until its jellyfish is in (the old check looked for a lesson kind never set, so it closed at 8 s) */ n.phase = 'purse'; n.pt = 0; } // (4.12.2) in the lesson it stays out until it is closed
   } else if (n.phase === 'purse') {
     n.open = Math.max(0, n.open - dt / NET_PURSE);
     n.mx += (tgt.x - n.mx) * Math.min(1, dt); n.my += (tgt.y - n.my) * Math.min(1, dt);

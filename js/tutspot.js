@@ -112,11 +112,11 @@ export class TutSpot {
     // panel's middle, meets the thing's box), never over it; the picture points down, its fingertip at 0.451, 0.883
     // of the angles near that line, the one where the glove lies over the fewest other words and buttons (a list of links,
     // a card's label) and stays on the screen; worked out once per thing and place, then kept
-    const G = 71 /* (7.3.0) the glove 15 % bigger, as in olive.css */, a0 = Math.atan2(dy, dx), key = Math.round(cx) + ',' + Math.round(cy) + ',' + Math.round(w) + ',' + Math.round(h) + ',' + a0.toFixed(1);
+    const G = 71 /* (7.3.0) the glove 15 % bigger, as in olive.css */, a0 = Math.atan2(dy, dx), key = Math.round(cx / 6) + ',' + Math.round(cy / 6) + ',' + Math.round(w / 6) + ',' + Math.round(h / 6); /* (7.4.26, owner) the glove kept where it was while the thing stays put: keyed on the angle too, it was worked out again each time Earl's small sway crossed a tenth of a radian, and it hopped left and right */
     const place = (an) => { const ux = Math.cos(an), uy = Math.sin(an), e2 = Math.min(Math.abs(ux) > 1e-3 ? (w / 2) / Math.abs(ux) : 1e9, Math.abs(uy) > 1e-3 ? (h / 2) / Math.abs(uy) : 1e9) + 4;
       const tx = cx - ux * e2, ty = cy - uy * e2, rad = an - Math.PI / 2, ox2 = (0.451 - 0.5) * G, oy2 = (0.883 - 0.5) * G;
       return { rad, ax: tx - (ox2 * Math.cos(rad) - oy2 * Math.sin(rad)), ay: ty - (ox2 * Math.sin(rad) + oy2 * Math.cos(rad)) }; };
-    if (this.gloveKey !== key) {
+    if (this.gloveKey !== key || Math.abs(Math.atan2(Math.sin(a0 - (this.gloveA0 || 0)), Math.cos(a0 - (this.gloveA0 || 0)))) > 0.6) { this.gloveA0 = a0;
       const hit = (px, py) => { if (px < 4 || py < 4 || px > innerWidth - 4 || py > innerHeight - 4) return 3;
         for (const el of document.elementsFromPoint(px, py)) { if (el.closest('#tut-spot')) continue; if (t && (el === t || t.contains(el) || el.contains(t))) return 0;
           if (el.matches('button, a, input, img, canvas, h1, h2, h3, h4, h5, p, li, label, b, i, em, strong, small, [data-act], [data-q], .tag, .card') || (el.childElementCount === 0 && (el.textContent || '').trim())) return el.tagName === 'CANVAS' ? 0 : 1;
@@ -133,7 +133,7 @@ export class TutSpot {
     Object.assign(this.arrow.style, { left: ax + 'px', top: ay + 'px', transform: `translate(-50%, -50%) rotate(${deg.toFixed(1)}deg)` });
     this.arrow.style.setProperty('--bx', (dx * 6).toFixed(1) + 'px'); this.arrow.style.setProperty('--by', (dy * 6).toFixed(1) + 'px');
   }
-  hideParts() { LOCK = null; for (const b of this.blocks) b.style.display = 'none'; this.hole.style.display = 'none'; this.arrow.style.display = 'none'; this.say.style.display = 'none'; this.keyBox.style.display = 'none'; if (this.card) this.card.style.display = 'none'; }
+  hideParts() { LOCK = null; if (this.el.classList.contains('vig')) this.el.classList.remove('vig'); for (const b of this.blocks) b.style.display = 'none'; this.hole.style.display = 'none'; this.arrow.style.display = 'none'; this.say.style.display = 'none'; this.keyBox.style.display = 'none'; if (this.card) this.card.style.display = 'none'; }
   // on: the tutorial is guiding (the frame shows); spot: what to point at, if anything
   update(on, spot, text = null) { this.update0(on, spot, text); this.keyBox.style.display = 'none'; flushStyles(); } // (5.6.7) a phone: the line at the top says it, once
   update0(on, spot, text = null) {
@@ -188,8 +188,10 @@ export class TutSpot {
       if (spot.card) { // the card beside the lit thing (below it when there is room, else above), the arrow hidden
         this.arrow.style.display = 'none'; this.cardId = spot.card.id;
         const p = this.card.querySelector('p'); if (p.textContent !== spot.card.text) p.textContent = spot.card.text;
-        this.card.style.display = 'block'; flushStyles(); const cw = Math.min(320, vw - 24), ch = this.card.offsetHeight || 110;
-        const left = Math.max(12, Math.min(vw - cw - 12, x + w / 2 - cw / 2)), top = y + h + 14 + ch < vh ? y + h + 14 : Math.max(12, y - ch - 14);
+        const side = spot.card.side === 'left' && x > 200; if (this.card.classList.contains('point-r') !== side) this.card.classList.toggle('point-r', side);
+        this.card.style.display = 'block'; flushStyles(); const cw = side ? Math.min(320, x - 52) : Math.min(320, vw - 24), ch = this.card.offsetHeight || 110;
+        /* (7.4.26, owner) a card can stand to the left of what it is about, its arrow pointing across at it */
+        const left = side ? Math.max(12, x - cw - 30) : Math.max(12, Math.min(vw - cw - 12, x + w / 2 - cw / 2)), top = side ? Math.max(12, Math.min(vh - ch - 12, y + h / 2 - ch / 2)) : y + h + 14 + ch < vh ? y + h + 14 : Math.max(12, y - ch - 14);
         Object.assign(this.card.style, { left: left + 'px', top: top + 'px', width: cw + 'px' });
       }
       // (4.3.1) no words by it: the ring and the arrow are enough (the banner at the top says what the step is)
@@ -223,7 +225,11 @@ export class TutSpot {
         // the journal, the quests and the chart are not HUD buttons but the clipboard group at the top left: the
         // picture itself when it shows, else the clipboard that opens the group
         const DOMK = { j: ['#quests-btn img'], o: ['#quests-btn img'], k: ['#hud-chart', '#quests-btn img'] }; // (7.2.4) the picture itself: the button's box is twice its size and runs off the screen's edge
-        if (!h && DOMK[want]) { const el2 = this.find(DOMK[want]), r = el2 && el2.getBoundingClientRect(); if (r) h = { x: r.left, y: r.top, w: r.width, h: r.height }; }
+        let menuEl = null;
+        if (!h && DOMK[want]) { const el2 = this.find(DOMK[want]), r = el2 && el2.getBoundingClientRect(); if (r) { h = { x: r.left, y: r.top, w: r.width, h: r.height }; menuEl = el2; } }
+        /* (7.4.26, owner) a step asking for the journal (or the chart): its picture in full colour and glowing, the screen's edges darkened a little */
+        if (menuEl !== this.litEl) { if (this.litEl) this.litEl.classList.remove('ts-lit'); this.litEl = menuEl; if (menuEl) menuEl.classList.add('ts-lit'); }
+        if (this.el.classList.contains('vig') !== !!menuEl) this.el.classList.toggle('vig', !!menuEl);
         // words with it, never a key cap (a step with nothing to ring keeps just its words)
         if ((spot.act !== 'sprint' || onHud) && spot.say) { this.keyBox.style.display = 'flex'; const say = ({ obs: 'Tap the fish to observe it', sprint: 'Tap to sprint (uses air faster)' })[want] || spot.say.replace(/^(Press|Hold)\b/, (m) => (m === 'Press' ? 'Tap' : 'Hold')); if (this.keyText.textContent !== say) this.keyText.textContent = say; }
         if (h && !onHud) {

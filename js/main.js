@@ -41,7 +41,8 @@ import { readSlot, setSlot, getSlot, lastSlot, flushSave, SLOTS, SUB_AIR } from 
 import { rollChestAll } from './chests.js';
 import { setDiverLook } from './earl_draw.js'; // (6.7.0)
 import { isTestStore } from './purchases.js'; // (6.5.9)
-import { calState, calClaimed, calWeek, giftPearls } from './store.js';
+import { calState, calClaimed, calWeek, giftPearls, syncServerTime } from './store.js';
+syncServerTime(); setInterval(syncServerTime, 10 * 60e3); /* (7.4.26) the daily gift's clock */
 import { hullCap } from './economy.js';
 import { loadBest, TRACKS, tlv, GEAR, lv, statValue, upgradeCost, owns, gear, coinsFor, upgradeCoins, WARES } from './economy.js';
 import { SUB_ADDONS, SUPPLIES, supplyMax, GOODS, PATCH_PRICE, HOSPITAL_SHARE, hospitalCap, replacementPrice, SUBS, rollCrush, crushMean, newProfile, loadProfile, saveProfile, marketTick, priceOf, sell, spend, money } from './economy.js';
@@ -1107,7 +1108,7 @@ function lessonHold(on) { // the dive held: air, the animals aboard, the sea's c
   else { g.lessonHold = null; }
 }
 function lessons() {
-  const P = profile, e = g.earl, sub = g.sub; g.frozen = false; g.lesson = null; g.questHint = null; g.airCallout = false; g.trawlOnly = null;
+  const P = profile, e = g.earl, sub = g.sub; g.frozen = false; g.lesson = null; g.questHint = null; g.airCallout = false; g.trawlOnly = null; if (P && P.tut !== 'on') g.tutVig = 0;
   if (!P || g.mode !== 'play' || P.tut === 'on' || g.kill || sub.imploded) { lessonHold(false); return; }
   const tankO = !!(ui.tankOpen && ui.tankOpen()), invO = shown('inventory'), TR = ui.tankRoom;
   // ---- the first trawl ----
@@ -1116,9 +1117,10 @@ function lessons() {
     const st = P.lessonTrawl || 'drop', setSt = (v) => { P.lessonTrawl = v; saveProfile(P); };
     let J = g.lessonJelly; const jSp = SPECIES_BY_ID[171];
     if (st === 'drop' || st === 'tow') {
-      if (!J || (J.dead && !J.netted) || (!J.dead && !g.fauna.list.includes(J))) { const d = sub.dir || 1; J = g.fauna.makeFish(jSp, sub.x + d * 16, sub.y + 4, -d, /* (6.6.2) at the depth the net tows, 4 m under the sub */ g.fauna.groupId++, true); J.devKeep = true; J.vx = J.vy = 0; g.fauna.list.push(J); g.lessonJelly = J; }
+      if (!J || (J.dead && !J.netted) || (!J.dead && !g.fauna.list.includes(J))) { const d = sub.facing || 1; J = g.fauna.makeFish(jSp, sub.x + d * 12, sub.y + 4, /* (7.4.26, owner) in front of her, where she is facing (sub.dir was never set: it was always to the east) */ -d, /* (6.6.2) at the depth the net tows, 4 m under the sub */ g.fauna.groupId++, true); J.devKeep = true; J.vx = J.vy = 0; g.fauna.list.push(J); g.lessonJelly = J; }
       J.x = J.homeX ?? (J.homeX = J.x); J.y = J.homeY ?? (J.homeY = J.y); // it hangs where it was placed, pulsing in place
       g.trawlOnly = J; // the net takes only it
+      g.tutVig = 1; /* (7.4.26, owner) the screen's edges darkened until it is in the net */
     }
     const n = g.subNet;
     if (st === 'drop') { if (n) setSt('tow'); else lessonSet('Let out the trawl net', { key: 'n', say: 'Let out the trawl net' }, J && { x: J.x, y: J.y }, J); return; }
@@ -1219,7 +1221,8 @@ function tripFish(n) {
 }
 const tripCaught = (tf) => !!(tf && tf.dead && g.bag.some((s) => s.id === tf.sp.id));
 function tutor() {
-  const P = profile, e = g.earl; g.tut = null; g.tutForce = null; g.tutQuiet = false; g.tutFence = null; // (7.4.0) set again by the step that wants them { const m0 = P && QUEST_MAIN[questsOf(P).main]; g.questMainId = m0 ? m0.id : null; } /* (6.5.0) the Log's step, for the way-aboard chevrons */ if (ui.cabin) ui.cabin.tutMark = null; // (6.5.6) this had slipped into the comment, so the cabin's chevrons to the computer stayed after the tutorial
+  const P = profile, e = g.earl; g.tut = null; g.tutForce = null; g.tutQuiet = false; g.tutFence = null; g.tutVig = 0; /* (7.4.0) set again by the step that wants them */
+  { const m0 = P && QUEST_MAIN[questsOf(P).main]; g.questMainId = m0 ? m0.id : null; } /* (6.5.0) the Log's step, for the way-aboard chevrons */ if (ui.cabin) ui.cabin.tutMark = null; // (6.5.6) this had slipped into the comment, so the cabin's chevrons to the computer stayed after the tutorial
   // (4.4.0) during the tutorial the game's own prompts and the things they do are off (hud.js, cabin.js, the key
   // gate below): only the action the step asks for works, on the tutorial's own, larger button
   g.tutHidePrompts = !!P && g.mode === 'play' && tutorialOn(P); g.tutAction = null; g.tutLadder = false; // (7.1.0) the ladder's chevrons only on a climb step
@@ -1283,12 +1286,16 @@ function tutor() {
     }
   } else if (m.id === 'sell') {
     if (!P.tutJournal) { const qOpen = shown('quests'); text = qOpen ? 'Turn to the Journal' : 'Open your journal'; spot = jOpen ? null : qOpen ? { sel: ['#booktabs [data-t="journal"]'], say: 'Journal' } : { act: 'journal', say: 'Open your journal' }; } // (7.1.0) from the Quests page, its tab
-    else if (jOpen && (P.tutJTour || 0) < 3) { // (4.12.2) a short look round the journal before it is closed
-      const k = P.tutJTour || 0;
+    else if (jOpen && (P.tutJTour || 0) < 4) { // (4.12.2) a short look round the journal before it is closed
+      // (7.4.26, owner) the list, then the animal's page (the card on the left page, pointing across), then he opens All
+      // himself, and only then is it said what All is
+      const k = P.tutJTour || 0, allOn = !!document.querySelector('#journal .tabs [data-tab="all"].on');
       text = 'Your journal';
+      if (k === 2 && allOn) { P.tutJTour = 3; saveProfile(P); }
       spot = k === 0 ? { sel: ['#journal-list .jcell'], card: { id: 'jtour', text: 'Every animal you observe is drawn here. Tap one to read about it.' } }
-        : k === 1 ? { sel: ['#journal .tabs'], card: { id: 'jtour', text: 'All shows every animal in the sea, the ones still to find in shadow.' } }
-        : { sel: ['#journal-detail'], card: { id: 'jtour', text: 'This page shows the animal you chose: where it lives, how big it grows, where you first saw it.' } }; /* (5.9.2) no notes page any more */
+        : k === 1 ? { sel: ['#journal-detail'], card: { id: 'jtour', side: 'left', text: 'This page shows the animal you chose: where it lives, how big it grows, where you first saw it.' } }
+        : k === 2 ? (text = 'Open All', { sel: ['#journal .tabs [data-tab="all"]'], say: 'All' })
+        : { sel: ['#journal .tabs [data-tab="all"]'], card: { id: 'jtour', text: '“All” shows every animal in the sea, the ones still to find in shadow.' } };
     }
     else if (jOpen) { text = 'Close the journal'; spot = { sel: ['#journal-close'], act: 'journal', say: 'Close the journal' }; }
     else if (shopOpen) { text = 'Sell your catch'; spot = { sel: ['#workshop button[data-act="sellall"]:not([disabled])', '#workshop [data-act="sellone"]'], say: 'Sell all' }; }
@@ -1301,7 +1308,7 @@ function tutor() {
     else if (!zone('boat', nearBoat)) { text = 'Bring your catch up beside the Margaret'; to = ladder; }
     else { const wx = BOAT.x + 4.5 * dir; // (7.1.0) the winch is used where it is: led there first, then offered
       if (Math.abs(e.x - wx) >= 3.2) { text = 'Swim to the Margaret\'s winch at the stern'; to = { x: wx, y: 0.4 }; }
-      else { text = 'Tap the Margaret\'s winch to sell your catch'; offer('sell', 'Sell your catch', 'U'); } }
+      else { text = 'Tap the Sell door on the Margaret'; offer('sell', 'Sell your catch', 'U'); } }
   } else if (m.id === 'buy') {
     // the cheapest piece of gear he can afford at Bayside, to point at
     const pick = Object.values(ITEMS).filter((it) => it.shop === 'catalog' && it.price > 0 && it.price <= (P.cash || 0) && !ownsItem(P, it.id)).sort((a, b) => a.price - b.price)[0];
@@ -1338,7 +1345,7 @@ function tutor() {
     g.tutQuiet = true; g.tutFence = { x0: BOAT.x - 48, x1: BOAT.x + 28, y1: 42 };
     const sn = S.seen, part = sn.st || 0, sub = g.sub, ap = g.autopilot, set = (n) => { if ((sn.st || 0) < n) { sn.st = n; saveProfile(P); } };
     const inReach = () => { const T = findTarget(); return !!(T && T.kind === 'board'); };
-    const toSub = () => { to = { x: sub.x, y: sub.y }; text = 'Get in the sub'; if (inReach()) spot = { key: 'f', say: 'Get in' }; };
+    const toSub = () => { to = { x: sub.x, y: sub.y }; text = 'Get in the sub'; g.tutVig = 1; /* (7.4.26, owner) the screen's edges darkened until he is in */ if (inReach()) spot = { key: 'f', say: 'Get in' }; };
     const offDeck = () => { const ax = g.aboard.x || 0, endX = ax < (DECK_MIN + DECK_MAX) / 2 ? DECK_MIN - 1.2 : DECK_MAX + 1.2; to = { x: BOAT.x + endX * dir, y: 0.6 }; text = 'Walk off the end of the deck to jump in'; };
     if (inCabin) { text = 'Out on deck'; cabinTo('door', 'outdoor', 'Out on deck'); }
     else if (part === 0) { if (e.inSub) set(1); else if (g.aboard) offDeck(); else toSub(); }
@@ -2487,7 +2494,7 @@ function update(dt) {
       // at the surface: open the depth meter (setting happens there; the Space that set it is ignored)
       if (!ui.trapSetOpen() && performance.now() - (ui.tsClosedAt || 0) > 400) { const msg = canSetHere(g); if (msg) hud.toast(msg, 'warn'); else ui.openTrapSet(); }
     } else if (pressed.has(' ') && !e.inSub) {
-      if (tool.kind === 'cam') { if (!g.photo) { const why = startPhoto(g); if (why) hud.toast(why, 'warn'); else audio.ready && audio.click(); } } else if (tool.kind === 'none') { /* hands free: nothing to use */ } else { const msg = useTool(g); if (msg) hud.toast(msg, 'warn'); else if (g.capture && g.capture.t === 0) audio.ready && audio.whoosh && audio.whoosh(0.25); }
+      if (tool.kind === 'cam') { if (!g.photo) { const why = startPhoto(g); if (why) hud.toast(why, 'warn'); else audio.ready && audio.click(); } } else if (tool.kind === 'none') { if (tool.noNet) { hud.toast('No net equipped: put one on from your bag', 'warn'); audio.ready && audio.uiSoft && audio.uiSoft(); } /* hands free: nothing to use */ } else { const msg = useTool(g); if (msg) hud.toast(msg, 'warn'); else if (g.capture && g.capture.t === 0) audio.ready && audio.whoosh && audio.whoosh(0.25); }
     } else if (pressed.has(' ') && e.inSub && !g.armGame && !g.homeRun) {
       if (!owns(profile, 'arm')) hud.toast('The claw needs hydraulics', 'warn');
       else { const msg = startArm(g); if (msg) hud.toast(msg, 'warn'); else audio.ready && audio.ram && audio.click(); }
@@ -2623,10 +2630,11 @@ function update(dt) {
         g.tapMarks.push({ key: 'f', w: [at.x - at.r, at.y - at.r, at.x + at.r, at.y + at.r], what: 'other' });
       }
       const winchX = BOAT.x + 4.5 * Math.sign(Math.cos(BOAT.yaw || 0) || 1), nearB = !g.aboard && ((Math.abs(e2.x - winchX) < 3.2 && e2.y < 3 && !e2.inSub) || (e2.inSub && g.sub.docked)); // (7.1.0) only by the winch itself, not anywhere near the boat
-      if (nearB && (bagN || e2.inSub || (g.tutAction && String(g.tutAction.key).toLowerCase() === 'u'))) g.tapMarks.push({ key: 'u', boat: [28.5, -17.5, 35.5, -11.2], what: 'winch' }); // her winch at the stern: the catch is hauled up by it
+      if (nearB && (bagN || e2.inSub || (g.tutAction && String(g.tutAction.key).toLowerCase() === 'u'))) g.tapMarks.push({ key: 'u', boat: [28.9, -10.2, 35.1, -2.2], what: 'winch' }); // (7.4.26, owner) the sell door in her side by the stern
       // (5.6.9) during the tutorial only the step's own thing is marked (the door on the first step, the hatch on the
       // swim down and the ladder while the winch is wanted all pulled the eye the wrong way)
-      if (profile.tut === 'on' && g.questMainId !== 'subtrip') { const id = g.tutAction && g.tutAction.id, want = { climb: 'ladder', cabin: 'door', sell: 'winch' }[id]; g.tapMarks = want ? g.tapMarks.filter((m) => m.what === want) : []; }
+      if (profile.tut === 'on' && g.questMainId === 'subtrip') g.tapMarks = g.tapMarks.filter((m) => m.what === 'sub' || m.what === 'pickup'); /* (7.4.26) the sub trip: the sub to tap, not the cabin door */
+      else if (profile.tut === 'on') { const id = g.tutAction && g.tutAction.id, want = { climb: 'ladder', cabin: 'door', sell: 'winch' }[id]; g.tapMarks = want ? g.tapMarks.filter((m) => m.what === want) : []; }
     }
     // (5.6.7) the tutorial's first dive cannot drown him: a miss, a chase and a sprint still leave a quarter of the tank
     g.firstDive = firstDive(profile); // (5.6.9) the HUD keeps the red air figures out of it
@@ -2780,6 +2788,8 @@ function update(dt) {
     if (g.sub.imploded && !e.inSub && !g.kill && !g.imploded && (g.implodeT || 0) > 6 && (e.y < 1 || g.aboard || g.ashore)) { const sb = g.sub; sb.imploded = false; sb.failing = null; sb.hull = 1; sb.docked = true; sb.o2 = sb.o2Max; sb.crushR = null; profile.subLost = false; profile.hull = 1; saveProfile(profile); say('The sub is back in its cradle', 'sub'); }
     zoneHazards(dt);
     g.aim = null;
+    /* (7.4.26, owner) the right hand on the screen turns his lamp: toward the finger from where he is, mirrored to his front when the finger is behind him; let go and it eases back */
+    { const LA = touch && touch.lampAt, es = g.earlScr; if (LA && es && !e.inSub && !g.aboard) { const dx = LA.x - es[0] * innerWidth, dy = LA.y - es[1] * innerHeight; g.lampA = Math.atan2(dy, Math.abs(dx) * (e.facing < 0 ? -1 : 1)); g.lampK = Math.min(1, (g.lampK || 0) + dt * 6); } else g.lampK = Math.max(0, (g.lampK || 0) - dt * 2.5); }
     if (!g.sub.imploded && !g.sub.docked && g.mode === 'play' && !g.frozen) crushDepth(dt); // (7.4.22, owner) her hull is at risk whether he is in her or not
     if (res === 'implode' || g.implodeNow) {
       g.implodeNow = false;
@@ -3116,6 +3126,13 @@ function bookTabs() {
     el.innerHTML = '<button data-t="journal">Journal</button><button data-t="quests">Quests</button><button data-t="chart">Chart</button>';
     el.addEventListener('click', (ev) => { const b = ev.target.closest('button'); if (!b) return; const t = b.dataset.t; ui.closeAll(); if (t === 'journal') ui.toggleJournal(true); else if (t === 'quests') ui.toggleQuests(true); else ui.chart.toggle(true); audio.ready && audio.journalPage && audio.journalPage(); });
     document.body.appendChild(el);
+    /* (7.4.26, owner) the tabs tuck under the book's edge, so a full-screen page (the Quests, the Chart) lay over them and a
+       tap on a tab fell on that page's backdrop, which closed the book. A tap inside a tab's own outline is the tab's. */
+    document.addEventListener('click', (ev) => {
+      if (el.hidden || el.contains(ev.target)) return;
+      const b = [...el.children].find((q) => { const r = q.getBoundingClientRect(); return ev.clientX >= r.left && ev.clientX <= r.right && ev.clientY >= r.top && ev.clientY <= r.bottom; });
+      if (!b) return; ev.stopPropagation(); ev.preventDefault(); b.click();
+    }, true);
   }
   el.hidden = !show;
   // (5.9.2) Quests and the Chart open as pages in the same book: a shell (its cover and two blank pages) behind them
@@ -3220,7 +3237,9 @@ function frame(now) {
     hud.spotWanted = !!(profile && (profile.tut === 'on' || !!g.lesson) /* (6.6.2) and the lessons */ && tk && tk !== 'sprint' && tk !== g.tutPressedKey); g.tutFreeze = !!(hud.spotOn && hud.spotWanted && !hud.panel); }
   hud.panel = !!(ui.anyOpen && ui.anyOpen('cabin davetalk')); /* (7.0.13) Dave's words sit at the foot of the scene: the HUD stays round them */ // (5.6.8) the cabin keeps the controls: it is the same game
   { const cab = !!(ui.cabinOpen && ui.cabinOpen()); if (cab !== hud.inCabin) { hud.inCabin = cab; document.documentElement.classList.toggle('in-cabin', cab); } }
-  if (hud.inCabin && pressed.has(' ') && ui.cabin.near && ui.cabin.near() === 'door') { pressed.delete(' '); ui.cabin.use(); } // (7.4.0, owner) at the cabin door the big button takes him out too
+  if (hud.inCabin && pressed.has(' ') && ui.cabin.near && ui.cabin.near() === 'door') { pressed.delete(' '); ui.cabin.use(); }
+  /* (7.4.26, owner) the hand button in the cabin (the door picture at the door): it uses what he stands at. Nothing took it before, so in the tutorial's "Out on deck" a tap at the door did nothing */
+  if (hud.inCabin && pressed.has('f')) { pressed.delete('f'); pressed.delete('f-tap'); if (ui.cabin.near && ui.cabin.near() && !(ui.anyOpen && ui.anyOpen('cabin davetalk'))) { ui.cabin.use(); audio.ready && audio.click && audio.click(); } } // (7.4.0, owner) at the cabin door the big button takes him out too
   hud.abilDef = currentAbility(); // (5.9.0) the arc's ability button
   hud.killTide = false; // (6.0.0) nothing saves him once it strikes: the Tidewarden is for before, while the water reddens // (5.10.8) the Tidewarden, offered in the jaws
   hud.cabinNear = hud.inCabin && ui.cabin.near ? ui.cabin.near() : null; // (7.1.0) which station is in reach, for the button's picture
@@ -3293,6 +3312,21 @@ let menuUsedAt = performance.now();
 const MENU_KEYS = new Set(['menu', 'journal', 'j', 'b', 'c', 't', 'r', 'store', 'events']);
 window.addEventListener('actdown', (ev) => { if (MENU_KEYS.has(ev.key)) menuUsedAt = performance.now(); }, true);
 window.addEventListener('pointerdown', (ev) => { if (ev.clientX < innerWidth * 0.14) menuUsedAt = performance.now(); }, true);
+// (7.4.26, owner) one press for everything on the screen that can be tapped, as the HUD's coins have: the thing sinks and
+// lights a little, a soft ring of light runs out from under the finger, and the phone gives its small tick. On the
+// screens that had no sound of their own (the new diver, its keyboard, the slots, the title) a soft click as well
+const PRESSABLE = 'button, [data-act], [data-test], [data-store], [data-pet], [data-evday], [data-tab], [data-t], .jcell, .lk-tile, .sl-main, .ev-day, .st-card, .cr-sw, [role="button"]';
+const QUIET_SCREENS = '#creator, #slots, #title, .cr-kb';
+let pressLayer = null;
+window.addEventListener('pointerdown', (ev) => {
+  const b = ev.target && ev.target.closest && ev.target.closest(PRESSABLE); if (!b || b.disabled || b.closest('[hidden]') || b.closest('#hud, #game')) return;
+  b.classList.remove('pfx'); void b.offsetWidth; b.classList.add('pfx'); clearTimeout(b.__pfxT); b.__pfxT = setTimeout(() => b.classList.remove('pfx'), 260);
+  if (!pressLayer) { pressLayer = document.createElement('div'); pressLayer.id = 'pressfx'; document.body.appendChild(pressLayer); }
+  const r = b.getBoundingClientRect(), d = Math.max(36, Math.min(120, Math.max(r.width, r.height) * 0.9)), ring = document.createElement('i');
+  ring.style.left = ev.clientX + 'px'; ring.style.top = ev.clientY + 'px'; ring.style.setProperty('--d', d + 'px'); pressLayer.appendChild(ring); setTimeout(() => ring.remove(), 420);
+  if (navigator.vibrate) try { navigator.vibrate(6); } catch (e) { /* not allowed yet */ }
+  if (b.closest(QUIET_SCREENS)) { audio.resume && audio.resume(); audio.ready && audio.uiSoft && audio.uiSoft(); }
+}, true);
 function menuFold(now) {
   if (!hud.menuOpen || !profile || g.mode !== 'play') { if (!hud.menuOpen) menuUsedAt = now; return; } // (7.4.0) in the tutorial too: a step about the menu holds it open by itself
   if (ui.anyOpen && ui.anyOpen()) { menuUsedAt = now; return; } // while a panel from it is open, the clock waits
