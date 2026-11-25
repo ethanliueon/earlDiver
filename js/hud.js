@@ -131,7 +131,7 @@ export class Hud {
   constructor(canvas) {
     this.c = canvas; this.ctx = canvas.getContext('2d');
     this.ecg = new Array(120).fill(0); this.ecgT = 0; this.beatPhase = 0;
-    this.sweep = 0; this.blip = null; this.toasts = []; this.journalHot = null; this.chartHot = null;
+    this.pFly = []; this.sweep = 0; this.blip = null; this.toasts = []; this.journalHot = null; this.chartHot = null;
   }
   resize() {
     // (5.4) on a phone the page is wider than the screen (index.html): the HUD drawn at 1.5 pixels a real point, as before
@@ -151,6 +151,7 @@ export class Hud {
   }
   // explanations: only when hints are on (H)
   hint(text) { if (this.hints) this.toast(text, 'note'); }
+  pearlsWon(n) { n = Math.round(n || 0); if (n > 0) this.pFly.push({ n, t0: performance.now() / 1000 + this.pFly.length * 0.25 }); } // (7.6.22, owner)
   toast(text, kind = '') {
     text = titled(String(text).replace(/\s+·\s+/g, ', ')); // (4.26) no middle dots in what the game says
     // the same line again while it is still up: count it ("x2") instead of stacking a copy
@@ -590,11 +591,22 @@ e.inSub ? [
       ctx.restore();
       // (7.3.9, owner) the pearls, the premium currency, in a smaller row under the money: the painted pearl, then the count
       // (7.3.9, owner) on its own small plate of the panels' olive steel, the pearl set at its left end and the count beside it
-      { const pr = 8 * u, py = my + ch * 0.55 + 6 * u + pr, im = hudIcon('pearl'), ptxt = String(Math.max(0, Math.floor(P.pearls || 0)).toLocaleString('en-US'));
+      // (7.6.22, owner) pearls won show as their own: "+N" with a pearl in the middle of the screen, then the pearls rush to
+      // this counter, which counts up as they land (never "$x · +N pearls" on one line)
+      const nowP = performance.now() / 1000, FL = (this.pFly || []).filter((f) => nowP - f.t0 < 1.5); this.pFly = FL;
+      const pend = FL.reduce((a, f) => a + Math.round(f.n * (1 - Math.min(1, Math.max(0, (nowP - f.t0 - 0.55) / 0.7)))), 0);
+      { const pr = 8 * u, py = my + ch * 0.55 + 6 * u + pr, im = hudIcon('pearl'), ptxt = String(Math.max(0, Math.floor((P.pearls || 0) - pend)).toLocaleString('en-US'));
         ctx.save(); ctx.font = `700 ${15 * u}px ${HUDF}`; const pw = ctx.measureText(ptxt).width, bx = mx - ch * 0.8, bh = pr * 2 + 4 * u, pcx = bx + 3 * u + pr * 1.2, ptx = pcx + pr * 1.2 + 5 * u, /* (7.4.0, owner) its left edge under the banknotes' */ bw = (ptx - bx) + pw + 9 * u; /* the count close after the pearl */
         steelPlate(ctx, bx, py - bh / 2, bw, bh, u); this.pearlRect = { r: bx + bw, y: py, h: bh, u }; // (7.6.0) the marked eye sits beside it
         ctx.fillStyle = 'rgba(0,0,0,0.28)'; ctx.beginPath(); ctx.roundRect(bx + 2 * u, py - bh / 2 + 2 * u, bw - 4 * u, bh - 4 * u, 3 * u); ctx.fill(); /* a shallow well pressed into the plate */
-        if (im) ctx.drawImage(im, pcx - pr * 1.2, py - pr * 1.2, pr * 2.4, pr * 2.4);
+        if (im) { const bump = FL.some((f) => { const k = nowP - f.t0; return k > 0.6 && k < 1.35; }) ? 1 + 0.12 * Math.sin(nowP * 30) : 1; ctx.drawImage(im, pcx - pr * 1.2 * bump, py - pr * 1.2 * bump, pr * 2.4 * bump, pr * 2.4 * bump); }
+        if (im && FL.length) { const T = ctx.getTransform(), LW = ctx.canvas.width / (T.a || 1), LH = ctx.canvas.height / (T.d || 1), sx = LW / 2, sy = LH * 0.36;
+          for (const f of FL) { const k = nowP - f.t0, ap = Math.min(1, k / 0.18), out = k > 1.15 ? Math.max(0, 1 - (k - 1.15) / 0.3) : 1;
+            if (k < 0.75) { ctx.save(); ctx.globalAlpha = ap * Math.min(1, (0.75 - k) / 0.2); const sc = 0.8 + 0.2 * ap; ctx.font = `700 ${22 * u * sc}px ${HUDF}`; ctx.textAlign = 'left'; ctx.textBaseline = 'middle'; const tw = ctx.measureText('+' + f.n).width, R2 = 13 * u * sc;
+              ctx.drawImage(im, sx - (tw + R2 * 2.6) / 2, sy - R2, R2 * 2, R2 * 2); ctx.fillStyle = 'rgba(0,0,0,0.55)'; ctx.fillText('+' + f.n, sx - (tw + R2 * 2.6) / 2 + R2 * 2.4 + 1, sy + 1); ctx.fillStyle = '#efe8d2'; ctx.fillText('+' + f.n, sx - (tw + R2 * 2.6) / 2 + R2 * 2.4, sy); ctx.restore(); }
+            const nP = Math.min(8, Math.max(1, f.n)); for (let i = 0; i < nP; i++) { const q = Math.min(1, Math.max(0, (k - 0.45 - i * 0.05) / 0.6)); if (q <= 0 || q >= 1) continue; const e2 = q * q * (3 - 2 * q), ox = sx + Math.sin(i * 2.3) * 14 * u, oy = sy + Math.cos(i * 1.7) * 8 * u, mx2 = (ox + pcx) / 2 + 40 * u, my2 = Math.min(oy, py) - 30 * u;
+              const bx2 = (1 - e2) * (1 - e2) * ox + 2 * (1 - e2) * e2 * mx2 + e2 * e2 * pcx, by2 = (1 - e2) * (1 - e2) * oy + 2 * (1 - e2) * e2 * my2 + e2 * e2 * py, rr = pr * (1.1 - 0.3 * e2);
+              ctx.save(); ctx.globalAlpha = out; ctx.drawImage(im, bx2 - rr, by2 - rr, rr * 2, rr * 2); ctx.restore(); } } }
         ctx.textAlign = 'left'; ctx.textBaseline = 'middle'; ctx.shadowColor = 'rgba(0,0,0,0.85)'; ctx.shadowBlur = 3 * u; ctx.fillStyle = '#e6e0d0';
         ctx.fillText(ptxt, ptx, py + 1 * u); ctx.restore(); }
       this.moneyRowBottom += PEARL_ROW * u;

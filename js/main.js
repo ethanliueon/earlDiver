@@ -330,7 +330,7 @@ const ui = new UI({
     saveProfile(P); audio.ready && audio.sale(); audio.cue && audio.cue('sale');
     const cards = (r.gift && gift ? [{ kind: 'item', id: r.gift }] : []).concat((r.kit || []).map(([kind, id]) => ({ kind, id }))).map((c) => ({ ...c, how: 'For the quest' }));
     if (cards.length) ui.showGains(cards); // (4.6.0)
-    { const pt = r.pearls ? ` · +${r.pearls} pearls` : ''; if (!(ui.questTag(`+${money(r.pay)}${pt}`))) hud.toast(`Quest done: +${money(r.pay)}${pt}`, 'big'); } // (5.7.0) on a phone always the stamped tag, panel open or not // (5.5.6) on a phone, a tag from the clipboard
+    { if (!(ui.questTag(`+${money(r.pay)}`))) hud.toast(`Quest done: +${money(r.pay)}`, 'big'); if (r.pearls) hud.pearlsWon(r.pearls); } /* (7.6.22, owner) the pearls on their own, flying to their counter */ // (5.7.0) on a phone always the stamped tag, panel open or not // (5.5.6) on a phone, a tag from the clipboard
     return true;
   },
   tutHide: () => !!(g && g.tutHidePrompts), // (4.4.0) the cabin's own prompts, off during the tutorial
@@ -577,8 +577,8 @@ function depthPearls() {
   const P = profile, e = g.earl; if (!P || g.mode !== 'play' || P.tut === 'on') return;
   const d = Math.max(e.y, e.inSub ? g.sub.y : 0);
   for (const [m, n] of depthMarks(d)) if (d >= m && (P.depthRec || 0) < m) {
-    P.depthRec = m; P.pearls = (P.pearls || 0) + n; saveProfile(P);
-    (g.obsLabels || (g.obsLabels = [])).push({ c: null, x: e.inSub ? g.sub.x : e.x, y: (e.inSub ? g.sub.y : e.y) - 0.8, text: `${m.toLocaleString('en-US')} m · +${n} pearls`, rar: null, nameCol: '#e4dcc6', t: 0 });
+    P.depthRec = m; P.pearls = (P.pearls || 0) + n; saveProfile(P); hud.pearlsWon(n);
+    (g.obsLabels || (g.obsLabels = [])).push({ c: null, x: e.inSub ? g.sub.x : e.x, y: (e.inSub ? g.sub.y : e.y) - 0.8, text: `${m.toLocaleString('en-US')} m`, rar: null, nameCol: '#e4dcc6', t: 0 });
   }
 }
 // (7.4.14) a pet he owns out with him: its size and its glow come from petshop.js (pets.js updatePet)
@@ -1010,7 +1010,7 @@ function buy(kind) {
   } else if (kind.startsWith('sellscroll:')) { // (7.4.11, owner) a scroll is not sold on a tap: asked first. (7.6.2, owner) sold only for pearls, a quarter of its shelf price
     const q = instOf(P, kind.slice(11)); if (!q || isOn(P, q)) return false; const it = ITEMS[q.id], n = scrollSellPearls(q.id), R = RARITY[it.rarity];
     ui.confirm('Sell ' + it.name + '?', (R ? R.name + ' ' : '') + 'scroll · ' + n.toLocaleString('en-US') + ' pearls', 'Sell, ' + n.toLocaleString('en-US') + ' pearls', 'Keep', () => {
-      if (removeItem(P, q.u)) { P.pearls = (P.pearls || 0) + n; saveProfile(P); hud.toast('Sold ' + it.name + ' · +' + n + ' pearls'); } ui.renderInventory && ui.renderInventory(); });
+      if (removeItem(P, q.u)) { P.pearls = (P.pearls || 0) + n; saveProfile(P); hud.toast('Sold ' + it.name); hud.pearlsWon(n); } ui.renderInventory && ui.renderInventory(); });
     return false;
   } else if (kind.startsWith('loadlock:')) { hud.toast('At the surface', 'note'); return false; // (7.6.7) the padlocked Load
   } else if (kind.startsWith('loadfull-done:')) { return false;
@@ -1301,7 +1301,7 @@ function tutor() {
   const Z = g.tutZones || (g.tutZones = {}), now = performance.now();
   const zone = (name, inside) => { if (inside) Z[name] = now; return now - (Z[name] || -1e9) < 400; };
   // (5.5) on a phone, with a fish in reach: the net button ringed (or the net's slot, if it is not in hand)
-  const netSpot = () => (g.catchTarget ? (g.toolSel !== 'net' ? { key: '1', say: 'Tap the net to take it out' } : { act: 'use', say: 'Tap the net to swing it' }) : null);
+  const netSpot = (near = false) => (g.catchTarget || near /* (7.6.22, owner) in the tutorial, shown as soon as he is by the fish, before any swing */ ? (g.toolSel !== 'net' ? { key: '1', say: 'Tap the net to take it out' } : { act: 'use', say: 'Tap the net to swing it' }) : null);
   const offer = (id, say, key = 'F') => { action = { id, say, key }; spot = { key, say, button: id }; };
   const cabinTo = (id, act, say) => { ui.cabin.tutMark = id; if (zone('cabin-' + id, ui.cabin.near && ui.cabin.near() === id)) offer(act, say); else action = { id: act, say, key: 'F', cabinOnly: true }; };
   const ladderZone = () => zone('ladder', !e.inSub && !g.aboard && e.y < 2.6 && e.y > -0.6 && Math.abs(e.x - BOAT.x - LADDER_M) < 1.6);
@@ -1341,7 +1341,7 @@ function tutor() {
       fishStep(() => {
         if (part <= 1) { text = 'Observe the fish'; offer('observe', 'Observe', 'obs'); } // (5.5) on a phone, its own eye button
         else if (g.tutOops && g.time - g.tutOops < 3.5) { text = 'It got away. Try again'; prompt = { text: 'It got away. Try again', col: '#f2c7a0' }; }
-        else { text = g.toolSel !== 'net' ? 'Take out your net' : 'Swing your net to catch it'; prompt = netPrompt(); spot = spot || netSpot(); if (spot && g.catchTarget) prompt = null; /* (5.5.3) the ringed button and its words say it already */ }
+        else { text = g.toolSel !== 'net' ? 'Take out your net' : 'Swing your net to catch it'; prompt = netPrompt(); spot = spot || netSpot(true); if (spot) prompt = null; /* (5.5.3) the ringed button and its words say it already */ }
       });
       if (text === 'Swim to the orange fish') text = 'Swim down to the orange fish under the boat';
     }
@@ -1386,7 +1386,7 @@ function tutor() {
       spot = pick ? { sel, say: `Buy a piece of gear (the ${pick.name.toLowerCase()} is ${money(pick.price, false)})`, confirm: 'Confirm the purchase' } : null;
     }
     else if (inCabin) { text = 'Walk to the computer to shop'; cabinTo('desk', 'shop', 'Open the shop'); }
-    else if (g.aboard) { text = 'Go into the cabin: the door by the wheelhouse'; to = { x: BOAT.x + DOOR_M * dir, y: -1.2 }; door = true; if (zone('door', deckAtDoor())) { offer('cabin', 'Enter the cabin'); text = 'Tap the cabin door to go in'; }
+    else if (g.aboard) { text = 'Go into the cabin: the door by the wheelhouse'; to = { x: BOAT.x + DOOR_M * dir, y: -1.2 }; door = true; if (zone('door', deckAtDoor())) { offer('cabin', 'Enter the cabin'); spot = null; g.tutVig = 1; text = 'Tap the cabin door to go in'; } /* (7.6.22, owner) no glove at the door: the door glows and the screen's edges darken */
       { const bf = renderer.boatFrame, kx = innerWidth / renderer.c.width; if (bf) spot = { pt: [(bf.x + bf.sx * 19 * bf.k) * kx, (bf.y - 17.5 * bf.k) * kx, 5.4 * bf.k * kx, 14 * bf.k * kx] }; } } // (7.5.0, owner) up on deck: the glove points at the cabin door itself // (4.3.5) the door itself lit up
     else { text = 'Climb aboard the Margaret by the ladder'; to = ladder; g.tutLadder = true; if (ladderZone()) { offer('climb', 'Climb aboard'); text = 'Tap the ladder to climb aboard'; } }
   } else if (m.id === 'wear') {
@@ -2688,7 +2688,7 @@ function update(dt) {
       if (why) { g.homeRun = false; ap.cancel(); hud.toast(why, steer ? '' : 'warn'); }
       else {
         const r2 = ap.update(g, dt, 1);
-        if (r2 === 'docked') { g.homeRun = false; audio.cue && audio.cue('home'); g.homeFx = { t: 0 }; say('Home', 'sub'); } // (7.4.0, owner) home: the sub's rim glows, the view leans in and out
+        if (r2 === 'docked') { g.homeRun = false; audio.cue && audio.cue('home'); g.homeFx = { t: 0 }; /* (7.6.22, owner) no "Home" over her */ } // (7.4.0, owner) home: the sub's rim glows, the view leans in and out
       }
     }
     g.subHit = false;
