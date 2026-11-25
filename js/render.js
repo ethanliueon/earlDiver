@@ -1537,8 +1537,8 @@ export class Renderer {
     // drifts slowly round him (beside him, ahead, behind), so it trails, overtakes and sweeps past him as a school does; the
     // fish keep places in a long ragged shoal along its heading, each facing the way it swims, and they flash together
     // as the school turns. More fish, and a longer school, by tier
-    if (g.mode === 'play' && g.shoalFx) { const F = g.shoalFx, e = g.earl, m = e.inSub ? g.sub : e, fade = Math.min(1, F.t / 1.2, (F.dur + 1.5 - F.t) / 1.5), n = [0, 16, 28, 44][F.lv], now = g.time, dt = Math.min(0.05, Math.max(0, now - (F.rt ?? now))); F.rt = now;
-      if (F.cx == null) { F.cx = m.x - (e.facing || 1) * 4; F.cy = m.y + 1; F.vx = (e.facing || 1) * 1.5; F.vy = 0; F.hd = Math.atan2(0, F.vx); }
+    if (g.mode === 'play' && g.shoalFx) { const F = g.shoalFx, e = g.earl, m = e.inSub ? g.sub : e, fade = Math.min(1, F.t / 0.15, (F.dur + 1.5 - F.t) / 1.5), n = [0, 16, 28, 44][F.lv], now = g.time, dt = Math.min(0.05, Math.max(0, now - (F.rt ?? now))); F.rt = now;
+      if (F.cx == null) { const side = -(e.facing || 1); F.cx = m.x + side * (this.W / 2 / ppm + 4); F.cy = m.y + 1.5; F.vx = -side * 9; F.vy = -0.4; F.hd = Math.atan2(0, F.vx); } /* (7.6.19, owner) the school rushes in from off the screen behind him, never appearing out of nowhere */
       const orb = (e.inSub ? 5.5 : 2.4) * (1 + F.lv * 0.1), th = F.t * 0.33 + Math.sin(F.t * 0.21) * 1.2, tx = m.x + Math.cos(th) * orb * 1.3, ty = m.y + Math.sin(th) * orb * 0.45 - 0.4;
       F.vx += ((tx - F.cx) * 2.6 - F.vx * 1.5) * dt; F.vy += ((ty - F.cy) * 2.6 - F.vy * 1.5) * dt; F.cx += F.vx * dt; F.cy += F.vy * dt;
       const want = Math.atan2(F.vy * 0.6, F.vx), dh = Math.atan2(Math.sin(want - F.hd), Math.cos(want - F.hd)); F.hd += dh * Math.min(1, dt * 3); const turn = Math.min(1, Math.abs(dh) * 2.2);
@@ -1546,7 +1546,7 @@ export class Renderer {
       // stay with the school (its own loose spot in it, drawn from a bell curve, never a pattern), swim as the school swims,
       // and keep a body's length from its neighbours; a little restlessness of its own on top. So the shape lives and
       // stretches, thickens and thins, and never falls into rows
-      const sp = SPECIES_BY_ID[F.fish || 49] || SPECIES_BY_ID[49], Lp = ppm * Math.max(0.28, (sp.len || 0.3) * 0.9), ch = Math.cos(F.hd), shd = Math.sin(F.hd), SL = (2.2 + 0.5 * F.lv) * (e.inSub ? 1.8 : 1), SW = (0.9 + 0.2 * F.lv) * (e.inSub ? 1.6 : 1), sep = F.lv >= 3 ? 0.75 : 0.6; // (7.6.15) twice the room round each fish; sardines, mackerel, seadevils
+      const sp = SPECIES_BY_ID[F.fish || 49] || SPECIES_BY_ID[49], Lp = ppm * Math.max(0.28, (sp.len || 0.3) * 0.9), ch = Math.cos(F.hd), shd = Math.sin(F.hd), SL = (2.2 + 0.5 * F.lv) * (e.inSub ? 1.8 : 1) * (F.lv >= 3 ? 1.35 : 1), SW = (0.9 + 0.2 * F.lv) * (e.inSub ? 1.6 : 1) * (F.lv >= 3 ? 1.35 : 1), sep = F.lv >= 3 ? 1.05 : 0.6; /* (7.6.19, owner) the anglers further apart */ // (7.6.15) twice the room round each fish; sardines, mackerel, seadevils
       if (!F.fishN) { const rnd = (k) => { const v = Math.sin(k * 127.1 + 311.7) * 43758.5453; return v - Math.floor(v); }, gs = (k) => Math.sqrt(-2 * Math.log(Math.max(1e-6, rnd(k)))) * Math.cos(TAU * rnd(k + 0.5));
         F.fishN = []; for (let i = 0; i < n; i++) { const oa = gs(i * 3.1) * 0.45, oc = gs(i * 5.7 + 2) * 0.45; F.fishN.push({ x: F.cx + oa * SL * ch - oc * SW * shd, y: F.cy + oa * SL * shd + oc * SW * ch, vx: F.vx, vy: F.vy, oa, oc, ph: rnd(i * 9.3) * TAU, sz: 0.8 + 0.4 * rnd(i * 2.2) }); } }
       // (7.6.15) a strike taken: the school bursts open round the hunter's mouth (fish flung out, bubbles, a flash of scales)
