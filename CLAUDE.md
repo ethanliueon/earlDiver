@@ -301,3 +301,5 @@ last desktop build is kept on the branch `desktop-4.25.5`).
 - (7.5.3, owner) Sparks on legendary and mythical pictures are drawn on a small canvas inside each picture's own frame
   (legendfx.js), so they scroll with it and never trail; never one canvas over the page chasing positions.
 - (7.5.4, owner) An observed animal's name fades out once the animal is off the screen (never held at the edge).
+- (7.5.5, owner) Gear and chests sell from the bag anywhere in play. Rare and up, every scroll and every chest ask first
+  ("Sell Gulper's Throat?" / "Legendary net", Keep / Sell, $...); a common or uncommon sells on a tap.

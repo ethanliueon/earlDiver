@@ -1,4 +1,5 @@
 // Hatchetfish (Earl is the default diver) — game loop, state, interactions and UI glue.
+import { rarKind } from './itemcard.js'; // (7.5.5) "Legendary net" on the sale's question
 import { watchPage } from './units.js'; // (6.0.3) first, so every canvas draws its figures in the chosen units
 import { watchPanels, platesReady } from './reveal.js'; // (6.5.0) no panel seen half-drawn
 import { installFatFinger } from './fatfinger.js';
@@ -395,7 +396,7 @@ const ui = new UI({
   onMessage: (m) => hud.toast(m),
   moneyAt: () => (hud.moneyAt), // (5.7.5) where the money is on the HUD, for the quest's sum
   onEquip: (k) => { const ok = buy(k); return ok; },
-  canSellGear: () => !!(g && g.mode === 'play' && (g.aboard || ui.cabinOpen() || (g.sub.docked && g.earl.inSub) || nearDave() || nearStation())), // someone to sell to: the Margaret, the station, or Dave
+  canSellGear: () => !!(g && g.mode === 'play'), // (7.5.5, owner) sold from the bag anywhere (once only aboard, at the station or Dave's)
 });
 // (4.10.0) the chart (K, or the chart button under the journal): the whole sea, and the player's own markers
 // (6.8.1) Sail here: from the chart, to a sail point already found. Only aboard the boat with the sub in its cradle; a
@@ -982,7 +983,7 @@ function buy(kind) {
     else if (put) { applyKit(e, P); ok = true; const key = { cam: 2 }[ITEMS[q.id].kind]; if (key && g.toolSel !== ITEMS[q.id].kind) hud.hint(`Tap the swap button by the net for the ${ITEMS[q.id].name.toLowerCase()}`); }
   } else if (kind.startsWith('sellscroll:')) { // (7.4.11, owner) a scroll is not sold on a tap: asked first, and told that three combine
     const q = instOf(P, kind.slice(11)); if (!q || isOn(P, q)) return false; const it = ITEMS[q.id], v = sellValue(q), NX0 = NEXT_TIER[it.rarity], NX = NX0 && ITEMS[`ab_${it.fam}_${NX0}`] ? NX0 : null;
-    ui.confirm(`Sell ${it.name}?`, NX ? `3 of the same scroll and rarity combine into 1 ${RARITY[NX].name} (${ITEMS[`ab_${it.fam}_${NX}`].name}).` : `${RARITY[it.rarity] ? RARITY[it.rarity].name : 'It'}: the highest a scroll can be.`, `Sell, ${money(v)}`, 'Keep', () => { buy('sellgear:' + q.u); ui.renderInventory && ui.renderInventory(); });
+    ui.confirm(`Sell ${it.name}?`, NX ? `3 of the same scroll and rarity combine into 1 ${RARITY[NX].name} (${ITEMS[`ab_${it.fam}_${NX}`].name}).` : `${RARITY[it.rarity] ? RARITY[it.rarity].name : 'It'}: the highest a scroll can be.`, `Sell, ${money(v)}`, 'Keep', () => { buy('sellok:' + q.u); ui.renderInventory && ui.renderInventory(); });
     return false;
   } else if (kind.startsWith('combine:')) { // (7.4.11, owner) three of a scroll at one rarity, none worn, become one of the next rarity
     const id = kind.slice(8), it = ITEMS[id], NX = it && NEXT_TIER[it.rarity], nId = NX && `ab_${it.fam}_${NX}`; // (7.4.15) three legendaries make the mythical
@@ -990,9 +991,14 @@ function buy(kind) {
     if (!nId || !ITEMS[nId] || spare.length < 3) return false;
     for (const x of spare.slice(0, 3)) removeItem(P, x.u);
     giveItem(P, nId); ui.lkSel = null; ui.showGains([{ kind: 'item', id: nId, how: 'Combined' }]); ok = true;
-  } else if (kind.startsWith('sellgear:')) {
+  } else if (kind.startsWith('sellgear:')) { // (7.5.5, owner) rare and up, and every chest, asked first; a common or uncommon sells on a tap
+    const q = instOf(P, kind.slice(9)); if (!q || isOn(P, q)) return false; const it = ITEMS[q.id], v = sellValue(q);
+    if (it.kind === 'chest' || !['common', 'uncommon'].includes(it.rarity)) { const R = RARITY[it.rarity];
+      ui.confirm(`Sell ${it.name}?`, it.kind === 'chest' ? `${R ? R.name + ' ' : ''}chest, unopened` : (R ? rarKind(R.name, it.kind) : ''), `Sell, ${money(v)}`, 'Keep', () => { buy('sellok:' + q.u); ui.renderInventory && ui.renderInventory(); }); return false; }
+    return buy('sellok:' + q.u);
+  } else if (kind.startsWith('sellok:')) {
     // (2.8.0) selling gear back, for about a third of what it is worth; never what he has on
-    const q = instOf(P, kind.slice(9));
+    const q = instOf(P, kind.slice(7));
     if (q && !isOn(P, q)) { const v = sellValue(q); if (removeItem(P, q.u)) { P.cash = Math.round((P.cash + v) * 100) / 100; ok = true; hud.toast(`Sold ${ITEMS[q.id].name} · ${money(v)}`); } }
   } else if (kind.startsWith('up:')) {
     // one more step on a track: every stat it covers improves together
