@@ -396,3 +396,10 @@ last desktop build is kept on the branch `desktop-4.25.5`).
 - (7.6.10, owner) The loading screen's depth gauge is set in the game's olive steel (bezel, knurling, lip, screws and needle cap), no brass.
 - (7.6.11, owner) Siphon: no beam ahead and no Lighthouse beams; the water round him is lit as by a Flare (Kraken a Flare+'s light; Carnival too: light 2 and over draws the Lighthouse's sweeping beams, so only that family reaches it). Its ink is let out by distance along the whole jet, lighter and see-through, spreading wider.
 - (7.6.12, owner, from a photograph) Siphon's ink is threads and veils, never clouds: from a faint knot, four long filaments wind out (dark and thick at the root, hair-fine at the tip), curling slowly as they spread and sink, torn translucent veils between them; sepia-black at low strength, let out every 1.3 m.
+- (7.6.13, owner) Siphon jets 30 / 45 / 100 m at 80 m/s (a brief kick, steady speed, a brief stop; ink capped at about 40
+  puffs a jet). Never a line in a skill: Snatch is a point of light darting to the fish, small ripples blooming where it
+  passed and a ripple bursting round the fish (Talon larger, amber); Cast's throw line is gone. Called fish (Lure,
+  Tidecall, Bloodmoon) come as small schools of one kind, each at its own place a few metres round him (exotics and
+  legendaries alone), never one ball. Shoal is one school with its own momentum that trails, overtakes and sweeps round
+  him, fish facing the way it swims and flashing together as it turns. Item cards carry no outline in their rarity's
+  colour and the pop-up's frame is plain olive steel (nothing is boxed); a card's plate is lit faintly from within instead.

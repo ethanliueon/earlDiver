@@ -113,10 +113,11 @@ export const ABILITY_DEFS = {
   // (7.6.8, owner) the pure dash: the diver (or the sub) fades into a squid of the tier's size, jets mantle first along the
   // way he taps, ink spilling behind and the water ahead lit, and fades back; nothing can bite him meanwhile, and a hunter
   // on his trail loses him in the ink
+  // (7.6.13, owner) 30 / 45 / 100 m at 80 m/s (the times are the distances at that speed, with a brief kick and stop)
   siphon: {
-    rare: { name: 'Siphon', pure: true, dur: 0.55, cd: 600, siphon: { dist: 20, sp: 148, len: 2.2, light: 1 }, line: 'Tap a way: you become a squid and jet 20 m, ink behind you. A hunter on your trail loses you in it.' },
-    exotic: { name: 'Siphon+', pure: true, dur: 0.65, cd: 900, siphon: { dist: 30, sp: 149, len: 3.6, light: 1.3 }, line: 'Tap a way: you become a giant squid and jet 30 m, ink behind you, the water round you lit.' },
-    legendary: { name: 'Kraken', pure: true, dur: 0.8, cd: 1800, siphon: { dist: 45, sp: 'colossal', len: 5.5, light: 1.6, eyes: true }, line: 'Tap a way: you become the colossal squid, eyes burning, and jet 45 m through a cloud of ink, the water round you lit.' },
+    rare: { name: 'Siphon', pure: true, dur: 0.42, cd: 600, siphon: { dist: 30, sp: 148, len: 2.2, light: 1 }, line: 'Tap a way: you become a squid and jet 30 m, ink behind you. A hunter on your trail loses you in it.' },
+    exotic: { name: 'Siphon+', pure: true, dur: 0.63, cd: 900, siphon: { dist: 45, sp: 149, len: 3.6, light: 1.3 }, line: 'Tap a way: you become a giant squid and jet 45 m, ink behind you, the water round you lit.' },
+    legendary: { name: 'Kraken', pure: true, dur: 1.4, cd: 1800, siphon: { dist: 100, sp: 'colossal', len: 5.5, light: 1.6, eyes: true }, line: 'Tap a way: you become the colossal squid, eyes burning, and jet 100 m through a cloud of ink, the water round you lit.' },
   },
   tidewarden: {
     legendary: { name: 'Tidewarden', maxLoad: 1, dur: 4, cd: 28800, ward: true, tide: true, line: 'When the water round you turns red: a wave of blue, it freezes, fades, and is gone for 5 minutes.' },

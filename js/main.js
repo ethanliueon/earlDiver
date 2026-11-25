@@ -2307,7 +2307,7 @@ function callFish(A) {
   const e = g.earl, m = e.inSub ? g.sub : e, cm = renderer.cam; if (!cm) return;
   const fish = g.fauna.callSchool({ x: cm.x, y: cm.y, w: cm.w || 30, h: cm.h || 16 }, m.x, m.y, A.call.n, A.call.exo, A.call.leg || 0, Math.random, (sp) => !!AGGRO[sp.id]); // (no hunter answers a call)
   if (!fish.length) { say('Nothing lives here to call'); return; }
-  g.callFx = { fish, home: fish[0].home, t: 0, dur: A.dur + 6 };
+  g.callFx = { fish, homes: fish.homes || [fish[0].home], t: 0, dur: A.dur + 6 };
   if (g.entity && !A.blood) g.entity.attn = Math.min(1, (g.entity.attn || 0) + 0.2);
 }
 function bloodmoon(A) { // the water to blood; the thing just past the radar's reach, marking him, hunting him
@@ -2369,9 +2369,9 @@ function tickAbility(dt) {
   // (5.16.0) Dash waiting for its tap (counted in real time: the world is slowed meanwhile), and the dash under way
   if (g.dashAim) { g.dashAim.t -= dt / 0.2; if (g.dashAim.t <= 0) { g.dashAim = null; renderer.aimZoom = 1; hud.toast('Dash put away', 'note'); } }
   if (g.siphonAim) { g.siphonAim.t -= dt / 0.2; if (g.siphonAim.t <= 0) { g.siphonAim = null; renderer.aimZoom = 1; } } // (7.6.8)
-  if (g.siphon) { const Q = g.siphon, M = Q.sub ? g.sub : g.earl, J = Q.A.dur; Q.t += dt; const tj = Q.t - SIPH.fo, k = clamp(tj / J, 0, 1), q = k < 0.5 ? 2 * k * k : 1 - Math.pow(-2 * k + 2, 2) / 2; // eased: a kick, the long glide, the stop
+  if (g.siphon) { const Q = g.siphon, M = Q.sub ? g.sub : g.earl, J = Q.A.dur; Q.t += dt; const tj = Q.t - SIPH.fo, k = clamp(tj / J, 0, 1), E0 = 0.12, q = k < E0 ? (k * k / E0) / (2 - 2 * E0) : k > 1 - E0 ? 1 - ((1 - k) * (1 - k) / E0) / (2 - 2 * E0) : (k - E0 / 2) / (1 - E0); // (7.6.13) a brief kick, a steady 80 m/s, a brief stop
     M.x = Q.x0 + (Q.x1 - Q.x0) * q; M.y = Q.y0 + (Q.y1 - Q.y0) * q; M.vx = 0; M.vy = 0; if (Q.sub) { g.earl.x = M.x; g.earl.y = M.y; }
-    if (tj > 0 && tj < J) { const gone = Math.hypot(M.x - (Q.px ?? Q.x0), M.y - (Q.py ?? Q.y0)); if (gone >= 1.3) { Q.px = M.x; Q.py = M.y; /* (7.6.11) let out by distance along the whole path, not by time (it bunched where the jet eased in and out) */ (g.inkPuffs || (g.inkPuffs = [])).push({ x: M.x - Q.dx * (Q.sub ? 2.5 : 1) + (Math.random() - 0.5) * 0.6, y: M.y - Q.dy * (Q.sub ? 2.5 : 1) + (Math.random() - 0.5) * 0.6, t: 0, r: (Q.sub ? 1.1 : 0.6) * (0.7 + Math.random() * 0.6) * (1 + (Q.A.tier === 'legendary' ? 0.5 : Q.A.tier === 'exotic' ? 0.25 : 0)), s: Math.random() * 100, d: Math.atan2(Q.dy, Q.dx) }); }
+    if (tj > 0 && tj < J) { const gone = Math.hypot(M.x - (Q.px ?? Q.x0), M.y - (Q.py ?? Q.y0)); if (gone >= Math.max(1.3, Q.A.siphon.dist / 40)) { Q.px = M.x; Q.py = M.y; /* (no more than about 40 puffs a jet) */ /* (7.6.11) let out by distance along the whole path, not by time (it bunched where the jet eased in and out) */ (g.inkPuffs || (g.inkPuffs = [])).push({ x: M.x - Q.dx * (Q.sub ? 2.5 : 1) + (Math.random() - 0.5) * 0.6, y: M.y - Q.dy * (Q.sub ? 2.5 : 1) + (Math.random() - 0.5) * 0.6, t: 0, r: (Q.sub ? 1.1 : 0.6) * (0.7 + Math.random() * 0.6) * (1 + (Q.A.tier === 'legendary' ? 0.5 : Q.A.tier === 'exotic' ? 0.25 : 0)), s: Math.random() * 100, d: Math.atan2(Q.dy, Q.dx) }); }
       for (let i = 0; i < 2; i++) g.bubbles.push({ x: M.x - Q.dx * 1.2 + (Math.random() - 0.5), y: M.y - Q.dy * 1.2 + (Math.random() - 0.5), r: 0.03 + Math.random() * 0.08, w: Math.random() * 6, t: 0 }); }
     if (Q.t > SIPH.fo + J + SIPH.fi) { g.siphon = null; renderer.aimZoom = 1; } }
   if (g.inkPuffs) { for (const p of g.inkPuffs) p.t += dt; g.inkPuffs = g.inkPuffs.filter((p) => p.t < 7); if (!g.inkPuffs.length) g.inkPuffs = null; }
@@ -2417,9 +2417,9 @@ function tickAbility(dt) {
   if (g.castAim) { g.castAim.t -= dt; if (g.castAim.t <= 0) g.castAim = null; }
   if (g.bursts) { for (const b of g.bursts) b.t += dt; g.bursts = g.bursts.filter((b) => b.t < (b.pull || 0) + b.dur + 0.2); } // (7.6.7)
   if (g.radarRipple) { g.radarRipple.t += dt; if (g.radarRipple.t > 2.2) g.radarRipple = null; }
-  if (g.callFx) { const C = g.callFx, m = g.earl.inSub ? g.sub : g.earl; C.t += dt; C.home.x = m.x; C.home.y = m.y; // (7.6.7) the called fish home on him while the call lasts
-    for (const c of C.fish) if (!c.dead && c.called && Math.hypot(c.x - m.x, c.y - m.y) < 7) { c.speed = c.cruise; c.called = false; }
-    if (C.t > C.dur) { for (const c of C.fish) if (c.home === C.home) { c.home = null; c.speed = c.cruise; c.called = false; } g.callFx = null; } }
+  if (g.callFx) { const C = g.callFx, m = g.earl.inSub ? g.sub : g.earl; C.t += dt; for (const h of C.homes) { h.x = m.x + (h.ox || 0); h.y = m.y + (h.oy || 0); } // (7.6.7) the called fish home on him while the call lasts; (7.6.13) each school at its own place round him
+    for (const c of C.fish) if (!c.dead && c.called && c.home && Math.hypot(c.x - c.home.x, c.y - c.home.y) < 4) { c.speed = c.cruise; c.called = false; }
+    if (C.t > C.dur) { for (const c of C.fish) if (C.homes.includes(c.home)) { c.home = null; c.speed = c.cruise; c.called = false; } g.callFx = null; } }
   if (g.snatch && !(abilityState(g).activeT > 0 || (g.abil2 && g.abil2.activeT > 0))) g.snatch = null;
   if (g.snatchFx) { g.snatchFx.t += dt; if (g.snatchFx.t > 0.56) g.snatchFx = null; }
   if (g.ironT > 0) g.ironT = Math.max(0, g.ironT - dt);

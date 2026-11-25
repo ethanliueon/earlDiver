@@ -459,17 +459,23 @@ export class Fauna {
     const by = { exotic: [], legendary: [], rest: [] };
     for (const c of cands) { const R = (rarityOf(c) || {}).id; (R === 'exotic' ? by.exotic : R === 'legendary' ? by.legendary : by.rest).push(c); }
     const pick = (L) => { let tot = 0; const w = L.map((c) => { const v = weightOf(c) * this.depthPref(c, x, y, this.night) + 1e-6; tot += v; return v; }); let r = rnd() * tot; for (let i = 0; i < L.length; i++) { r -= w[i]; if (r <= 0) return L[i]; } return L[0]; };
-    const home = { x, y, kind: 'call' }, out = [];
-    for (let i = 0; i < n; i++) {
-      const q = rnd(), L = q < legP && by.legendary.length ? by.legendary : q < legP + exoP && by.exotic.length ? by.exotic : by.rest.length ? by.rest : cands;
-      const sp = pick(L), a = rnd() * Math.PI * 2, rx = cam.w / 2 + 3 + rnd() * 4, ry = cam.h / 2 + 3 + rnd() * 4;
-      const k = Math.min(rx / Math.max(1e-3, Math.abs(Math.cos(a))), ry / Math.max(1e-3, Math.abs(Math.sin(a)))); // just past the view's edge on this bearing
-      const fx = clamp(cam.x + Math.cos(a) * k, 3, 4960), fy = clamp(cam.y + Math.sin(a) * k, 1, W.floorAt(fx) - 0.6);
-      const f = this.makeFish(sp, fx, fy, Math.cos(a) > 0 ? -1 : 1, this.groupId++, true);
-      if (!f) continue;
-      f.home = home; f.homeR = 2.5 + rnd() * 4; f.hide = false; f.tT = 0; f.called = true; f.speed = Math.max(f.cruise * 3, 3.2); // (it rushes in, then slows to its own pace round him)
-      this.list.push(f); out.push(f);
+    // (7.6.13, owner) natural, never one ball: ordinary fish come in small schools of one kind (each sharing a group, so
+    // when the call ends they swim on together); exotics and legendaries come alone, as the rare do. Each school is given
+    // its own place a few metres round him (kept as he moves) and arrives on its own bearing. The per-fish odds hold: a roll
+    // is made per school, scaled by the schools' mean size
+    const out = [], homes = [], meanG = 4, adj = (q) => q * meanG / (1 + q * (meanG - 1)), pE = adj(exoP), pL = adj(legP);
+    while (out.length < n) {
+      const q = rnd(), rare = q < pL + pE, L = q < pL && by.legendary.length ? by.legendary : rare && by.exotic.length ? by.exotic : by.rest.length ? by.rest : cands, sp = pick(L);
+      const sz = rare || L === by.legendary ? 1 : Math.max(1, Math.min(n - out.length, Math.round((sp.v.sch > 1 ? Math.min(8, sp.v.sch) : 2) * (0.5 + rnd() * 0.6))));
+      const ha = rnd() * Math.PI * 2, hd = 3.5 + rnd() * 7, home = { x: x + Math.cos(ha) * hd, y: y + Math.sin(ha) * hd * 0.55, ox: Math.cos(ha) * hd, oy: Math.sin(ha) * hd * 0.55, kind: 'call' }; homes.push(home);
+      const a = ha + (rnd() - 0.5) * 0.8, rx = cam.w / 2 + 3 + rnd() * 4, ry = cam.h / 2 + 3 + rnd() * 4, kk = Math.min(rx / Math.max(1e-3, Math.abs(Math.cos(a))), ry / Math.max(1e-3, Math.abs(Math.sin(a))));
+      const gx = cam.x + Math.cos(a) * kk, gy = cam.y + Math.sin(a) * kk, gid = this.groupId++;
+      for (let i = 0; i < sz; i++) { const fx = clamp(gx + (rnd() - 0.5) * 2.4, 3, 4960), fy = clamp(gy + (rnd() - 0.5) * 1.4, 1, W.floorAt(fx) - 0.6);
+        const f = this.makeFish(sp, fx, fy, Math.cos(a) > 0 ? -1 : 1, gid, i === 0); if (!f) continue;
+        f.home = home; f.homeR = 1.6 + sz * 0.35 + rnd() * 1.2; f.hide = false; f.tT = rnd() * 1.5; f.called = true; f.speed = Math.max(f.cruise * 3, 3.2) * (0.85 + rnd() * 0.3);
+        this.list.push(f); out.push(f); }
     }
+    out.homes = homes;
     return out;
   }
   spawnGlimmer(cam, night) {
