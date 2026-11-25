@@ -378,3 +378,18 @@ last desktop build is kept on the branch `desktop-4.25.5`).
   full; away from the surface the same buttons greyed under a padlock, "At the surface"); one centred action bar; a worn
   scroll's card and frame fit what they hold. The swap chip sits on the skill button's upper right rim (as the camera chip
   on the net's), sized to clear the hand button.
+- (7.6.8, owner) Siphon / Siphon+ / Kraken (pure; the old Ink family is gone): pressed, it waits for a tap (the world
+  slowed, the view drawn out); he (or the sub) greys and fades, the game's own Humboldt / giant / colossal squid fades in
+  (1.5 times larger for the sub), jets mantle first 20 / 30 / 45 m along the tapped way (stopped short of rock), ink
+  puffing behind (small smoky lobes, stretched along the jet, thinning; no outline) and a soft-sided beam lighting the water
+  ahead; Kraken's eyes burn amber, with sharp living specks along its arms; then it fades back into him. Nothing bites him
+  meanwhile; a hunter on his trail breaks off. Dash's trail is torn water: tapered foam slivers, small tapering curls off
+  its sides (Dash+), sharp specks swirling (Undertow), a cavitation trail of bubbles; no tube, rings or round glows.
+- (7.6.9, owner) The rest of the cheap effects redone: the reach skills light the hoop's own rim (slivers chasing round it),
+  Apex and Leviathan Heart ring it with hooked teeth of light, the swing leaves a torn streak (no round glows); Ironskin
+  turns his own figure to gunmetal with a cold sheen sweeping down (Temper's pipeline); Snatch throws a sagging weighted
+  line with a lead sinker and a barbed hook that glints, the bite a puff of bubbles, Talon three hooked claws of amber
+  light; Shoal is real sardines (the game's own drawing) in one ragged school wheeling round him, flashing as they turn;
+  Breath draws pale slivers of water streaming in to his tank; Nacre's shimmer chases round the net's rim and a lucky
+  catch lets a real pearl rise (no "+1 pearl"); Eagle Eye closes real lids (feathered dark curves with lash shadows) round
+  an almond of sight. Gust keeps Sprint's water streaks while he moves.

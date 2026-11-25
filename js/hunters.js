@@ -84,7 +84,7 @@ export function updateHunters(g, dt) {
   const night = g.day.light < 0.3;
   // (claude-polish) the Margaret's own water is safe: near her (60 m) and above 40 m nothing starts an attack, and one under
   // way breaks off (a great white took a new diver at 6 m beside her, an orca stove in the first sub at 30 m)
-  const protectedNow = !!g.protection || !!g.hunterWard || !!g.homeSafe || !!(g.earl.legends && g.earl.legends.has('faithless')); // (5.16.0)
+  const protectedNow = !!g.protection || !!g.hunterWard || !!g.homeSafe || !!g.siphon || /* (7.6.8) */ !!(g.earl.legends && g.earl.legends.has('faithless')); // (5.16.0)
   const dolphinsNear = list.some((c) => DOLPHINS.has(c.sp.id) && dist(c.x, c.y, e.x, e.y) < 25);
   const frenzy = g.fauna.puffs.some((p) => dist(p.x, p.y, e.x, e.y) < 35);
   const hidden = g.concealed;

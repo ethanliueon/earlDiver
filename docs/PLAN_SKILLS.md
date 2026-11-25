@@ -137,3 +137,12 @@ Each new hybrid family gets a mythical Heart later, once it has proved itself.
 
 Built: steps 1-5 in 7.6.0-7.6.4, the pure families and Lookout in 7.6.5, the rest in 7.6.6. Bloodmoon is only in the
 Test tab (never on the shelf or in chests) until Events and Special Offers are built.
+
+## 7.6.7-7.6.9 (owner)
+- Every skill opens with a burst of light by tier (a lens rolling out; a Heart's the brightest, rippling the radar). Every
+  Heart except Bloodmoon throws the thing 200 m further off when it is on the radar and at least 100 m away.
+- Tidecall is now the Lure family: Lure / Lure+ / Tidecall (15 / 25 / 40 fish of the depth, 5 / 7 / 10 % exotic). Bloodmoon
+  calls 40 (15 % exotic, 2 % legendary) and still brings the thing.
+- Ink is gone; its place is Siphon / Siphon+ / Kraken, the pure dash (20 / 30 / 45 m as a squid). Dash stays the hybrid.
+- Revel lights the water as a Flare+ and keeps hunters off (15 / 25 / 40 m). Temper heats the suit; it no longer shares
+  Dauntless's field.

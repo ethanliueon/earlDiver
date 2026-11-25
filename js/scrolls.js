@@ -6,8 +6,8 @@
 // bands. Painted once per size and kept.
 const TAU = Math.PI * 2;
 
-export const ABILITY_FAMILIES = ['sprint', 'vigor', 'dash', 'flare', 'echo', 'ironhull', 'tidewarden', 'dauntless', 'breath', 'gust', 'temper', 'plunge', 'lookout', 'cast', 'snatch', 'ironskin', 'calm', 'tidecall', 'nacre', 'bloodmoon', 'shoal', 'revel', 'ink']; // (7.6.5, 7.6.6) the new families
-export const ACCENT = { sprint: '#a6e6f2', vigor: '#9ad690', dash: '#efe0b8', flare: '#f6b45c', echo: '#f0c8a8', ironhull: '#c6cfd4', tidewarden: '#8cc2f4', dauntless: '#c8d2d6', breath: '#b8dcea', gust: '#d8e2e0', temper: '#c8c0b0', plunge: '#a8b0a8', lookout: '#e8c890', cast: '#c8d0a8', snatch: '#d8c8a0', ironskin: '#b8bcc0', calm: '#a8c0c8', tidecall: '#a8d0c8', nacre: '#e8e0d0', bloodmoon: '#c84838', shoal: '#d0d8dc', revel: '#e0b870', ink: '#b090c0' };
+export const ABILITY_FAMILIES = ['sprint', 'vigor', 'dash', 'flare', 'echo', 'ironhull', 'tidewarden', 'dauntless', 'breath', 'gust', 'temper', 'plunge', 'lookout', 'cast', 'snatch', 'ironskin', 'calm', 'tidecall', 'nacre', 'bloodmoon', 'shoal', 'revel', 'siphon']; // (7.6.5, 7.6.6) the new families
+export const ACCENT = { sprint: '#a6e6f2', vigor: '#9ad690', dash: '#efe0b8', flare: '#f6b45c', echo: '#f0c8a8', ironhull: '#c6cfd4', tidewarden: '#8cc2f4', dauntless: '#c8d2d6', breath: '#b8dcea', gust: '#d8e2e0', temper: '#c8c0b0', plunge: '#a8b0a8', lookout: '#e8c890', cast: '#c8d0a8', snatch: '#d8c8a0', ironskin: '#b8bcc0', calm: '#a8c0c8', tidecall: '#a8d0c8', nacre: '#e8e0d0', bloodmoon: '#c84838', shoal: '#d0d8dc', revel: '#e0b870', siphon: '#d89a86' };
 const BODY = {
   rare: { mid: '#2e4c70', dark: '#15253a', light: '#4d739c' },
   exotic: { mid: '#4c2d58', dark: '#25142c', light: '#714b83' },
@@ -567,10 +567,17 @@ function emblemTier(x, fam, tier) {
       for (let i = 0; i < 6; i++) { const a = Math.PI * (0.15 + i * 0.14), r1 = P(); r1.moveTo(Math.cos(a) * 18, 8 + Math.sin(a) * 8); r1.lineTo(Math.cos(a) * 22, 8 + Math.sin(a) * 11); S(r1, 1); } }
     done2(); return;
   }
-  if (fam === 'ink') {
-    if (tier === 'rare') { drop(0, 2, 11); }
-    else if (exo) { ring(); drop(-4, -2, 8); const sw = P(); for (let a = 0; a < TAU * 1.4; a += 0.15) { const r = 4 + a * 2.2, px = 6 + Math.cos(a) * r * 0.7, py = 8 + Math.sin(a) * r * 0.45; a ? sw.lineTo(px, py) : sw.moveTo(px, py); } S(sw, 1.3); }
-    else { medallion(); for (let k = 0; k < 3; k++) { const sw = P(); for (let a = 0; a < TAU * 1.2; a += 0.15) { const r = 3 + a * 2.6 + k, ph = a + k * 2.1, px = Math.cos(ph) * r * 0.9, py = Math.sin(ph) * r * 0.7; a ? sw.lineTo(px, py) : sw.moveTo(px, py); } S(sw, 1.8 - k * 0.4); } drop(14, -14, 3.4); drop(-15, 12, 2.6); }
+  if (fam === 'siphon') { // (7.6.8) a squid jetting mantle first, its arms streaming behind; ink drops (Siphon+), an eye and a cloud (Kraken)
+    const sq = (s0, eye) => { x.save(); x.translate(-2, 2); x.rotate(-0.75); x.scale(s0, s0);
+      const m = P(); m.moveTo(0, -19); m.bezierCurveTo(6, -12, 6.5, -2, 5, 4); m.lineTo(-5, 4); m.bezierCurveTo(-6.5, -2, -6, -12, 0, -19); m.closePath(); F(m);
+      const fn = P(); fn.moveTo(0, -19); fn.lineTo(7, -13); fn.lineTo(4.5, -10); fn.lineTo(-4.5, -10); fn.lineTo(-7, -13); fn.closePath(); F(fn);
+      for (let k = 0; k < 5; k++) { const ax = -4 + k * 2, a = P(); a.moveTo(ax, 3); a.bezierCurveTo(ax * 1.2, 9, ax * 1.6 + (k % 2 ? 2 : -2), 13, ax * 1.3, 18); x.lineWidth = 2.2 - Math.abs(k - 2) * 0.3; x.strokeStyle = W; x.lineCap = 'round'; x.stroke(a); }
+      const tn = P(); tn.moveTo(-1, 4); tn.bezierCurveTo(-3, 14, 4, 18, 1, 25); x.lineWidth = 1.2; x.stroke(tn); const tn2 = P(); tn2.moveTo(1, 4); tn2.bezierCurveTo(4, 13, -2, 19, 3, 24); x.stroke(tn2);
+      const ln = P(); ln.moveTo(0, -15); ln.lineTo(0, eye ? -5 : 0); D(ln, 0.9); if (eye) { const ey = P(); ey.arc(0, 0.5, 2.8, 0, TAU); x.fillStyle = K; x.fill(ey); const ey2 = P(); ey2.arc(0, 0.5, 1.3, 0, TAU); F(ey2); } x.restore(); };
+    if (tier === 'rare') sq(1.05);
+    else if (exo) { ring(); sq(0.85); drop(11, 9, 2.6); drop(15, 3, 1.9); }
+    else { medallion(); sq(0.82, true);
+      for (let k = 0; k < 3; k++) { const cl = P(); cl.arc(10 + k * 3, 10 - k * 3.5, 3.2 - k * 0.6, 0, TAU); F(cl); } }
     done2(); return;
   }
   // (7.4.19, owner) the mythicals' own pictures: each the legendary's idea pushed further, on the medallion, with a small

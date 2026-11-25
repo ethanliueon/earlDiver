@@ -110,10 +110,13 @@ export const ABILITY_DEFS = {
     exotic: { name: 'Revel+', dur: 45, cd: 1200, revel: 2, light: 1.6, repel: 25, line: 'For 45 s brighter lantern colours round you, pulsing in time. Hunters keep 25 m off.' },
     legendary: { name: 'Carnival', dur: 60, cd: 2400, revel: 3, light: 2, repel: 40, line: 'For 60 s the sea becomes a carnival of coloured light, pulsing in time. Hunters keep 40 m off.' },
   },
-  ink: {
-    rare: { name: 'Ink', dur: 30, cd: 300, ink: 1, line: 'The water round you tinted a colour for 30 s.' },
-    exotic: { name: 'Ink+', dur: 45, cd: 600, ink: 2, line: 'The water round you deeply tinted a colour for 45 s.' },
-    legendary: { name: 'Inkstorm', dur: 60, cd: 1800, ink: 3, line: 'For 60 s you colour the sea, and leave a slow-fading trail of it behind you.' },
+  // (7.6.8, owner) the pure dash: the diver (or the sub) fades into a squid of the tier's size, jets mantle first along the
+  // way he taps, ink spilling behind and the water ahead lit, and fades back; nothing can bite him meanwhile, and a hunter
+  // on his trail loses him in the ink
+  siphon: {
+    rare: { name: 'Siphon', pure: true, dur: 0.55, cd: 600, siphon: { dist: 20, sp: 148, len: 2.2, light: 1 }, line: 'Tap a way: you become a squid and jet 20 m, ink behind you. A hunter on your trail loses you in it.' },
+    exotic: { name: 'Siphon+', pure: true, dur: 0.65, cd: 900, siphon: { dist: 30, sp: 149, len: 3.6, light: 1.6 }, line: 'Tap a way: you become a giant squid and jet 30 m, ink behind you and the water ahead lit.' },
+    legendary: { name: 'Kraken', pure: true, dur: 0.8, cd: 1800, siphon: { dist: 45, sp: 'colossal', len: 5.5, light: 2.4, eyes: true }, line: 'Tap a way: you become the colossal squid, eyes burning, and jet 45 m through a cloud of ink, the water ahead lit far.' },
   },
   tidewarden: {
     legendary: { name: 'Tidewarden', maxLoad: 1, dur: 4, cd: 28800, ward: true, tide: true, line: 'When the water round you turns red: a wave of blue, it freezes, fades, and is gone for 5 minutes.' },

@@ -441,6 +441,7 @@ const INJURY = {
   names: ['', 'Grazed', 'Wounded', 'Badly hurt', 'Critical'],
 };
 function hurt(dmg, sp, how) {
+  if (g.siphon && how !== 'heat') return; // (7.6.8) mid-change, nothing touches him
   if (g.ironT > 0 && how !== 'heat') { g.ironHit = { t: g.time }; for (let i = 0; i < 10; i++) g.bubbles.push({ x: g.earl.x + (Math.random() - 0.5) * 0.6, y: g.earl.y + (Math.random() - 0.5) * 0.6, r: 0.03, w: Math.random() * 6, t: 0 }); return; } // (7.6.6, owner) Ironskin
   if (g.mode !== 'play') return;
   const suit = suitOf(profile);
@@ -1534,7 +1535,7 @@ function tapRectAt(x, y) { const sl = 10 * (window.__fingerK || 1); let best = n
 function wireCabinTouch() { if (cabinTouch || !ui.cabin || !ui.cabin.c) return; cabinTouch = new Touch(ui.cabin.c, { buttonAt: () => null, active: () => !!(!document.getElementById('cabin').hidden), onTap: (x) => { ui.cabin.tapAt(x); return true; } }); ui.cabin.stick = () => (touch.vec.on ? { ...touch.vec, sprint: touch.vec.sprint || !!(g && g.sprintLock) } : cabinTouch.vec); } // (5.6.8) the HUD (and its stick) is over the cabin now
 setTimeout(wireCabinTouch, 0);
 watchPage(); // (6.0.3) the page's text in the chosen units
-const touch = new Touch(hudCanvas, { onTap: (x, y) => { const pm = g.patchMarks; if (pm && renderer.cam) { const cm = renderer.cam, kk = innerWidth / renderer.c.width; for (const [wi, w] of pm.entries()) { const px = ((w.x - cm.x) * cm.ppm + renderer.c.width / 2) * kk, py = ((w.y - cm.y) * cm.ppm + renderer.c.height / 2) * kk; if (Math.hypot(x - px, y - py) < Math.max(36 * (window.__fingerK || 1), cm.ppm * 0.9 * kk)) { g.repairTap = wi; g.repairTapCount = (g.sub.patches || []).length; return true; } } } const o = hud.obsScreen, k = innerWidth / hud.c.width; if (o && Math.hypot(x - o.x * k, y - o.y * k) < o.r * k * 1.6) { touch.key('obs', true); setTimeout(() => touch.key('obs', false), 60); return true; } if (ui.cabinOpen && ui.cabinOpen()) { ui.cabin.tapAt(x); return true; } const tr = tapRectAt(x, y); if (tr) { touch.key(tr.key, true); setTimeout(() => touch.key(tr.key, false), 60); return true; } return false; }, buttonAt: (x, y) => hudButtonAt(x, y), aim: (x, y) => { if (g && renderer.cam && (g.castAim || (g.snatch && g.snatch.left > 0))) { const cm = renderer.cam, kk = innerWidth / renderer.c.width, wx = cm.x + (x / kk - renderer.c.width / 2) / cm.ppm, wy = cm.y + (y / kk - renderer.c.height / 2) / cm.ppm; if (g.castAim) return castTo(wx, wy); if (snatchAt(wx, wy)) return true; } /* (7.6.6) */ if (!g || !g.dashAim || !renderer.cam) return false; const cm = renderer.cam, kk = innerWidth / renderer.c.width; return dashTo(cm.x + (x / kk - renderer.c.width / 2) / cm.ppm, cm.y + (y / kk - renderer.c.height / 2) / cm.ppm); }, active: () => !!(g && g.mode === 'play' && !hud.panel), onMessage: (m) => { audio.ready && audio.uiSoft(); hud.toast(m); }, onPress: (k) => { if (PLAIN_CLICK.has(k) && audio.ready) audio.click(); } });
+const touch = new Touch(hudCanvas, { onTap: (x, y) => { const pm = g.patchMarks; if (pm && renderer.cam) { const cm = renderer.cam, kk = innerWidth / renderer.c.width; for (const [wi, w] of pm.entries()) { const px = ((w.x - cm.x) * cm.ppm + renderer.c.width / 2) * kk, py = ((w.y - cm.y) * cm.ppm + renderer.c.height / 2) * kk; if (Math.hypot(x - px, y - py) < Math.max(36 * (window.__fingerK || 1), cm.ppm * 0.9 * kk)) { g.repairTap = wi; g.repairTapCount = (g.sub.patches || []).length; return true; } } } const o = hud.obsScreen, k = innerWidth / hud.c.width; if (o && Math.hypot(x - o.x * k, y - o.y * k) < o.r * k * 1.6) { touch.key('obs', true); setTimeout(() => touch.key('obs', false), 60); return true; } if (ui.cabinOpen && ui.cabinOpen()) { ui.cabin.tapAt(x); return true; } const tr = tapRectAt(x, y); if (tr) { touch.key(tr.key, true); setTimeout(() => touch.key(tr.key, false), 60); return true; } return false; }, buttonAt: (x, y) => hudButtonAt(x, y), aim: (x, y) => { if (g && renderer.cam && (g.castAim || (g.snatch && g.snatch.left > 0))) { const cm = renderer.cam, kk = innerWidth / renderer.c.width, wx = cm.x + (x / kk - renderer.c.width / 2) / cm.ppm, wy = cm.y + (y / kk - renderer.c.height / 2) / cm.ppm; if (g.castAim) return castTo(wx, wy); if (snatchAt(wx, wy)) return true; } /* (7.6.6) */ if (g && g.siphonAim && renderer.cam) { const cm = renderer.cam, kk = innerWidth / renderer.c.width; return siphonTo(cm.x + (x / kk - renderer.c.width / 2) / cm.ppm, cm.y + (y / kk - renderer.c.height / 2) / cm.ppm); } /* (7.6.8) */ if (!g || !g.dashAim || !renderer.cam) return false; const cm = renderer.cam, kk = innerWidth / renderer.c.width; return dashTo(cm.x + (x / kk - renderer.c.width / 2) / cm.ppm, cm.y + (y / kk - renderer.c.height / 2) / cm.ppm); }, active: () => !!(g && g.mode === 'play' && !hud.panel), onMessage: (m) => { audio.ready && audio.uiSoft(); hud.toast(m); }, onPress: (k) => { if (PLAIN_CLICK.has(k) && audio.ready) audio.click(); } });
 hud.touchRef = touch; // (5.7.0) the HUD draws the sprint button beside the stick
 // (7.2.4) no full screen asked of the browser: entering it drops the page's pinned scale (the panels and words came out
 // 1.8x too large). Full screen is the home-screen app's (manifest), as on an iPhone
@@ -2232,6 +2233,7 @@ function useAbility() {
   // (5.16.0) Dash on a phone: pressed, it waits for a tap where to go (time slowed, the screen greyed, the view opened by
   // its tier); pressed again, or 3 s with no tap, and it is put away unspent
   if (A.dash) { if (g.dashAim) { g.dashAim = null; renderer.aimZoom = 1; } else { g.dashAim = { t: 3, A }; renderer.aimZoom = A.zoom || 1; } return; }
+  if (A.siphon) { if (g.siphonAim) { g.siphonAim = null; renderer.aimZoom = 1; } else if (!g.siphon) { g.siphonAim = { t: 3, A }; renderer.aimZoom = 1.2; hud.toast('Tap a way to go', 'note'); } return; } // (7.6.8, owner) Siphon: aimed by a tap, as the dash
   if (A.cast) { if (g.castAim) g.castAim = null; else { g.castAim = { t: 4, A }; hud.toast('Tap where to throw', 'note'); } return; } // (7.6.6, owner) Cast: aimed by a tap, as the dash
   const S = abilityState(g), e = g.earl, P = profile;
   S.def = A; S.activeT = A.dur; S.maxT = A.dur; S.at = g.time;
@@ -2254,7 +2256,6 @@ function useAbility() {
   if (A.blood) bloodmoon(A);
   if (A.shoal) g.shoalFx = { t: 0, lv: A.shoal, dur: A.dur };
   if (A.revel) g.revelFx = { t: 0, lv: A.revel, dur: A.dur };
-  if (A.ink) { const INKS = [[118, 28, 40], [40, 88, 56], [74, 40, 108], [30, 70, 104], [124, 82, 30]]; P.inkN = ((P.inkN || 0) + 1) % INKS.length; g.inkFx = { t: 0, lv: A.ink, dur: A.dur, col: INKS[P.inkN], trail: [] }; }
   if (A.echo) { g.echoT = A.dur; g.echoLv = A.echo; g.echoAt = g.time; g.echoSweep = 0; } // (5.16.0) the screen-wide sweep (render.js), then the marks on the radar (hud.js)
   if (A.tide) { // (7.4.15) The Last Tide: any time. In red water as Tidewarden; marked, the mark washed off; else only its light and air
     const red = (g.fx && (g.fx.redTint || 0) > 0.03) || (g.entity && g.entity.dist < 160 && (g.entity.marked || g.entity.state === 'hunt' || g.entity.state === 'stalk'));
@@ -2294,7 +2295,7 @@ function snatchAt(wx, wy) {
   const N = g.snatch; if (!N || N.left <= 0 || !(abilityState(g).activeT > 0 || (g.abil2 && g.abil2.activeT > 0))) return false;
   let best = null, bd = 2.2; for (const c of g.fauna.list) { if (c.dead || c.pet || c.companion) continue; const d = Math.hypot(c.x - wx, c.y - wy) - (c.len || 0) * 0.5; if (d < bd) { bd = d; best = c; } }
   if (!best) return false; N.left--; const net = gear(profile, 'net') || {}, maxLen = net.maxLen || 0.6;
-  g.snatchFx = { x0: g.earl.x, y0: g.earl.y, x1: best.x, y1: best.y, t: 0 };
+  g.snatchFx = { x0: g.earl.x, y0: g.earl.y, x1: best.x, y1: best.y, t: 0, tier: N.def.tier }; for (let i = 0; i < 8; i++) g.bubbles.push({ x: best.x + (Math.random() - 0.5) * 0.4, y: best.y + (Math.random() - 0.5) * 0.4, r: 0.02 + Math.random() * 0.06, w: Math.random() * 6, t: -0.2 - Math.random() * 0.1 }); // (7.6.8) the bite: a puff of bubbles where the hook takes it
   if (best.len > maxLen * 1.1) say('Too big for the net');
   else if (bagUsed(g) >= bagSlots(g)) say('The bag is full');
   else if (Math.random() < Math.min(0.97, 0.62 + N.bonus)) skillCatch(best, best.x, best.y); else { say('Missed'); best.flee = 1; }
@@ -2329,6 +2330,22 @@ function fireBurst(A) {
       ent.x = m.x + dx * k; ent.y = clamp(m.y + dy * k * 0.5, 40, g.world.floorAt(ent.x) - 10); ent.vx = 0; ent.vy = 0; ent.dist = d + 200;
       if (ent.state === 'hunt' || ent.state === 'charge') ent.state = 'search'; g.pushFx = { t: 0, x: ent.x, y: ent.y }; } }
 }
+// (7.6.8, owner) Siphon: the way tapped, its full length (stopped short of rock or the seabed); he greys and fades,
+// the squid of the tier fades in, jets mantle first with ink spilling behind and the water ahead lit, then fades back
+// into him at the far end. Nothing bites him meanwhile, and a hunter on his trail breaks off, lost in the ink
+const SIPH = { fo: 0.24, fi: 0.32 };
+function siphonTo(wx, wy) {
+  const D = g.siphonAim; if (!D) return false;
+  const A = D.A, e = g.earl, M = e.inSub ? g.sub : e, P = profile, dist = A.siphon.dist, r = e.inSub ? 2.2 : 0.6;
+  let dx = wx - M.x, dy = wy - M.y; const L0 = Math.hypot(dx, dy) || 1; dx /= L0; dy /= L0;
+  let L = dist; for (let d = 0.5; d <= dist; d += 0.5) { const px = M.x + dx * d, py = M.y + dy * d; if (py < (e.inSub ? 3 : 0.6) || g.world.rockAt(px, py, r) || py > g.world.floorAt(px) - r) { L = Math.max(0, d - 1); break; } }
+  g.siphonAim = null; renderer.aimZoom = 1.12;
+  const S = abilityState(g); S.def = A; S.activeT = SIPH.fo + A.dur + SIPH.fi; S.maxT = S.activeT; S.at = g.time; P.abilReadyAt = Date.now() + (S.activeT + A.cd) * 1000; saveProfile(P);
+  g.siphon = { x0: M.x, y0: M.y, x1: M.x + dx * L, y1: M.y + dy * L, dx, dy, t: 0, A, sub: !!e.inSub, puffT: 0 };
+  e.facing = dx >= 0 ? 1 : -1; if (e.inSub) g.sub.facing = e.facing;
+  for (const c of g.fauna.list) if (c.att && c.att.s !== 'idle' && c.att.s !== 'leave') { c.att.s = 'leave'; c.att.t = 0; c.att.cool = 30; }
+  fireBurst(A); audio.ready && audio.click && audio.click(); return true;
+}
 function dashTo(wx, wy) {
   const D = g.dashAim; if (!D) return false;
   const A = D.A, e = g.earl, M = e.inSub ? g.sub : e, P = profile;
@@ -2345,12 +2362,19 @@ function dashTo(wx, wy) {
   g.dashMove = { x0: M.x, y0: M.y, x1, y1, t: 0, dur: A.dur, tier: A.dash };
   g.dashFx = { x0: M.x, y0: M.y, x1, y1, t: 0, tier: A.dash };
   e.facing = Math.sign(x1 - M.x) || e.facing; if (e.inSub) g.sub.facing = e.facing;
-  for (let i = 0; i < 10 + A.dash * 8; i++) { const k = Math.random(); g.bubbles.push({ x: M.x + (x1 - M.x) * k + (Math.random() - 0.5), y: M.y + (y1 - M.y) * k + (Math.random() - 0.5), r: 0.03 + Math.random() * 0.08, w: Math.random() * 6, t: 0 }); }
+  for (let i = 0; i < 18 + A.dash * 14; i++) { const k = Math.random(); g.bubbles.push({ x: M.x + (x1 - M.x) * k + (Math.random() - 0.5) * 1.2, y: M.y + (y1 - M.y) * k + (Math.random() - 0.5) * 1.2, r: 0.02 + Math.pow(Math.random(), 2) * 0.14, w: Math.random() * 6, t: -Math.random() * 0.3 }); } // (7.6.8) a cavitation trail: many bubbles, mostly small, a few large
   audio.ready && audio.click && audio.click(); return true;
 }
 function tickAbility(dt) {
   // (5.16.0) Dash waiting for its tap (counted in real time: the world is slowed meanwhile), and the dash under way
   if (g.dashAim) { g.dashAim.t -= dt / 0.2; if (g.dashAim.t <= 0) { g.dashAim = null; renderer.aimZoom = 1; hud.toast('Dash put away', 'note'); } }
+  if (g.siphonAim) { g.siphonAim.t -= dt / 0.2; if (g.siphonAim.t <= 0) { g.siphonAim = null; renderer.aimZoom = 1; } } // (7.6.8)
+  if (g.siphon) { const Q = g.siphon, M = Q.sub ? g.sub : g.earl, J = Q.A.dur; Q.t += dt; const tj = Q.t - SIPH.fo, k = clamp(tj / J, 0, 1), q = k < 0.5 ? 2 * k * k : 1 - Math.pow(-2 * k + 2, 2) / 2; // eased: a kick, the long glide, the stop
+    M.x = Q.x0 + (Q.x1 - Q.x0) * q; M.y = Q.y0 + (Q.y1 - Q.y0) * q; M.vx = 0; M.vy = 0; if (Q.sub) { g.earl.x = M.x; g.earl.y = M.y; }
+    if (tj > 0 && tj < J) { Q.puffT -= dt; if (Q.puffT <= 0) { Q.puffT = 0.022; (g.inkPuffs || (g.inkPuffs = [])).push({ x: M.x - Q.dx * (Q.sub ? 2.5 : 1) + (Math.random() - 0.5) * 0.6, y: M.y - Q.dy * (Q.sub ? 2.5 : 1) + (Math.random() - 0.5) * 0.6, t: 0, r: (Q.sub ? 1.1 : 0.6) * (0.7 + Math.random() * 0.6) * (1 + (Q.A.tier === 'legendary' ? 0.5 : Q.A.tier === 'exotic' ? 0.25 : 0)), s: Math.random() * 100, d: Math.atan2(Q.dy, Q.dx) }); }
+      for (let i = 0; i < 2; i++) g.bubbles.push({ x: M.x - Q.dx * 1.2 + (Math.random() - 0.5), y: M.y - Q.dy * 1.2 + (Math.random() - 0.5), r: 0.03 + Math.random() * 0.08, w: Math.random() * 6, t: 0 }); }
+    if (Q.t > SIPH.fo + J + SIPH.fi) { g.siphon = null; renderer.aimZoom = 1; } }
+  if (g.inkPuffs) { for (const p of g.inkPuffs) p.t += dt; g.inkPuffs = g.inkPuffs.filter((p) => p.t < 7); if (!g.inkPuffs.length) g.inkPuffs = null; }
   if (g.dashMove) { const D = g.dashMove, M = g.earl.inSub ? g.sub : g.earl; D.t += dt; const k = Math.min(1, D.t / D.dur), q = 1 - Math.pow(1 - k, 3);
     M.x = D.x0 + (D.x1 - D.x0) * q; M.y = D.y0 + (D.y1 - D.y0) * q; M.vx = (D.x1 - D.x0) / D.dur * 0.15; M.vy = (D.y1 - D.y0) / D.dur * 0.15;
     if (g.earl.inSub) { g.earl.x = M.x; g.earl.y = M.y; } if (k >= 1) g.dashMove = null; }
@@ -2397,17 +2421,18 @@ function tickAbility(dt) {
     for (const c of C.fish) if (!c.dead && c.called && Math.hypot(c.x - m.x, c.y - m.y) < 7) { c.speed = c.cruise; c.called = false; }
     if (C.t > C.dur) { for (const c of C.fish) if (c.home === C.home) { c.home = null; c.speed = c.cruise; c.called = false; } g.callFx = null; } }
   if (g.snatch && !(abilityState(g).activeT > 0 || (g.abil2 && g.abil2.activeT > 0))) g.snatch = null;
-  if (g.snatchFx) { g.snatchFx.t += dt; if (g.snatchFx.t > 0.5) g.snatchFx = null; }
+  if (g.snatchFx) { g.snatchFx.t += dt; if (g.snatchFx.t > 0.56) g.snatchFx = null; }
   if (g.ironT > 0) g.ironT = Math.max(0, g.ironT - dt);
   if (g.ironFx) { g.ironFx.t += dt; if (g.ironFx.t > 1.2) g.ironFx = null; }
   if (g.calmT > 0) { g.calmT = Math.max(0, g.calmT - dt); if (g.entity && g.entity.state !== 'hunt') { g.entity.marked = false; g.entity.attn = 0; } }
   if (g.nacreT > 0) g.nacreT = Math.max(0, g.nacreT - dt);
+  if (g.pearlFx) { for (const p of g.pearlFx) p.t += dt; g.pearlFx = g.pearlFx.filter((p) => p.t < 1.8); if (!g.pearlFx.length) g.pearlFx = null; }
   if (g.bloodT > 0) { g.bloodT = Math.max(0, g.bloodT - dt); g.fx.redTint = Math.max(g.fx.redTint || 0, 0.85 * Math.min(1, g.bloodT / 2, (60 - g.bloodT) / 1.5 + 0.2)); } g.curseCatch = g.bloodT > 0;
-  for (const k of ['shoalFx', 'revelFx', 'inkFx']) { const F = g[k]; if (F) { F.t += dt; if (F.t > F.dur + 1.5) g[k] = null; } }
+  for (const k of ['shoalFx', 'revelFx']) { const F = g[k]; if (F) { F.t += dt; if (F.t > F.dur + 1.5) g[k] = null; } }
   if (g.songFx) { g.songFx.t += dt; if (g.songFx.t > 4) g.songFx = null; }
   if (g.markWashFx) { g.markWashFx.t += dt; if (g.markWashFx.t > 2) g.markWashFx = null; }
   { const RA = on && A.reach ? A : on2 && A2.reach ? A2 : null; g.multiCatch = RA && RA.multi ? RA.multi : 1; g.reachMul = RA ? RA.reach : 1; g.swingMul = RA && RA.swing ? RA.swing : 1; g.sureCatch = !!(RA && RA.sure); g.blessCatch = !!(RA && RA.bless); g.reachDef = RA; }
-  g.abilLight = Math.max(on && A.light ? A.light : 0, on2 && A2.light ? A2.light : 0, g.mythT > 0 ? MYTH.light : 0);
+  g.abilLight = Math.max(on && A.light ? A.light : 0, on2 && A2.light ? A2.light : 0, g.mythT > 0 ? MYTH.light : 0, g.siphon ? g.siphon.A.siphon.light : 0);
   { const lh = !!(((on && A.light >= 2) || (on2 && A2.light >= 2)) && (g.lightFade ?? 1) > 0.5); if (document.documentElement.classList.contains('lighthouse') !== lh) document.documentElement.classList.toggle('lighthouse', lh); } /* (5.16.0) Lighthouse: the HUD comes to life */
   g.netRange = gear(profile, 'net').range || 1.2; g.wardOn = !!((on && A.ward && !A.tide) || (on2 && A2.ward && !A2.tide)); // (7.3.0) these two had slipped into the comment above: the Lighthouse never kept hunters off
   if (g.echoT > 0) g.echoT = Math.max(0, g.echoT - dt);
@@ -2715,7 +2740,7 @@ function update(dt) {
     const capEvs = updateCapture(g, dt).concat(g.skillCaught ? g.skillCaught.splice(0) : []); // (7.6.6) catches by Cast and Snatch too
     for (const ev of capEvs) {
       if (ev.type === 'caught') {
-        if (g.nacreT > 0 && Math.random() < 0.25) { profile.pearls = (profile.pearls || 0) + 1; saveProfile(profile); (g.obsLabels || (g.obsLabels = [])).push({ c: null, x: ev.x ?? g.earl.x, y: (ev.y ?? g.earl.y) - 0.9, text: '+1 pearl', rar: null, nameCol: '#e4dcc6', t: 0 }); } // (7.6.6) Nacre
+        if (g.nacreT > 0 && Math.random() < 0.25) { profile.pearls = (profile.pearls || 0) + 1; saveProfile(profile); (g.pearlFx || (g.pearlFx = [])).push({ x: ev.x ?? g.earl.x, y: ev.y ?? g.earl.y, t: 0 }); } // (7.6.6) Nacre; (7.6.8) a pearl rising from the catch, no words
         if (ev.spec && ev.spec.cursed) (g.obsLabels || (g.obsLabels = [])).push({ c: null, x: ev.x ?? g.earl.x, y: (ev.y ?? g.earl.y) - 0.6, text: 'Cursed', rar: null, nameCol: '#b8402c', t: 0 });
         if (ev.ambushed && !ev.extra) (g.obsLabels || (g.obsLabels = [])).push({ c: null, x: ev.x ?? g.earl.x, y: ev.y ?? g.earl.y, text: 'Ambushed', rar: null, nameCol: '#d8d0b4', t: 0 }); // (7.4.0, owner) Ambush held it still: said beside it
         if (g.toolTip && g.bubbles) for (let i = 0; i < 7; i++) g.bubbles.push({ x: g.toolTip.x + (Math.random() - 0.5) * 0.5, y: g.toolTip.y + (Math.random() - 0.5) * 0.4, r: 0.02 + Math.random() * 0.06, w: Math.random() * 6, t: -Math.random() * 0.2 }); // (5.8.0) a catch stirs up a few more bubbles
@@ -3349,7 +3374,7 @@ function frame(now) {
     g.legendK = k; ts = 1 - 0.67 * k;
   } else if (g && g.legendK) g.legendK = Math.max(0, g.legendK - dt / 1.2);
   if (g && g.homeFx) { g.homeFx.t += dt; if (g.homeFx.t > 1.6) g.homeFx = null; } // (7.4.0) the home arrival's moment
-  if (g && g.dashAim && !g.paused) ts = Math.min(ts, 0.2); // (5.16.0) Dash waiting for a tap: the world slowed to a fifth
+  if (g && (g.dashAim || g.siphonAim) && !g.paused) ts = Math.min(ts, 0.2); // (5.16.0) Dash waiting for a tap: the world slowed to a fifth
   if (!(ui.confirmOpen && ui.confirmOpen() && ui.confirmModal)) update(dt * ts); // (5.5) a question that must be answered (the tutorial's welcome) holds the world still
   renderer.updateCamera(g, dt);
   // (3.0.27) the sea isn't drawn while a full-screen room covers it: it only cost frames (and slowed him there)
