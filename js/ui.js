@@ -25,7 +25,7 @@ import { speciesIcon, fittedIcon, petIcon, speciesBox, drawSpecies } from './cre
 import { ABOUT } from '../data/species_about.js';
 import { xEyes } from './gallery.js';
 import { usualDepth } from './fauna.js';
-import { RESOURCES, BOAT } from './world.js';
+import { RESOURCES, BOAT , yardX } from './world.js';
 import { TRAPS, hullCap } from './economy.js';
 import { toolIcon } from './tools_draw.js';
 import { livesOnBottom, isSessile, specimenValue, deepPremium, conditionName, rarityOf, rarityStars, rarityCls, rarityCol } from './specimens.js';
@@ -2575,7 +2575,7 @@ export class UI {
     if (!$('journal').hidden) this.journalCount(g);
     if (!$('workshop').hidden) {
       const e = g.earl;
-      if (!this.refitOnly && (Math.abs(e.x - BOAT.x) > 16 || e.y > 5)) this.toggleWorkshop(false); // (refits from the tank room work anywhere)
+      if (!this.refitOnly && (Math.abs(e.x - BOAT.x) > 16 && !(this.shopTab === 'sub' && Math.abs(e.x - yardX()) < 10) || e.y > 5)) this.toggleWorkshop(false); /* (7.6.23) the shipyard barge counts as beside her */ // (refits from the tank room work anywhere)
     }
     if (!$('tankroom').hidden) {
       if (!g.earl.inSub) this.toggleTank(false);

@@ -8,7 +8,7 @@ import { coinURL, tileURL } from './coins.js';
 installFatFinger();
 import { clamp, lerp, dist, makeRng, formatTime, TAU } from './util.js';
 import { markOf, SUB_MARKS, BOAT_U, BOAT_LADDER, BOAT_DOOR, deckLine } from './earl_draw.js';
-import { generateWorld, RESOURCES, BOAT, BOAT_HOME, BOAT_MIN, BOAT_MAX, WORLD_W, ISLE, CAVE, CANYON, WHALE_FALL, SEEP, TRENCH, boatDock, SAIL, SAIL_OFF } from './world.js';
+import { generateWorld, RESOURCES, BOAT, BOAT_HOME, BOAT_MIN, BOAT_MAX, WORLD_W, ISLE, CAVE, CANYON, WHALE_FALL, SEEP, TRENCH, boatDock, SAIL, SAIL_OFF, yardX } from './world.js';
 import { SPECIES, SPECIES_BY_ID } from './species.js';
 import { Chart } from './chart.js';
 import { Fauna } from './fauna.js';
@@ -1156,6 +1156,22 @@ function lessons() {
   const P = profile, e = g.earl, sub = g.sub; g.frozen = false; g.lesson = null; g.questHint = null; g.airCallout = false; g.trawlOnly = null; if (P && P.tut !== 'on') g.tutVig = 0;
   if (!P || g.mode !== 'play' || P.tut === 'on' || g.kill || sub.imploded) { lessonHold(false); return; }
   const tankO = !!(ui.tankOpen && ui.tankOpen()), invO = shown('inventory'), TR = ui.tankRoom;
+  // (7.6.23, owner) a short tour of the tank room, once: the tank, the hatch to the pressure chambers, the floor where a
+  // trawl's catch lands, the bag on its hook. Each a card beside the part it is about; OK moves on. True while it runs
+  const TOUR = [['tank', 'The sub\'s tank. Live animals swim here, in water, until you are back at the Margaret to sell them or keep them.'],
+    ['chambers', 'Through this hatch: the pressure chambers, for animals from deep water that would die at the surface.'],
+    ['pile', 'What the trawl net brings in lands here on the floor. Drag each animal up into the tank.'],
+    ['bag', 'Your catch bag hangs here. Drag what you caught by hand from it into the tank.']];
+  const tankTour = () => { if (!tankO || (TR && TR.room !== 'tank')) return false; const k = P.tutTankTour || 0; if (k >= TOUR.length) return false;
+    const [z, txt] = TOUR[k]; if (!document.querySelector(`#tankroom .tr-zone[data-z="${z}"]`)) { P.tutTankTour = k + 1; saveProfile(P); return tankTour(); }
+    lessonHold(true); lessonSet('The tank room', { sel: [`#tankroom .tr-zone[data-z="${z}"]`], card: { id: 'tanktour', text: txt } }); return true; };
+  // ---- (7.6.23, owner) the first time he comes into the sub with live animals in his bag: into the tank with them ----
+  { const live = g.bag.filter((q) => SPECIES_BY_ID[q.id] && !(q.cond <= 0.05));
+    if (P.lessonBagTank !== 'done' && e.inSub && (live.length || P.lessonBagTank === 'on') && !g.lessonJelly && !(g.entity && g.entity.marked)) {
+      if (P.lessonBagTank !== 'on') { P.lessonBagTank = 'on'; saveProfile(P); }
+      if (!live.length) { if (tankO) { lessonHold(true); lessonSet('Close the tank room', { sel: ['#tankroom .tr-close'] }); return; } P.lessonBagTank = 'done'; saveProfile(P); }
+      else if (!tankO) { g.tutVig = 1; lessonSet('Move your catch into the sub\'s tank', { key: 't', say: 'Open the tank room' }); return; }
+      else { if (tankTour()) return; lessonHold(true); lessonSet('Drag your fish from the bag into the tank', { sel: ['#tankroom .tr-zone[data-z="bag"]'], light: true }); return; } } }
   // ---- (7.6.0, owner) a better sub is for sale: once ever, the first time the cash covers the next sub up. Led aboard,
   // into the cabin, to the computer, its Submersibles page, and that sub's price lit; then never again ----
   if (P.lessonYard !== 'done' && P.tut !== 'on') { const nx = lv(P, 'depth') + 1, NS = SUBS[nx];
@@ -1166,10 +1182,8 @@ function lessons() {
         const yardO = shown('workshop') && ui.shopTab === 'sub';
         if (yardO) { g.yardSeen = true; lessonSet(`The ${NS.name}: ${money(NS.price, false)}`, { sel: ['#shop-body .pay-tag[data-arg="up:tHull"]', `#shop-body .yd-card[data-yd="sub:${nx}"]`, '#shop-body .yd-plaque[data-yd="all"]'] }); return; } // its price tag; or its card among all the subs; or the way to all of them
         if (g.yardSeen) { P.lessonYard = 'done'; saveProfile(P); g.yardSeen = false; } // seen and closed: never again
-        else if (shown('catalog')) { lessonSet('A better sub is for sale', { sel: ['#catalog [data-go="yard"]'] }); return; }
-        else if (ui.cabinOpen && ui.cabinOpen()) { if (ui.cabin) ui.cabin.tutMark = 'desk'; lessonSet('A better sub is for sale: the computer'); return; }
-        else if (g.aboard) { const bf = renderer.boatFrame, kx = innerWidth / renderer.c.width; lessonSet('A better sub is for sale: the cabin computer', bf ? { pt: [(bf.x + bf.sx * 19 * bf.k) * kx, (bf.y - 17.5 * bf.k) * kx, 5.4 * bf.k * kx, 14 * bf.k * kx] } : null); return; }
-        else if (atTop) { lessonSet('A better sub is for sale: aboard the Margaret', null, { x: BOAT.x + LADDER_M * Math.sign(Math.cos(BOAT.yaw || 0) || 1), y: 1 }); return; }
+        else if (atTop && !e.inSub && !g.aboard) { lessonSet('A better sub is for sale: the shipyard beside the Margaret', null, { x: yardX(), y: 0.6 }); return; } /* (7.6.23, owner) the yard is its own barge now */
+        else if (atTop) { lessonSet(g.aboard ? 'A better sub is for sale: dive in and swim to the shipyard' : 'A better sub is for sale: leave the sub, the shipyard is beside the Margaret'); return; }
       } } }
   // ---- the first trawl ----
   if (P.lessonTrawl !== 'done' && e.inSub && !sub.docked && sub.y >= 20 && sub.y < (sub.rated || 300) * 0.9 && !g.entity?.marked) { // (6.9.3) never at crush depth, nor with the thing on him // (6.8.0) the first sub dive below 20 m after the tutorial (the Log's trawl step is gone)
@@ -1190,8 +1204,9 @@ function lessons() {
     const pile = g.subTank.find((s) => s.pile), inTank = g.subTank.find((s) => s.id === 171 && !s.pile && !s.pressed);
     if (P.lessonTrawl === 'tank') {
       if (!tankO) { if (pile || !inTank) { lessonSet('The catch is on the floor of the sub', { key: 't', say: 'Open the tank room' }); return; } }
+      if (tankTour()) return; /* (7.6.23, owner) the room shown first */
       lessonHold(true);
-      if (pile) { lessonSet('Drag it from the floor into the tank'); return; }
+      if (pile) { lessonSet('Drag it from the floor up into the tank', { sel: ['#tankroom .tr-zone[data-z="pile"]'], light: true }); return; }
       if (inTank && !(TR && TR.openKey)) { lessonSet('Tap it for its card'); return; }
       if (inTank) { setSt('shut'); }
     }
@@ -1459,7 +1474,7 @@ function tutor() {
 }
 const tutSpot = new TutSpot();
 tutSpot.onAction = (id) => runTutAction(id); // (4.4.1) the button
-tutSpot.onCard = (id) => { if (id === 'bagtour' && profile) { profile.tutBagTour = true; saveProfile(profile); audio.ready && audio.click(); return; } /* (6.6.0) */ if (id === 'jtour' && profile) { profile.tutJTour = (profile.tutJTour || 0) + 1; saveProfile(profile); audio.ready && audio.click(); } }; // (4.12.2)
+tutSpot.onCard = (id) => { if (id === 'bagtour' && profile) { profile.tutBagTour = true; saveProfile(profile); audio.ready && audio.click(); return; } /* (6.6.0) */ if (id === 'tanktour' && profile) { profile.tutTankTour = (profile.tutTankTour || 0) + 1; saveProfile(profile); audio.ready && audio.click(); return; } if (id === 'jtour' && profile) { profile.tutJTour = (profile.tutJTour || 0) + 1; saveProfile(profile); audio.ready && audio.click(); } }; // (4.12.2)
 function startRun() {
   // (5.5) an iPhone's browser cannot show a page full screen: once, on the first dive there, how to get it
   if (/iPhone|iPod/.test(navigator.userAgent) && !(window.matchMedia && matchMedia('(display-mode: standalone), (display-mode: fullscreen)').matches) && !navigator.standalone) {
@@ -1735,6 +1750,7 @@ function findTarget() {
   }
   if (best) return best;
   if (!e.inSub && !g.sub.imploded && dist(e.x, e.y, g.sub.x, g.sub.y) < 4.5) return { kind: 'board' };
+  if (!e.inSub && !g.aboard && e.y < 3.2 && Math.abs(e.x - yardX()) < 7) return { kind: 'yard' }; // (7.6.23, owner) the shipyard barge
   // (6.5.7) a guardian jellyfish (the sea lantern) close by: the hand reads it
   if (!e.inSub) for (const l of W.lanterns) if (dist(e.x, e.y, l.x, l.y) < Math.min(4, LANTERN_RADIUS)) return { kind: 'guardian', l };
   if (!e.inSub && W.inKelp(e.x, e.y)) {
@@ -1765,7 +1781,7 @@ function promptFor(t) {
       else p = PRY.has(t.p.type) ? (g.pry && g.pry.p === t.p ? (g.promptBar = g.pry.t / PRY_TIME, 'Prying loose') : `Hold F  Pry loose the ${name}`) : `F  Collect ${name}`;
     } else if (t.kind === 'board') {
       p = 'F  Board the submersible';
-    }
+    } else if (t.kind === 'yard') { p = 'F  The shipyard'; }
     else if (t.kind === 'trap') { const S0 = trapSetOf(profile, t.t.id), lf = S0 ? trapLeft(S0) : 0, when = lf > 0 ? `, ${timeLeftText(lf)} to go` : ', done'; // (7.3.0) its time, in real time
       p = t.how === 'haul' ? `F  ${TRAPS[t.t.type].winch ? 'Winch up' : 'Pull up'} the catch (${t.t.catch.length} inside${when})`
       : t.how === 'needboat' ? `The ${TRAPS[t.t.type].name.toLowerCase()} is emptied with the Margaret's winch: bring her here (${t.t.catch.length} inside${when})`
@@ -1841,6 +1857,7 @@ function interact(t, exitSub) {
     }
     p.taken = true;
     audio.ready && audio.pickup();
+  } else if (t.kind === 'yard') { ui.openShop('sub', ['sub']); audio.ready && audio.click(); return;
   } else if (t.kind === 'board') {
     e.inSub = true; sub.docked = false; if (profile) { profile.subTimes = (profile.subTimes || 0) + 1; saveProfile(profile); } // (4.7.0) for the lessons
     if (sub.o2 < 1 && sub.y > 2.2) hud.toast('Cabin out of air: breathing from your tank', 'warn');
@@ -2600,7 +2617,7 @@ function update(dt) {
     if (pressed.has('events')) ui.toggleEvents();
     // (4.0.0) the shipyard: part of the Margaret, opened with P anywhere aboard her (deck, cabin, wheel) or
     // alongside her (in the water at her side, or in the sub in her cradle)
-    if (pressed.has('p')) { if (g.aboard || g.helm || atBoat) { audio.ready && audio.click(); ui.openShop('sub', ['sub']); } else hud.showFps = !hud.showFps; } // (4.12.0) the yard at the Margaret; anywhere else, the frame counter
+    if (pressed.has('p')) { if (!e.inSub && Math.abs(e.x - yardX()) < 8 && e.y < 3.2) { audio.ready && audio.click(); ui.openShop('sub', ['sub']); } else hud.showFps = !hud.showFps; } // (4.12.0) the yard at the Margaret; anywhere else, the frame counter
     if (pressed.has('v') && g.helm) { leaveHelm(); audio.ready && audio.click(); } // (the helm is taken aboard, at the wheel)
     if (pressed.has('r')) {
       // a backup air tank, plumbed into the cabin: the air bank fills to full
@@ -2830,6 +2847,7 @@ function update(dt) {
       if (!g.aboard && !e2.inSub) {
         const T = findTarget();
         if (T && T.kind === 'board') g.tapMarks.push({ key: 'f', w: [g.sub.x - 4.6, g.sub.y - 2.05, g.sub.x + 4.6, g.sub.y + 0.35], what: 'sub', capsule: true }); // (6.5.0) the whole sub: a capsule round its hull (a tap anywhere on it boards)
+        else if (T && T.kind === 'yard') { const yx = yardX(); g.tapMarks.push({ key: 'f', w: [yx - 6.2, -5, yx + 6.2, 1.1], what: 'yard' }); } // (7.6.23) the whole barge
         else if (T && T.kind === 'pickup') g.tapMarks.push({ key: 'f', w: [T.p.x - 0.7, T.p.y - 0.7, T.p.x + 0.7, T.p.y + 0.7], what: 'pickup' });
         else if (T && T.kind === 'trap') g.tapMarks.push({ key: 'f', w: [T.t.x - 0.9, T.t.y - 1.4, T.t.x + 0.9, T.t.y + 0.4], what: 'trap' });
         if (nearLadder()) g.tapMarks.push({ key: 'f', boat: [6.8, -13.2, 11.2, 3.4], what: 'ladder' });

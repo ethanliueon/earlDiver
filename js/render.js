@@ -25,7 +25,8 @@ import { makeVariantSprite } from './variants.js';
 import { SPECIES_BY_ID } from './species.js';
 import { LEGENDARY } from './specimens.js';
 import { glint, ember, ACCENT } from './scrolls.js'; // (7.4.3) the legendary sparkle, for a legendary pet
-import { BOAT, WORLD_W, EAST, CAVE, ANGLER, CANYON, SAIL, WHALE_FALL, ISLE } from './world.js';
+import { BOAT, WORLD_W, EAST, CAVE, ANGLER, CANYON, SAIL, WHALE_FALL, ISLE, yardX } from './world.js';
+import { bargePicture, BARGE } from './barge_draw.js';
 import { LANTERN_RADIUS } from './entity.js';
 import { Clouds } from './clouds.js';
 
@@ -603,6 +604,9 @@ export class Renderer {
     // and the bait's scent drifting away downstream
     this.trapLabels = [];
     const night = g.day && g.day.light < 0.3;
+    // (7.6.23, owner) the shipyard barge off the Margaret's bow, a picture painted once (barge_draw.js), riding the swell
+    { const bx = yardX(); if (bx > x0 - 12 && bx < x1 + 12) { const B = BARGE, pic = bargePicture(!!night), sc = ppm / B.PPM, bob = Math.sin(t * 0.9) * 0.05, roll = Math.sin(t * 0.7 + 1) * 0.008;
+        ctx.save(); ctx.translate(S(bx), Sy(bob)); ctx.rotate(roll); ctx.drawImage(pic, -7 * ppm, -B.WL * ppm, B.W * ppm, B.H * ppm); ctx.restore(); void sc; } }
     for (const pt of SAIL) if ((pt.id === 'home' || pt.id === 'dave' || pt.id === 'station' || pt.id === 'cave') /* (7.4.27, owner) buoys only at the shops: the others' chains read as a black line down the screen */ && pt.x > x0 - 6 && pt.x < x1 + 6 && y0 < 4 + 400) drawSailBuoy(ctx, S, Sy, ppm, t, pt, surfY, g.world.floorAt(pt.x), y1, night); // (6.8.1) the sail points' buoys
     for (const tr of g.traps || []) {
       if (tr.x < x0 - 10 || tr.x > x1 + 10) continue;

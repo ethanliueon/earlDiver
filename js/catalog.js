@@ -23,7 +23,7 @@ export const WEBSHOPS = {
   bayside: { title: 'Bayside Marine Supply', sub: 'Harbour Road, since 1974', stock: 'catalog', theme: 'bayside',
     lede: 'Diving gear and supplies, sent out to the boat the same day.', newIn: ['item:sipper', 'item:macro', 'item:long', 'item:split', 'item:s130'],
     cats: [['home', 'Home'], null, ['net', 'Hand nets'], ['cam', 'Cameras'], ['trawl', 'Trawl nets'], ['trap', 'Traps'], null,
-      ['suit', 'Suits'], ['fins', 'Fins'], ['tank', 'Air'], ['bag', 'Bags'], null, ['supply', 'Supplies'], ['sell', 'Sell your gear'], null, ['yard', 'Submersibles']] /* (6.4.0) chests are in the game's own Shop now. (7.6.0, owner) the sub yard on the computer too: it was found only from the docked sub */, // (4.0.0: the yard is on the Margaret now, P)
+      ['suit', 'Suits'], ['fins', 'Fins'], ['tank', 'Air'], ['bag', 'Bags'], null, ['supply', 'Supplies'], ['sell', 'Sell your gear']] /* (7.6.23, owner) the subs are sold at the shipyard barge now */ /* (6.4.0) chests are in the game's own Shop now. (7.6.0, owner) the sub yard on the computer too: it was found only from the docked sub */, // (4.0.0: the yard is on the Margaret now, P)
     chestTitle: 'Surplus crates', chestLede: 'Returns and odd lots from the back room, sold sealed. You get one thing, whatever is in it.' },
   station: { title: 'Station Stores', sub: 'Abyssal Research Station, 280 m, requisitions', stock: 'station', theme: 'station',
     lede: 'Surplus and spare equipment from the station stores, released to visiting divers. Delivered to your locker.', newIn: [],

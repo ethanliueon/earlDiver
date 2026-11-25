@@ -2263,3 +2263,5 @@ html body #redeem .rd-msg { min-height: 20px; margin: 8px 0; font: 500 15px var(
 html body #redeem .rd-msg.ok { color: #b8d090; }
 html body #redeem .rd-btns { display: flex; gap: 10px; justify-content: flex-end; }
 html body #redeem .rd-btns button { border: 12px solid transparent; border-image: var(--o-btn) 28 fill / 12px stretch; background: none; color: #2e2618; font: 600 16px var(--o-text, sans-serif); padding: 2px 10px; }
+/* (7.6.23) the tank room's unseen part outlines, for the tutorial to point at */
+html body #tankroom .tr-zone { position: absolute; display: block; pointer-events: none; background: transparent; }

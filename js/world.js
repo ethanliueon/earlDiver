@@ -25,6 +25,9 @@ export const FLOOR_RES = 0.5; // metres per floor sample
 // anywhere between BOAT_MIN and BOAT_MAX
 export const BOAT_HOME = 4850, BOAT_MIN = 60, BOAT_MAX = 4950; // (7.4.17) up to the island's shallows // (v2: she can go anywhere on the surface)
 export const BOAT = { x: BOAT_HOME, yaw: 0 }; // (3.0.0) yaw: 0 = bow to the left as drawn (her usual heading), PI = turned about
+// (7.6.23, owner) the shipyard: a work barge moored right beside the Margaret, off her bow; everything for the sub is
+// bought there (the subs, their refits, the yard's work), not on the cabin computer
+export const yardX = () => BOAT.x - 16.5 * (Math.sign(Math.cos(BOAT.yaw || 0)) || 1);
 export const boatDock = () => BOAT.x + 8.5 * Math.cos(BOAT.yaw || 0); // the sub's cradle, which turns with her
 export const BOAT_X = BOAT_HOME; // (where she starts)
 export const SPAWN = { x: BOAT_HOME - 12, y: 5 };

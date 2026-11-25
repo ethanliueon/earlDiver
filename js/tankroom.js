@@ -264,6 +264,12 @@ export class TankRoom {
     // (and, for a screen reader, a button per hatch, unseen)
     let html = ['L', 'R'].map((side) => { const to = this.hatchTo(side); return to ? `<button class="sr-only" data-go="${to}">${ROOMS[to]}</button>` : ''; }).join('');
     html += this.cardHtml(g, G);
+    // (7.6.23, owner) unseen outlines of the room's parts, for the tutorial's tour to light and point at (the tank, the way
+    // to the chambers, the catch on the floor, the bag on its hook)
+    { const z = (k, x, y, w, h, r = '8px') => `<i class="tr-zone" data-z="${k}" style="left:${Math.round(x)}px;top:${Math.round(y)}px;width:${Math.round(w)}px;height:${Math.round(h)}px;border-radius:${r}"></i>`;
+      if (this.room === 'tank') { html += z('tank', G.tank.x, G.tank.y, G.tank.w, G.tank.h); html += z('pile', G.pile.x, G.pile.y - 40, G.pile.w, 50);
+        const hl = G.hatchL; if (this.hatchTo('L')) html += z('chambers', hl.x - hl.r, hl.y - hl.r, hl.r * 2, hl.r * 2, '50%');
+        if (G.hook) html += z('bag', G.hook.x - 40, G.hook.y, 80, 110); } }
     this.over.innerHTML = html;
     this.states(g);
   }
