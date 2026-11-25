@@ -4,28 +4,46 @@
 import { legendMotes, ember } from './scrolls.js';
 
 export function startLegendFx() {
-  const c = document.createElement('canvas'); c.id = 'legendfx'; document.body.appendChild(c);
-  const x = c.getContext('2d'); let els = [], lastScan = 0;
-  // (7.3.0) only over a picture that is its own: a box marked Legendary that holds another thing's card (the inventory's
-  // side-by-side pop-up, the hand net beside Gulper's Throat) had its sparks drawn over that other thing's picture
+  // (7.5.3, owner) each picture carries its own small canvas, inside its frame: it scrolls with the picture and is clipped
+  // by whatever box it scrolls in, by the page itself. (One canvas over the page, moved each frame to where the pictures
+  // were, trailed them by a frame while a list scrolled: the sparks jittered.) Found again every half second; only those
+  // on screen are drawn.
   const RAR = '.r-common,.r-uncommon,.r-rare,.r-exotic,.r-legendary,.r-mythical';
   const ownImg = (el) => [...el.querySelectorAll('img')].find((im) => im.parentElement && im.parentElement.closest(RAR) === el) || null;
-  // (7.3.0) while a pop-up is open, only what is in it: a locker tile behind it had its sparks drawn through the pop-up
-  const scan = () => { const pop = [...document.querySelectorAll('.item-pop')].find((el) => el.getClientRects().length > 0); els = [...(pop || document).querySelectorAll('.r-legendary,.r-mythical')].filter((el) => el.offsetParent !== null && !el.classList.contains('empty') && ownImg(el)); /* things with a picture, not words in a rarity's colour */ };
+  const live = new Map(); let lastScan = 0, seed = 0;
+  const io = typeof IntersectionObserver === 'function' ? new IntersectionObserver((es) => { for (const en of es) { const L = en.target.__lfx; if (L) L.vis = en.isIntersecting; } }) : null;
+  const drop = (L) => { if (io) io.unobserve(L.c); L.c.remove(); live.delete(L.el); };
+  const scan = () => {
+    // (7.3.0) while a pop-up is open, only what is in it; only things with a picture of their own
+    const pop = [...document.querySelectorAll('.item-pop')].find((el) => el.getClientRects().length > 0);
+    const want = new Set([...(pop || document).querySelectorAll('.r-legendary,.r-mythical')].filter((el) => el.offsetParent !== null && !el.classList.contains('empty') && ownImg(el)));
+    for (const L of [...live.values()]) if (!want.has(L.el) || !L.c.isConnected || !L.el.isConnected) drop(L);
+    const dpr = Math.min(2, window.devicePixelRatio || 1);
+    for (const el of want) {
+      const im = ownImg(el), fr = (im && im.parentElement && im.parentElement !== el ? im.parentElement : im) || el;
+      const host = fr.tagName === 'IMG' ? fr.parentElement : fr; if (!host) continue;
+      let L = live.get(el);
+      if (!L) { const c = document.createElement('canvas'); c.className = 'lfx'; c.setAttribute('aria-hidden', 'true'); c.__lfx = L = { el, c, x: c.getContext('2d'), seed: ++seed, vis: !io, myth: false }; live.set(el, L); if (io) io.observe(c); }
+      if (L.c.parentElement !== host) host.appendChild(L.c);
+      if (getComputedStyle(host).position === 'static') host.style.position = 'relative';
+      // the frame's box in the host's own units (a scaled panel scales the canvas with it); its pixels from the screen size
+      const ox = fr === host ? 0 : fr.offsetLeft, oy = fr === host ? 0 : fr.offsetTop, w = fr.offsetWidth, h = fr.offsetHeight;
+      const st = L.c.style; st.left = ox + 'px'; st.top = oy + 'px'; st.width = w + 'px'; st.height = h + 'px';
+      const sr = fr.getBoundingClientRect(), pw = Math.max(1, Math.round(sr.width * dpr)), ph = Math.max(1, Math.round(sr.height * dpr));
+      if (L.c.width !== pw || L.c.height !== ph) { L.c.width = pw; L.c.height = ph; }
+      L.w = w; L.h = h; L.myth = el.classList.contains('r-mythical');
+    }
+  };
   const frame = (now) => {
-    const dpr = Math.min(2, window.devicePixelRatio || 1), W = innerWidth, H = innerHeight;
-    if (c.width !== Math.round(W * dpr) || c.height !== Math.round(H * dpr)) { c.width = Math.round(W * dpr); c.height = Math.round(H * dpr); }
     if (now - lastScan > 500) { lastScan = now; scan(); }
-    x.setTransform(1, 0, 0, 1, 0, 0); x.clearRect(0, 0, c.width, c.height);
-    if (els.length) { x.setTransform(dpr, 0, 0, dpr, 0, 0); const t = now / 1000;
-      els.forEach((el, i) => { // (6.0.18) the sparks stay inside the item's picture frame, clipped to it, never over the words
-        const im = ownImg(el), fr = (im && im.parentElement && im.parentElement !== el ? im.parentElement : im) || el, r = fr.getBoundingClientRect();
-        if (r.width < 8 || r.bottom < 0 || r.top > H || r.right < 0 || r.left > W) return;
-        // (7.3.0) and inside every box it scrolls in (a card scrolled down had its picture's sparks above the card)
-        let L = r.left, T = r.top, R = r.right, B = r.bottom;
-        for (let a = fr.parentElement; a && a !== document.body; a = a.parentElement) { const st = getComputedStyle(a); if (st.overflowY === 'visible' && st.overflowX === 'visible') continue; const q = a.getBoundingClientRect(); L = Math.max(L, q.left); T = Math.max(T, q.top); R = Math.min(R, q.right); B = Math.min(B, q.bottom); }
-        if (R - L < 2 || B - T < 2) return;
-        x.save(); x.beginPath(); x.rect(L, T, R - L, B - T); x.clip(); if (el.classList.contains('r-mythical')) mythMotes(x, r, t, i + 1); else legendMotes(x, r.left + r.width / 2, r.top + r.height / 2, r.width, r.height * 0.9, t, i + 1); x.restore(); }); }
+    const t = now / 1000;
+    for (const L of live.values()) {
+      if (!L.c.isConnected || !L.el.isConnected) { lastScan = 0; continue; } // redrawn elsewhere (a list drawn again): found on the next frame
+      if (!L.vis || !L.w || !L.h) continue;
+      const x = L.x; x.setTransform(1, 0, 0, 1, 0, 0); x.clearRect(0, 0, L.c.width, L.c.height); x.setTransform(L.c.width / L.w, 0, 0, L.c.height / L.h, 0, 0);
+      const r = { left: 0, top: 0, width: L.w, height: L.h };
+      if (L.myth) mythMotes(x, r, t, L.seed); else legendMotes(x, L.w / 2, L.h / 2, L.w, L.h * 0.9, t, L.seed);
+    }
     requestAnimationFrame(frame);
   };
   requestAnimationFrame(frame);

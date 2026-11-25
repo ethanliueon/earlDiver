@@ -902,7 +902,7 @@ html.touch body #tut-spot .ts-arrow.up:not(#_a) { border-left-width: 13px; borde
 html.touch body #inventory .eq-stage .eq-col:not(#_a):not(#_b) { row-gap: 26px !important; }
 #inventory .eq-slot[data-slot="ability"] img { object-fit: contain; }
 /* (5.9.1) the legendary sparks' canvas: over the panels, under nothing that takes a touch */
-#legendfx { position: fixed; inset: 0; width: 100vw; height: 100vh; pointer-events: none; z-index: 9350; }
+canvas.lfx { position: absolute; pointer-events: none; z-index: 2; } /* (7.5.3, owner) each picture's own sparks, inside its frame */
 /* ---------- (5.9.2) the journal, again: the game's own type, real paper, divider tabs on its edge ---------- */
 /* the pages: painted paper (assets/ui/book), browned at the edges and darker into the gutter */
 html body #journal .page.left:not(#_a):not(#_b):not(#_c), html body #bookshell .bs-page.l { background: #cbba92 url("../assets/ui/book/page_left.jpg") center / 100% 100% no-repeat !important; }
