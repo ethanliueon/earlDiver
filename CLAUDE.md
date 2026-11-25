@@ -413,4 +413,14 @@ last desktop build is kept on the branch `desktop-4.25.5`).
 - (7.6.23, owner) Everything for the sub is bought at the **shipyard barge** moored off the Margaret's bow (world.js `yardX`, drawn once into a picture in barge_draw.js; F/tap there, or P beside it, opens the yard page). The cabin computer no longer sells subs. The home buoy stays.
 - (7.6.23) The tank room has unseen part outlines (`.tr-zone[data-z=tank|chambers|pile|bag]`) so lessons can point at its parts. A one-time tour of the tank room runs in the first trawl lesson or the first time he comes into the sub with live animals in his bag (then: drag them into the tank).
 
+- (7.6.26, owner) Ability and Ability 2 sit on one row at the foot of the bag's two gear columns (the pet slot moved up).
+  Charges load at the surface in the sub too; Load and Fill are one width; loading keeps the card open, the new notch fills
+  in with a flare, and the notches glow more the fuller the scroll (full ones shine, each at its own pace); one charge spans
+  the whole bar; two compared scrolls both show their charges. With a charge loaded a use spends it and no cooldown starts
+  (main.js `coolAfter`); the cooldown runs only with none left. A scroll's emblem (and a Heart's seal) is saturated by its
+  charges, half at none to twice at full (scrolls.js `satPixels`). Money and pearls share one plate. "A better sub is for
+  sale" shows about 10 s, once. The shipyard page scrolls only up and down. Eagle Eye draws no lids; Lookout 1.6, Lookout+
+  2.1, Eagle Eye 3 times the view. The camera's look-ahead eases off toward a fifth of the view and never leaves him more
+  than a quarter of it away.
+
 - **Before release**: see `docs/RELEASE.md` (remove the test shop, connect real purchases, new redeem codes).

@@ -261,7 +261,7 @@ export class Catalog {
 // a picture of a thing, as a data URL (cached): kind, and the item (or suit key, trap index, supply key)
 const PICS = new Map();
 export function pictureOf(kind, v, w, h, plain = false) {
-    const key = kind + ':' + (v && v.id ? v.id : v) + ':' + w + 'x' + h + (plain ? 'p' : '');
+    const key = kind + ':' + (v && v.id ? v.id : v) + ':' + w + 'x' + h + (plain ? 'p' : '') + (v && v.sat != null ? ':s' + v.sat : ''); // (7.6.26) a scroll's charges in its picture
     if (PICS.has(key)) return PICS.get(key);
     const c = document.createElement('canvas'); c.width = w; c.height = h; const ctx = c.getContext('2d');
     if (!plain) { // (5.15.1) a photographer's sweep, not a flat gradient: light pooled from the upper left, the floor darker, a fine grain
@@ -271,7 +271,7 @@ export function pictureOf(kind, v, w, h, plain = false) {
       let sd = 7; const rnd = () => ((sd = (sd * 16807) % 2147483647) / 2147483647); for (let i = 0; i < w * h / 70; i++) { ctx.fillStyle = `rgba(${rnd() < 0.5 ? '40,48,52' : '255,255,250'},${(rnd() * 0.05).toFixed(3)})`; ctx.fillRect(rnd() * w, rnd() * h, 1, 1); } }
     if (kind === 'gold') { drawGoldCoins(ctx, w, h, v | 0); const url = c.toDataURL(); PICS.set(key, url); return url; } // (6.1.0)
     if (kind === 'chest') { drawChest(ctx, (v && v.look) || 'crate', w, h, 0); const url = c.toDataURL(); PICS.set(key, url); return url; } // (6.4.0) a chest in the locker
-    if (v && typeof v === 'object' && v.kind === 'ability') { drawScroll3(ctx, w / 2, h / 2, Math.min(w, h) * 0.98, v.fam, v.tier); const url = c.toDataURL(); PICS.set(key, url); return url; } // (5.9.0) an ability's scroll
+    if (v && typeof v === 'object' && v.kind === 'ability') { drawScroll3(ctx, w / 2, h / 2, Math.min(w, h) * 0.98, v.fam, v.tier, v.sat == null ? 1 : v.sat); const url = c.toDataURL(); PICS.set(key, url); return url; } // (5.9.0) an ability's scroll
     if (v && typeof v === 'object' && v.id && kind === 'net') { drawNet3(ctx, w, h, v); const url = c.toDataURL(); PICS.set(key, url); return url; } // (5.12.9)
     if (v && typeof v === 'object' && v.id && (kind === 'tank' || kind === 'bag')) { (kind === 'tank' ? drawTank3 : drawBag3)(ctx, w, h, v); const url = c.toDataURL(); PICS.set(key, url); return url; } // (5.12.8)
     if (v && typeof v === 'object' && v.id && kind === 'cam') { drawCam3(ctx, w, h, v); const url = c.toDataURL(); PICS.set(key, url); return url; } // (5.12.7)

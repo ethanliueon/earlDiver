@@ -286,7 +286,12 @@ const BODY3 = {
   mythical: { mid: '#4a1c18', dark: '#22090a', light: '#6c2a22', band: '#b85a36' }, // (7.4.15) oxblood
 };
 const fade = (hex, k) => { const [r, g, b] = hexRgb(hex), gr = (r + g + b) / 3, f = (c) => Math.round(c + (gr - c) * k).toString(16).padStart(2, '0'); return `#${f(r)}${f(g)}${f(b)}`; };
-function paintScroll3(x, fam, tier) {
+// (7.6.26, owner) a scroll's charges in its picture: the emblem (and a Heart's seal) more saturated the more are loaded,
+// from half its colour at none to twice it at full; the scroll and its cloth stay as they are
+function satPixels(c, k) { if (Math.abs(k - 1) < 0.01) return; const t = c.getContext('2d'), d = t.getImageData(0, 0, c.width, c.height), a = d.data;
+  for (let i = 0; i < a.length; i += 4) { if (!a[i + 3]) continue; const L = a[i] * 0.299 + a[i + 1] * 0.587 + a[i + 2] * 0.114; for (let q = 0; q < 3; q++) a[i + q] = Math.max(0, Math.min(255, L + (a[i + q] - L) * k)); }
+  t.putImageData(d, 0, 0); }
+function paintScroll3(x, fam, tier, sat = 1) {
   const B = BODY3[tier] || BODY3.rare, r = rnd(fam.length * 131 + tier.length * 17), plus = tier === 'exotic', my = tier === 'mythical', leg = tier === 'legendary' || my;
   const acc0 = my ? '#e8956a' : leg ? '#c4a05a' : (ACCENT[fam] || '#e8e0c8'), acc = fade(acc0, my ? 0.12 : 0.28), bandCol = my ? '#9a3e26' : leg ? '#8a6a34' : fade(ACCENT[fam] || '#e8e0c8', 0.32);
   const edgeCol = shade(B.dark, -0.4), grain = noisePattern(x);
@@ -358,14 +363,14 @@ function paintScroll3(x, fam, tier) {
   // the emblem: painted on, solid, softly shaded, the paint worn in places
   { const m = emblemMask2(fam, tier, 288) /* (7.4.19) a mythical has its own picture */, size = 58, c = document.createElement('canvas'); c.width = c.height = m.width; const t = c.getContext('2d');
     t.drawImage(m, 0, 0); t.globalCompositeOperation = 'source-in'; const eg = t.createLinearGradient(0, 0, 0, c.height); eg.addColorStop(0, shade(acc, 0.16)); eg.addColorStop(0.55, acc); eg.addColorStop(1, shade(acc, -0.32)); t.fillStyle = eg; t.fillRect(0, 0, c.width, c.height);
-    t.globalCompositeOperation = 'destination-out'; const rr2 = rnd(fam.length * 7 + 3); for (let i = 0; i < 70; i++) { t.globalAlpha = 0.25 + rr2() * 0.6; t.beginPath(); t.arc(rr2() * c.width, rr2() * c.height, 1 + rr2() * 4, 0, TAU); t.fill(); } t.globalAlpha = 1;
+    satPixels(c, sat); t.globalCompositeOperation = 'destination-out'; const rr2 = rnd(fam.length * 7 + 3); for (let i = 0; i < 70; i++) { t.globalAlpha = 0.25 + rr2() * 0.6; t.beginPath(); t.arc(rr2() * c.width, rr2() * c.height, 1 + rr2() * 4, 0, TAU); t.fill(); } t.globalAlpha = 1;
     x.save(); x.globalAlpha = 0.55; x.drawImage((() => { const d = document.createElement('canvas'); d.width = d.height = m.width; const u = d.getContext('2d'); u.drawImage(m, 0, 0); u.globalCompositeOperation = 'source-in'; u.fillStyle = 'rgba(0,0,0,1)'; u.fillRect(0, 0, d.width, d.height); return d; })(), -2 - size / 2 + 0.8, 1 - size / 2 + 1.2, size, size); x.restore(); // the paint's thickness: a soft shadow under it
     x.drawImage(c, -2 - size / 2, 1 - size / 2, size, size); }
   rolls(); roll(-46, 34, 35, 12.5, true);
   // (7.4.20, owner) a mythical's seal: hot wax pressed onto the sheet's corner over two ribbon tails. An uneven pool with
   // a raised rim (lit above, shadowed below), the stamp's disc pressed into it, and the heart embossed in that, its
   // upper edges catching the light. Still warm: an ember glow round it and a few sparks lifting off
-  if (my) { x.save(); x.translate(24, 21);
+  const seal3 = (x) => { x.save(); x.translate(24, 21);
     const gl = x.createRadialGradient(0, 0, 4, 0, 0, 18); gl.addColorStop(0, 'rgba(255,110,60,0.42)'); gl.addColorStop(1, 'rgba(255,110,60,0)'); x.fillStyle = gl; x.fillRect(-18, -18, 36, 36);
     for (const [dx, a] of [[-4, 0.45], [4, -0.35]]) { const rb = new Path2D(); rb.moveTo(dx - 2.6, 3); rb.lineTo(dx + 2.6, 3); rb.lineTo(dx + 3.4 + a * 4, 15); rb.lineTo(dx + a * 4, 12.4); rb.lineTo(dx - 3.4 + a * 4, 15); rb.closePath();
       const rg = x.createLinearGradient(dx - 3, 0, dx + 3, 0); rg.addColorStop(0, '#3e0e08'); rg.addColorStop(0.5, '#7a2416'); rg.addColorStop(1, '#3e0e08'); x.fillStyle = rg; x.fill(rb); }
@@ -381,12 +386,13 @@ function paintScroll3(x, fam, tier) {
     const hg = x.createLinearGradient(-4, -4, 4, 4); hg.addColorStop(0, '#e86448'); hg.addColorStop(1, '#a8301e'); x.fillStyle = hg; x.fill(heart(0, 0, 1));
     x.fillStyle = 'rgba(255,220,200,0.55)'; x.beginPath(); x.ellipse(-2.2, -1.8, 1.1, 0.6, -0.6, 0, TAU); x.fill(); // the shine on its lobe
     for (const [ex2, ey2, er] of [[-6, -10, 0.9], [3, -12.5, 0.7], [8, -9, 0.6], [-1, -15, 0.5]]) { x.fillStyle = 'rgba(255,170,100,0.85)'; x.beginPath(); x.arc(ex2, ey2, er, 0, TAU); x.fill(); x.fillStyle = 'rgba(255,120,60,0.25)'; x.beginPath(); x.arc(ex2, ey2, er * 2.6, 0, TAU); x.fill(); } // sparks lifting off
-    x.restore(); }
+    x.restore(); };
+  if (my) { if (Math.abs(sat - 1) < 0.01) seal3(x); else { const o = document.createElement('canvas'); o.width = x.canvas.width; o.height = x.canvas.height; const ox = o.getContext('2d'); ox.setTransform(x.getTransform()); seal3(ox); satPixels(o, sat); x.save(); x.setTransform(1, 0, 0, 1, 0, 0); x.drawImage(o, 0, 0); x.restore(); } }
 }
-export function drawScroll3(ctx, cx, cy, size, fam, tier = 'rare') {
-  const key = `3|${fam}|${tier}|${Math.round(size)}`;
+export function drawScroll3(ctx, cx, cy, size, fam, tier = 'rare', sat = 1) {
+  sat = Math.round(sat * 10) / 10; const key = `3|${fam}|${tier}|${Math.round(size)}|${sat}`;
   let c = cache.get(key);
-  if (!c) { c = document.createElement('canvas'); c.width = c.height = Math.ceil(size); const x = c.getContext('2d'), k = size / 104; x.translate(size / 2, size / 2); x.scale(k, k); paintScroll3(x, fam, tier); cache.set(key, c); }
+  if (!c) { c = document.createElement('canvas'); c.width = c.height = Math.ceil(size); const x = c.getContext('2d'), k = size / 104; x.translate(size / 2, size / 2); x.scale(k, k); paintScroll3(x, fam, tier, sat); cache.set(key, c); }
   ctx.drawImage(c, cx - c.width / 2, cy - c.height / 2);
 }
 // (5.7.8) a legendary's motes: slow sparks of old gold drifting up round it, wherever it is shown. Call each frame

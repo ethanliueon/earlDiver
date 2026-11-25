@@ -1328,7 +1328,9 @@ export class UI {
   equipHtml(P, g, extra = '') {
     ensureKit(P); const K = kitOf(P), free = !!this.h.canChangeGear(), onSet = new Set(Object.values(K.on));
     const SLOTS = [['suit', 'Suit'], ['fins', 'Fins'], ['tank', 'Tank'], ['bag', 'Bag'], ['ability', 'Ability'], ['net', '1  Net'], ['cam', '2  Camera'], ['ability2', 'Ability 2']]; // (5.9.0) the Ability slot: the scroll he carries. (7.6.4, owner) and the second, its swap on the skill button
-    const pic = (q) => { const it = ITEMS[q.id]; return pictureOf(it.kind, it, 120, 72, true); };
+    // (7.6.26, owner) a scroll's tile shows its charges: its emblem from half its colour (none) to twice it (full)
+    const satOf = (q, it) => { const A = abilityOf(q.id), mx = A ? maxLoad(A) : 0; return Math.round((0.5 + 1.5 * (mx ? Math.min(1, (q.load || 0) / mx) : 0)) * 10) / 10; };
+    const pic = (q) => { const it = ITEMS[q.id]; return pictureOf(it.kind, it.kind === 'ability' ? { ...it, sat: satOf(q, it) } : it, 120, 72, true); };
     const slot = ([kind, label]) => { const q = K.on[kind] && K.items.find((x) => x.u === K.on[kind]); const it = q && ITEMS[q.id], nm = label.replace(/^\d\s+/, '');
       // (5.11.7) the name inside the box, under the picture (it no longer hangs below and gets cut off); no key numbers (touch
       // only); an empty slot is just its name; a slot for something he does not own yet (the camera) carries a padlock
@@ -1391,7 +1393,8 @@ export class UI {
     const nSpare = ['necklace', 'glowAdv'].filter((k) => (SP[k] || 0) > 0).length + trapKinds.length + Math.ceil(nGold / 10);
     const pop = this.lkSel ? this.itemPop(P, g, free) : '';
     return `<div class="inv-sec wide eq inv-split${free ? '' : ' locked'}"><div class="inv-left"><div class="cash-plate"><span>CASH</span><b>${moneyExact(P.cash)}</b></div>`
-      + `<div class="eq-stage"><div class="eq-col">${SLOTS.slice(0, 5).map(slot).join('')}</div><canvas class="eq-earl" width="360" height="520"></canvas><div class="eq-col">${SLOTS.slice(5).map(slot).join('')}${beltSlot()}${petGear}</div></div>`
+      + `<div class="eq-stage"><div class="eq-col">${SLOTS.slice(0, 5).map(slot).join('')}</div><canvas class="eq-earl" width="360" height="520"></canvas><div class="eq-col">${SLOTS.slice(5, 7).map(slot).join('')}${petGear}${beltSlot()}${SLOTS.slice(7).map(slot).join('')}</div>`
+      /* (7.6.26, owner) Ability 2 at the foot of its column, level with Ability: the two scrolls on one row; the pet moved up */ + `</div>`
       /* (6.0.0) no lock note: gear changes anywhere */
       /* (5.11.7) no tank panel under him: the tank's slot already shows it */
       + `</div><div class="inv-right"><div class="lk-head"><h4>Locker</h4><small>by rarity</small><span class="${list.length + Math.ceil(nGold / 10) >= LOCKER ? 'full' : ''}">(${list.length + Math.ceil(nGold / 10)}/${LOCKER})</span></div><div class="lk-grid">${spare}${airTiles}${trapTiles}${goldTiles}${tiles}${'<div class="lk-tile empty"></div>'.repeat(Math.max(0, LOCKER - list.length - nSpare))}</div></div></div>${pop}${trapPop}${airPop}${glowPop}${goldPop}${petPick}${this.petSel ? this.petPop(P) : ''}`;
@@ -1429,10 +1432,21 @@ export class UI {
     const skills = skillsHtml(q.sk); void roman; // (6.5.3) the short list every card shares
     const power = q.leg ? powerHtml(q.leg, LEGEND[q.leg].cd ? powerStatus(P, q.leg) : '') : ''; // (5.16.0) a power that triggers: ready, or its hourglass and time left
     const S = it.set && SETS[it.set], have = S ? T.sets[it.set] || 0 : 0;
-    return `<div class="ip-col r-${it.rarity}${power || (q.sk && q.sk.length) || S ? ' more' : ''}"><h5>${head}</h5><img src="${pictureOf(it.kind, it, 260, 156, true)}" alt=""><b class="nm" style="color:${R.col}">${it.name}</b><span class="rr" style="color:${R.col}">${rarKind(R.name, it.kind)}${it.kind === 'ability' && (abilityOf(it.id) || {}).pure ? ' · Pure' : ''}</span><p class="ic-line">${it.line || ''}</p>
+    return `<div class="ip-col r-${it.rarity}${power || (q.sk && q.sk.length) || S ? ' more' : ''}"><h5>${head}</h5><img src="${pictureOf(it.kind, it.kind === 'ability' ? { ...it, sat: Math.round((0.5 + 1.5 * Math.min(1, (q.load || 0) / Math.max(1, maxLoad(abilityOf(q.id) || {})))) * 10) / 10 } : it, 260, 156, true)}" alt=""><b class="nm" style="color:${R.col}">${it.name}</b><span class="rr" style="color:${R.col}">${rarKind(R.name, it.kind)}${it.kind === 'ability' && (abilityOf(it.id) || {}).pure ? ' · Pure' : ''}</span><p class="ic-line">${it.line || ''}</p>
       ${(() => { const M2 = MEASURES[it.kind]; if (!M2) return ''; const rows2 = M2.map((r) => `<div class="ip-st"><span>${r[0]}</span><b>${measureHtml(it.kind, r, it, q.sk)}</b></div>`).concat(crossBoosts(it.kind, q.sk).map(([a, b]) => `<div class="ip-st"><span>${a}</span><b><span class="boost">${b}</span></b></div>`)).join(''); return `<div class="ip-stats">${rows2}</div>`; })() /* (5.12.0) its numbers on its own card */}
       ${power /* (7.3.0) after the figures, so they keep their place on every card */}<div class="ip-sks">${skills}</div>${S ? `<div class="lk-set${have >= 3 ? ' live' : ''}"><b>${S.name} set</b>, ${have >= 3 ? 'on' : `worn (${have}/3)`}<span>${S.trait}</span></div>` : ''}</div>`;
   }
+  // (7.6.3, owner) a scroll's charges, inside its card under its description: a notch for each slot (one slot runs the full
+  // width), then Load (one) and Fill (to the top), priced in pearls; only at the surface, the sub's too (7.6.26); away from it
+  // the same buttons greyed under a padlock. (7.6.26, owner) a charge just loaded fills in with a glow, and the loaded notches
+  // glow more the fuller the scroll is, shining at full
+  chargeBox(q) {
+    const A = abilityOf(q.id); if (!A) return ''; const mx = maxLoad(A), n = q.load || 0, pr = chargePrice(A), top = this.h.atSurface && this.h.atSurface(), pl = '<img class="st-pearl" src="assets/ui/icons/pearl.png" alt="">';
+    const fresh = this.freshLoad && this.freshLoad.u === q.u && Date.now() - this.freshLoad.at < 1500 ? this.freshLoad.from : n, full = n / mx;
+    const btn = (k, label) => top && n < mx ? `<button data-lk="${k}:${q.u}">${label}</button>` : `<button class="ld-off" data-lk="${n < mx ? 'loadlock' : 'loadfull-done'}:${q.u}">${n < mx ? '<i class="ld-pad"></i>' : ''}${label}</button>`;
+    return `<div class="ld-box${n >= mx ? ' ld-full' : ''}" style="--full:${full.toFixed(2)}"><div class="ld-head"><span>Charges</span><b>${n} / ${mx}</b></div><div class="ld-notches" style="grid-template-columns:repeat(${mx}, 1fr)">${Array.from({ length: mx }, (_, i) => `<i class="${i < n ? 'on' : ''}${i < n && i >= fresh ? ' fresh' : ''}" style="--i:${i - fresh}"></i>`).join('')}</div><div class="ld-btns lk-acts">${btn('load', `Load ${pl}${pr}`)}${btn('loadfull', `Fill ${pl}${pr * Math.max(1, mx - n)}`)}</div></div>`;
+  }
+  chargeCol(P, q, head) { let c = this.itemCol(P, q, head); const it = ITEMS[q.id]; if (it && it.kind === 'ability') { const cut = c.lastIndexOf('</div>'); c = c.slice(0, cut) + this.chargeBox(q) + c.slice(cut); } return c; }
   // the pop-up: the thing on its own (if he has it on), or side by side with what he has on of that kind
   itemPop(P, g, free) {
     const K = kitOf(P), q = K.items.find((x) => x.u === this.lkSel); if (!q) { this.lkSel = null; return ''; }
@@ -1447,7 +1461,7 @@ export class UI {
       return `<div class="item-pop"><div class="ip-box r-${it.rarity}"><button class="ip-close" aria-label="Close">×</button>${body}<div class="lk-acts">${acts}</div></div></div>`;
     }
     if (on) {
-      body = `<div class="ip-cols one">${this.itemCol(P, q, 'You have it on')}</div>`;
+      body = `<div class="ip-cols one">${this.chargeCol(P, q, 'You have it on')}</div>`;
       const starter = it.kind === 'net' ? null : FREE_IDS[it.kind]; // (6.9.1) a net unequipped leaves the hands empty, the hand net too
       if (free && !(starter && q.id === starter)) acts += `<button data-lk="off:${on2 ? 'ability2' : it.kind}">Unequip${starter ? ` <small>(${ITEMS[starter].name} back on)</small>` : ''}</button>`;
     } else {
@@ -1459,7 +1473,7 @@ export class UI {
         const bv = (i2, sk2) => { const B = boostOf(i2.kind, label, i2, sk2); return B && B.val != null ? B.val : num(i2); }, d = bv(it, q.sk) - bv(cur, curQ.sk), up = hi ? d > 0 : d < 0; // (6.0.8) compared with the skills counted in
         return `<tr><th>${label}</th><td>${a2}</td><td class="${up ? 'up' : 'down'}">${b2} ${up ? '▲' : '▼'}</td></tr>`;
       }).join('');
-      body = `<div class="ip-cols">${cur ? this.itemCol(P, curQ, 'Equipped') : `<div class="ip-col empty"><h5>Equipped</h5><p>Nothing in that slot.</p></div>`}<div class="ip-arrow">→</div>${this.itemCol(P, q, 'Selected')}</div>`
+      body = `<div class="ip-cols">${cur ? this.chargeCol(P, curQ, 'Equipped') : `<div class="ip-col empty"><h5>Equipped</h5><p>Nothing in that slot.</p></div>`}<div class="ip-arrow">→</div>${this.chargeCol(P, q, 'Selected')}</div>`
         + (rows ? `<table class="ip-vs"><thead><tr><th></th><td>${cur ? cur.name : '—'}</td><td>${it.name}</td></tr></thead><tbody>${rows}</tbody></table>` : '');
       if (free) acts += `<button data-lk="on:${q.u}">Put it on</button>`;
       if (free && it.kind === 'ability') acts += `<button data-lk="on2:${q.u}">Second slot</button>`; // (7.6.4, owner)
@@ -1470,10 +1484,7 @@ export class UI {
     // (7.6.3, owner) charges: a notch for each one loaded, then Load (one) and Load full, priced in pearls; only at the surface
     // (7.6.7, owner) inside the card, under its description, where they belong to the scroll; away from the surface the same
     // two buttons, greyed under a small padlock (tapped: "At the surface"), so the card keeps one shape everywhere
-    if (it.kind === 'ability') { const A = abilityOf(q.id), mx = maxLoad(A), n = q.load || 0, pr = chargePrice(A), top = this.h.atSurface && this.h.atSurface(), pl = '<img class="st-pearl" src="assets/ui/icons/pearl.png" alt="">';
-      const btn = (k, label) => top && n < mx ? `<button data-lk="${k}:${q.u}">${label}</button>` : `<button class="ld-off" data-lk="${n < mx ? 'loadlock' : 'loadfull-done'}:${q.u}">${n < mx ? '<i class="ld-pad"></i>' : ''}${label}</button>`;
-      const box = `<div class="ld-box"><div class="ld-head"><span>Charges</span><b>${n} / ${mx}</b></div><div class="ld-notches">${Array.from({ length: mx }, (_, i) => `<i class="${i < n ? 'on' : ''}"></i>`).join('')}</div><div class="ld-btns lk-acts">${btn('load', `Load ${pl}${pr}`)}${btn('loadfull', `Load full ${pl}${pr * Math.max(1, mx - n)}`)}</div></div>`;
-      const cut = body.lastIndexOf('</div></div>'); body = cut > 0 ? body.slice(0, cut) + box + body.slice(cut) : body + box; }
+    /* (7.6.26, owner) the charges are put into each scroll's own card (both, when two are compared): see chargeBox */
     // (7.5.6, owner) a scroll always shows its Combine 3, worn or not: greyed with how many he has until there are three
     if (it.kind === 'ability') { const NX = { rare: 'exotic', exotic: 'legendary', legendary: 'mythical' }[it.rarity], /* (7.4.15) three legendaries make the mythical */ nId = NX && `ab_${it.fam}_${NX}`, have = K0.items.filter((x) => x.id === q.id).length;
       if (nId && ITEMS[nId]) acts += `<button data-lk="combine:${q.id}"${have >= 3 ? '' : ' disabled'}>Combine 3${have >= 3 ? '' : ` (${have}/3)`} → <span style="color:${RARITY[NX].col}">${ITEMS[nId].name}</span></button>`; }
@@ -1513,7 +1524,7 @@ export class UI {
     }
     // a card's buttons, and clicking a tile (or a slot's item) to open its card
     const box = $('inventory').querySelector('.inv-body');
-    box.querySelectorAll('[data-lk]').forEach((b) => b.addEventListener('click', () => { const k = b.dataset.lk; this.h.onEquip(k); this.lkSel = null; this.renderInventory(); }));
+    box.querySelectorAll('[data-lk]').forEach((b) => b.addEventListener('click', () => { const k = b.dataset.lk, keep = /^(load|loadfull|loadlock|loadfull-done):/.test(k); /* (7.6.26, owner) loading keeps the card open */ if (/^(load|loadfull):/.test(k)) { const u = k.split(':')[1], q0 = kitOf(P).items.find((x) => x.u === u); this.freshLoad = { u, from: q0 ? (q0.load || 0) : 0, at: Date.now() }; } this.h.onEquip(k); if (!keep) this.lkSel = null; this.renderInventory(); }));
     // (7.4.14) the pet's slot on the Gear page: the pets he owns
     const pslotG = root.querySelector('.eq-slot[data-petslot]'); if (pslotG) pslotG.addEventListener('click', () => { this.petPick = true; this.lkSel = null; this.renderInventory(); });
     if (!this.ppWired && $('inventory')) { this.ppWired = true; $('inventory').addEventListener('click', (ev) => { const pk = ev.target.closest('.pet-pick'); if (!pk) return; ev.stopPropagation();

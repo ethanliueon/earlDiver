@@ -267,7 +267,9 @@ export class Renderer {
     // the speed's frame-to-frame wobble (the swell, a nudge off the hull) shook the whole view, so the boat and the sub
     // seemed to jiggle and the marine snow to jump
     { const LV = this.lookV || (this.lookV = { x: 0, y: 0 }), a = 1 - Math.exp(-dt * 2.2), dz = (v) => (Math.abs(v) < 0.25 ? 0 : v - Math.sign(v) * 0.25); LV.x += (dz(e.vx || 0) - LV.x) * a; LV.y += (dz(e.vy || 0) - LV.y) * a; }
-    const lookX = this.lookV.x * 0.9, lookY = this.lookV.y * 0.6;
+    // (7.6.26, owner) fast, he stays well inside the screen: the look-ahead eases off toward a fifth of the view (never a
+    // straight multiple of his speed), and the camera is never left more than a quarter of the view from him
+    const capX = cam.w * 0.2, capY = cam.h * 0.16, lookX = capX * Math.tanh(this.lookV.x * 0.9 / capX), lookY = capY * Math.tanh(this.lookV.y * 0.6 / capY);
     let tx = e.x + lookX, ty = e.y + lookY;
     ty = Math.max(ty, -cam.h * 0.18); // let a little sky show near the surface
     // (5.7.0) the title: the camera starts at the boat and sinks slowly past her keel into the dark, over a minute
@@ -278,6 +280,7 @@ export class Renderer {
     if (Math.hypot(cam.x - tx, cam.y - ty) > 80) { cam.x = tx; cam.y = ty; }
     const k = 1 - Math.exp(-dt * (g.mode === 'menu' ? 0.6 : 3));
     cam.x = lerp(cam.x, tx, k); cam.y = lerp(cam.y, ty, k);
+    if (g.mode === 'play' && !g.helm && !(lk > 0)) { const mX = cam.w * 0.25, mY = cam.h * 0.25; cam.x = clamp(cam.x, e.x - mX, e.x + mX); cam.y = clamp(cam.y, Math.max(e.y, -1e9) - mY, e.y + mY); } // (7.6.26)
     cam.x = clamp(cam.x, cam.w / 2 - 20, WORLD_W - cam.w / 2 + 25);
   }
 
@@ -1642,7 +1645,7 @@ export class Renderer {
     // (7.6.5, owner) Eagle Eye: the screen's edges darkened into the almond of a lid, a faint amber in the middle, while it runs
     // (7.6.8, owner) Eagle Eye: real lids. The top and the bottom close in as dark curved shapes, feathered at their edge,
     // a fringe of lash shadows along each, leaving an almond of sharp sight; the light inside warm
-    if (g.mode === 'play' && (g.eagle || 0) > 0.01) { const k = g.eagle, W0 = this.W, H0 = this.H, cx = W0 / 2, cy = H0 / 2, op = H0 * (0.62 - 0.12 * k), sp = W0 * 0.62;
+    if (false && g.mode === 'play' && (g.eagle || 0) > 0.01) { // (7.6.26, owner) Eagle Eye no longer closes lids over the screen const k = g.eagle, W0 = this.W, H0 = this.H, cx = W0 / 2, cy = H0 / 2, op = H0 * (0.62 - 0.12 * k), sp = W0 * 0.62;
       ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0);
       const lid = (sd) => { const P2 = new Path2D(); P2.moveTo(cx - sp, cy); P2.bezierCurveTo(cx - sp * 0.45, cy + sd * op, cx + sp * 0.45, cy + sd * op, cx + sp, cy); P2.lineTo(cx + sp + W0, cy); P2.lineTo(cx + sp + W0, cy + sd * H0 * 2); P2.lineTo(cx - sp - W0, cy + sd * H0 * 2); P2.lineTo(cx - sp - W0, cy); P2.closePath(); return P2; };
       const fl = 'filter' in ctx;

@@ -582,6 +582,12 @@ e.inSub ? [
     // button), the journal's coin beside it (HTML, placed by main.js at this.journalAt). The settings coin goes to the
     // top right corner, where a phone game keeps it; the depth moves left to make room (this.gearSpace)
     { const ch = 30 * u, mx = 12 * u + ch * 0.8, my = 12 * u + 19 * u;
+      // (7.6.26, owner) the money and the pearls share one plate: the olive steel with a dark well pressed into it, the
+      // banknotes and sum on its upper row, the pearl and its count under them (the pearls' own plate is gone)
+      { ctx.save(); ctx.font = `700 ${21 * u}px ${HUDF}`; const tw = ctx.measureText(moneyExact(P.cash || 0)).width; ctx.font = `700 ${15 * u}px ${HUDF}`; const pw2 = ctx.measureText(String(Math.floor(P.pearls || 0).toLocaleString('en-US'))).width; ctx.restore();
+        const pr = 8 * u, bx = mx - ch * 0.8 - 5 * u, top = my - ch * 0.62, bot = my + ch * 0.55 + 6 * u + pr * 2 + 6 * u, w = Math.max(ch * 1.6 + 6 * u + tw, 3 * u + pr * 2.4 + 5 * u + pw2) + 18 * u;
+        steelPlate(ctx, bx, top, w, bot - top, u); ctx.fillStyle = 'rgba(0,0,0,0.3)'; ctx.beginPath(); ctx.roundRect(bx + 2.5 * u, top + 2.5 * u, w - 5 * u, bot - top - 5 * u, 3.5 * u); ctx.fill();
+        this.pearlRect = { r: bx + w, y: my + ch * 0.55 + 6 * u + pr, h: bot - top, u }; }
       drawCash(ctx, mx, my, ch);
       ctx.save(); ctx.font = `700 ${21 * u}px ${HUDF}`; ctx.textAlign = 'left'; ctx.textBaseline = 'middle'; ctx.shadowColor = 'rgba(0,0,0,0.85)'; ctx.shadowBlur = 4 * u;
       // (5.7.5) the sum counts up to a new total (a quest paid, a sale) instead of jumping
@@ -597,8 +603,7 @@ e.inSub ? [
       const pend = FL.reduce((a, f) => a + Math.round(f.n * (1 - Math.min(1, Math.max(0, (nowP - f.t0 - 0.55) / 0.7)))), 0);
       { const pr = 8 * u, py = my + ch * 0.55 + 6 * u + pr, im = hudIcon('pearl'), ptxt = String(Math.max(0, Math.floor((P.pearls || 0) - pend)).toLocaleString('en-US'));
         ctx.save(); ctx.font = `700 ${15 * u}px ${HUDF}`; const pw = ctx.measureText(ptxt).width, bx = mx - ch * 0.8, bh = pr * 2 + 4 * u, pcx = bx + 3 * u + pr * 1.2, ptx = pcx + pr * 1.2 + 5 * u, /* (7.4.0, owner) its left edge under the banknotes' */ bw = (ptx - bx) + pw + 9 * u; /* the count close after the pearl */
-        steelPlate(ctx, bx, py - bh / 2, bw, bh, u); this.pearlRect = { r: bx + bw, y: py, h: bh, u }; // (7.6.0) the marked eye sits beside it
-        ctx.fillStyle = 'rgba(0,0,0,0.28)'; ctx.beginPath(); ctx.roundRect(bx + 2 * u, py - bh / 2 + 2 * u, bw - 4 * u, bh - 4 * u, 3 * u); ctx.fill(); /* a shallow well pressed into the plate */
+        /* (7.6.26) drawn on the shared plate above; the marked eye sits beside it (this.pearlRect) */ void bw;
         if (im) { const bump = FL.some((f) => { const k = nowP - f.t0; return k > 0.6 && k < 1.35; }) ? 1 + 0.12 * Math.sin(nowP * 30) : 1; ctx.drawImage(im, pcx - pr * 1.2 * bump, py - pr * 1.2 * bump, pr * 2.4 * bump, pr * 2.4 * bump); }
         if (im && FL.length) { const T = ctx.getTransform(), LW = ctx.canvas.width / (T.a || 1), LH = ctx.canvas.height / (T.d || 1), sx = LW / 2, sy = LH * 0.36;
           for (const f of FL) { const k = nowP - f.t0, ap = Math.min(1, k / 0.18), out = k > 1.15 ? Math.max(0, 1 - (k - 1.15) / 0.3) : 1;

@@ -73,9 +73,9 @@ export const ABILITY_DEFS = {
   },
   // (7.6.5, owner) a hybrid: the view drawn out wide, and light round him
   lookout: {
-    rare: { name: 'Lookout', dur: 30, cd: 300, zoom: 1.2, light: 1, line: 'For 30 s you see further round you, with light 28 m round you.' },
-    exotic: { name: 'Lookout+', dur: 45, cd: 900, zoom: 1.35, light: 1.3, line: 'For 45 s you see much further round you, with brighter light.' },
-    legendary: { name: 'Eagle Eye', dur: 90, cd: 3600, zoom: 1.6, light: 1.6, eagle: true, line: 'For 90 s the sea opens far round you, seen through a sharper eye, with bright light.' },
+    rare: { name: 'Lookout', dur: 30, cd: 300, zoom: 1.6, light: 1, line: 'For 30 s you see further round you, with light 28 m round you.' },
+    exotic: { name: 'Lookout+', dur: 45, cd: 900, zoom: 2.1, light: 1.3, line: 'For 45 s you see much further round you, with brighter light.' },
+    legendary: { name: 'Eagle Eye', dur: 90, cd: 3600, zoom: 3, light: 1.6, /* (7.6.26, owner) the view drawn out three times; no lids */ line: 'For 90 s the sea opens far round you, seen through a sharper eye, with bright light.' },
   },
   // (7.6.6, owner) the second batch (docs/PLAN_SKILLS.md): a net thrown at what you tap; taps that catch; the specials
   // (one rarity, few charges); Bloodmoon (an event Heart, only from the Test tab for now); and three for the eye alone

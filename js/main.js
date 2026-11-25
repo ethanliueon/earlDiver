@@ -1177,9 +1177,11 @@ function lessons() {
   if (P.lessonYard !== 'done' && P.tut !== 'on') { const nx = lv(P, 'depth') + 1, NS = SUBS[nx];
     if (NS && (P.lessonYard === 'on' || P.cash >= NS.price) && !(g.entity && g.entity.marked)) {
       const atTop = g.aboard || (e.inSub ? sub.docked : (e.y < 2 && Math.abs(e.x - BOAT.x) < 60));
-      if (P.lessonYard !== 'on' && atTop) { P.lessonYard = 'on'; saveProfile(P); }
+      if (P.lessonYard !== 'on' && atTop) { P.lessonYard = 'on'; P.lessonYardAt = Date.now(); saveProfile(P); }
       if (P.lessonYard === 'on') {
         const yardO = shown('workshop') && ui.shopTab === 'sub';
+        // (7.6.26, owner) a notice, never a duty: about 10 s on screen, then gone for good (unless he is at the yard's page)
+        if (!yardO && Date.now() - (P.lessonYardAt || 0) > 10000) { P.lessonYard = 'done'; saveProfile(P); g.yardSeen = false; return; }
         if (yardO) { g.yardSeen = true; lessonSet(`The ${NS.name}: ${money(NS.price, false)}`, { sel: ['#shop-body .pay-tag[data-arg="up:tHull"]', `#shop-body .yd-card[data-yd="sub:${nx}"]`, '#shop-body .yd-plaque[data-yd="all"]'] }); return; } // its price tag; or its card among all the subs; or the way to all of them
         if (g.yardSeen) { P.lessonYard = 'done'; saveProfile(P); g.yardSeen = false; } // seen and closed: never again
         else if (atTop && !e.inSub && !g.aboard) { lessonSet('A better sub is for sale: the shipyard beside the Margaret', null, { x: yardX(), y: 0.6 }); return; } /* (7.6.23, owner) the yard is its own barge now */
@@ -2232,7 +2234,7 @@ function causeText(kind) {
 
 // ---------------- (5.9.0) abilities ----------------
 // (7.6.3, owner) the surface: aboard, in the cabin, or anywhere at 0 m in the water (or the sub there)
-function atSurface() { const e = g && g.earl; if (!e) return false; return !!(g.aboard || (ui.cabinOpen && ui.cabinOpen()) || (e.inSub ? g.sub.y <= 1.5 : e.y <= 0.8)); }
+function atSurface() { const e = g && g.earl; if (!e) return false; return !!(g.aboard || (ui.cabinOpen && ui.cabinOpen()) || (e.inSub ? (g.sub.docked || g.sub.y <= 3.6) : e.y <= 0.8)); } // (7.6.26, owner) the sub at the top counts too (it floats a little under)
 // (7.6.4, owner) the swap chip: the second scroll comes onto the button, with its own cooldown and run; the other keeps
 // running beside it
 function abilSwap() { const P = profile, K = kitOf(P); if (!K.on.ability2) { hud.toast('No second scroll: put one in its slot in the bag'); return; }
@@ -2241,6 +2243,9 @@ function abilSwap() { const P = profile, K = kitOf(P); if (!K.on.ability2) { hud
   saveProfile(P); audio.ready && audio.click && audio.click(); }
 function secondAbility() { const q = profile && wornInst(profile, 'ability2'); const A = q ? abilityOf(q.id) : null; if (A) A.loaded = q.load || 0; return A; }
 function currentAbility() { const q = profile && wornInst(profile, 'ability'); const A = q ? abilityOf(q.id) : null; if (A) { A.loaded = q.load || 0; A.inst = q; } return A; } // (7.6.3) with its loaded charges
+// (7.6.26, owner) a use's cooldown: with a charge loaded on the worn scroll, the charge is spent and there is no cooldown
+// at all (none shown); only with none left does the cooldown run
+function coolAfter(P, secs) { const q = wornInst(P, 'ability'); if (q && q.load > 0) { q.load--; P.abilReadyAt = 0; } else P.abilReadyAt = Date.now() + secs * 1000; }
 function useAbility() {
   const A = currentAbility(), why = whyNot(g, profile, A);
   // (7.4.9, owner) cooling down: the wait can be skipped with pearls (abilities.js skipCost)
@@ -2251,7 +2256,8 @@ function useAbility() {
     return; }
   if (why) { hud.toast(why, 'note'); return; }
   // (7.6.3, owner) a loaded charge: fires at once, no wait and no question (running, it starts over)
-  const S0 = abilityState(g); if (A.loaded > 0 && (cooldownLeft(profile) > 0 || S0.activeT > 0) && !(A.charges && S0.charges > 0) && !g.dashAim) { A.inst.load = A.loaded - 1; A.loaded--; profile.abilReadyAt = 0; S0.activeT = 0; S0.charges = 0; saveProfile(profile); }
+  // (7.6.26, owner) the charge itself is spent where the cooldown would start (coolAfter): with charges, no cooldown at all
+  const S0 = abilityState(g); if (A.loaded > 0 && (cooldownLeft(profile) > 0 || S0.activeT > 0) && !(A.charges && S0.charges > 0) && !g.dashAim) { profile.abilReadyAt = 0; S0.activeT = 0; S0.charges = 0; }
   // (5.16.0) Dash on a phone: pressed, it waits for a tap where to go (time slowed, the screen greyed, the view opened by
   // its tier); pressed again, or 3 s with no tap, and it is put away unspent
   if (A.dash) { if (g.dashAim) { g.dashAim = null; renderer.aimZoom = 1; } else { g.dashAim = { t: 3, A }; renderer.aimZoom = A.zoom || 1; } return; }
@@ -2259,7 +2265,7 @@ function useAbility() {
   if (A.cast) { if (g.castAim) g.castAim = null; else { g.castAim = { t: 4, A }; hud.toast('Tap where to throw', 'note'); } return; } // (7.6.6, owner) Cast: aimed by a tap, as the dash
   const S = abilityState(g), e = g.earl, P = profile;
   S.def = A; S.activeT = A.dur; S.maxT = A.dur; S.at = g.time;
-  P.abilReadyAt = Date.now() + (A.dur + A.cd) * 1000; // (5.16.0) real time
+  coolAfter(P, A.dur + A.cd); // (5.16.0) real time
   fireBurst(A); // (7.6.7, owner)
   if (A.airNow) { if (e.inSub) g.sub.o2 = Math.min(g.sub.o2Max, g.sub.o2 + g.sub.o2Max * A.airNow); else e.o2 = Math.min(e.o2Max, e.o2 + e.o2Max * A.airNow); g.breathFx = { t: 0, tier: A.tier }; } // (7.6.5, owner) Breath: air back at once
   saveProfile(P);
@@ -2299,7 +2305,7 @@ function mythFire(A) {
 function castTo(wx, wy) {
   const C = g.castAim; if (!C) return false; g.castAim = null; const A = C.A, e = g.earl, P = profile;
   const dx = wx - e.x, dy = wy - e.y, L = Math.hypot(dx, dy) || 1, k = Math.min(1, A.cast.range / L), x1 = e.x + dx * k, y1 = Math.max(0.5, e.y + dy * k);
-  const S = abilityState(g); S.def = A; S.activeT = A.dur; S.maxT = A.dur; S.at = g.time; P.abilReadyAt = Date.now() + (A.dur + A.cd) * 1000; saveProfile(P);
+  const S = abilityState(g); S.def = A; S.activeT = A.dur; S.maxT = A.dur; S.at = g.time; coolAfter(P, A.dur + A.cd); saveProfile(P);
   g.castNet = { x0: e.x, y0: e.y, x1, y1, t: 0, dur: 0.35 + L * 0.02, r: A.cast.r, tier: A.tier }; fireBurst(A); audio.ready && audio.click && audio.click(); return true;
 }
 function castLand(N) {
@@ -2362,7 +2368,7 @@ function siphonTo(wx, wy) {
   let dx = wx - M.x, dy = wy - M.y; const L0 = Math.hypot(dx, dy) || 1; dx /= L0; dy /= L0;
   let L = dist; for (let d = 0.5; d <= dist; d += 0.5) { const px = M.x + dx * d, py = M.y + dy * d; if (py < (e.inSub ? 3 : 0.6) || g.world.rockAt(px, py, r) || py > g.world.floorAt(px) - r) { L = Math.max(0, d - 1); break; } }
   g.siphonAim = null; renderer.aimZoom = 1.12;
-  const S = abilityState(g); S.def = A; S.activeT = SIPH.fo + A.dur + SIPH.fi; S.maxT = S.activeT; S.at = g.time; P.abilReadyAt = Date.now() + (S.activeT + A.cd) * 1000; saveProfile(P);
+  const S = abilityState(g); S.def = A; S.activeT = SIPH.fo + A.dur + SIPH.fi; S.maxT = S.activeT; S.at = g.time; coolAfter(P, S.activeT + A.cd); saveProfile(P);
   g.siphon = { x0: M.x, y0: M.y, x1: M.x + dx * L, y1: M.y + dy * L, dx, dy, t: 0, A, sub: !!e.inSub, puffT: 0 };
   e.facing = dx >= 0 ? 1 : -1; if (e.inSub) g.sub.facing = e.facing;
   for (const c of g.fauna.list) if (c.att && c.att.s !== 'idle' && c.att.s !== 'leave') { c.att.s = 'leave'; c.att.t = 0; c.att.cool = 30; }
@@ -2377,9 +2383,9 @@ function dashTo(wx, wy) {
   const S = abilityState(g); S.def = A; S.activeT = A.dur; S.maxT = A.dur; S.at = g.time;
   if (A.charges) { // (7.4.15) Rift: the first dash leaves more. (7.5.6, owner) every dash has charges: each dash leaves the rest for 20 s; the rest starts after the last
     S.chargeMax = A.charges;
-    if (S.charges > 0) { S.charges--; S.chargeT = 20; if (S.charges <= 0) { S.charges = 0; S.chargeT = 0; P.abilReadyAt = Date.now() + (A.dur + A.cd) * 1000; } }
+    if (S.charges > 0) { S.charges--; S.chargeT = 20; if (S.charges <= 0) { S.charges = 0; S.chargeT = 0; coolAfter(P, A.dur + A.cd); } }
     else { S.charges = A.charges - 1; S.chargeT = 20; P.abilReadyAt = 0; if (A.tier === 'mythical') mythFire(A); fireBurst(A); }
-  } else { P.abilReadyAt = Date.now() + (A.dur + A.cd) * 1000; fireBurst(A); }
+  } else { coolAfter(P, A.dur + A.cd); fireBurst(A); }
   saveProfile(P);
   g.dashMove = { x0: M.x, y0: M.y, x1, y1, t: 0, dur: A.dur, tier: A.dash };
   g.dashFx = { x0: M.x, y0: M.y, x1, y1, t: 0, tier: A.dash };
@@ -2410,7 +2416,7 @@ function tickAbility(dt) {
   const on2 = !!(S2 && S2.activeT > 0 && A2);
   e.abilSpeed = Math.max(on && A.speed ? A.speed : 1, on2 && A2.speed ? A2.speed : 1); e.abilNoAir = !!((on && A.noAir) || (on2 && A2.noAir));
   // (7.4.15) Rift's second dash waits 20 s at most; then the rest begins
-  if (S.charges > 0) { S.chargeT -= dt; if (S.chargeT <= 0) { S.charges = 0; const R0 = currentAbility(); if (R0 && R0.charges) { profile.abilReadyAt = Date.now() + R0.cd * 1000; saveProfile(profile); } } }
+  if (S.charges > 0) { S.chargeT -= dt; if (S.chargeT <= 0) { S.charges = 0; const R0 = currentAbility(); if (R0 && R0.charges) { coolAfter(profile, R0.cd); saveProfile(profile); } } }
   // (7.4.15) a mythical's 10 s: light, speed and air (in the sub, the cabin's air)
   // (7.4.19) Dauntless: the suit and the hull rated deeper while it runs; the field's strength is how much of the extra
   // depth he is using (0 at the old rating, 1 at the new)
