@@ -403,3 +403,4 @@ last desktop build is kept on the branch `desktop-4.25.5`).
   legendaries alone), never one ball. Shoal is one school with its own momentum that trails, overtakes and sweeps round
   him, fish facing the way it swims and flashing together as it turns. Item cards carry no outline in their rarity's
   colour and the pop-up's frame is plain olive steel (nothing is boxed); a card's plate is lit faintly from within instead.
+- (7.6.14, owner rated 2/10) Shoal is a small flock: each sardine its own place and speed, keeping to the school (its own loose spot, from a bell curve, never a pattern or rows), matching its heading, keeping a body's length from its neighbours, a little restless; the school follows a point drifting round him within a few metres.

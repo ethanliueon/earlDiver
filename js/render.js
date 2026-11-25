@@ -1539,14 +1539,23 @@ export class Renderer {
     // as the school turns. More fish, and a longer school, by tier
     if (g.mode === 'play' && g.shoalFx) { const F = g.shoalFx, e = g.earl, m = e.inSub ? g.sub : e, fade = Math.min(1, F.t / 1.2, (F.dur + 1.5 - F.t) / 1.5), n = [0, 16, 28, 44][F.lv], now = g.time, dt = Math.min(0.05, Math.max(0, now - (F.rt ?? now))); F.rt = now;
       if (F.cx == null) { F.cx = m.x - (e.facing || 1) * 4; F.cy = m.y + 1; F.vx = (e.facing || 1) * 1.5; F.vy = 0; F.hd = Math.atan2(0, F.vx); }
-      const orb = (e.inSub ? 6 : 3) * (1 + F.lv * 0.15), th = F.t * 0.33 + Math.sin(F.t * 0.21) * 1.2, tx = m.x + Math.cos(th) * orb * 1.3, ty = m.y + Math.sin(th) * orb * 0.45 - 0.4;
-      F.vx += ((tx - F.cx) * 1.6 - F.vx * 1.1) * dt; F.vy += ((ty - F.cy) * 1.6 - F.vy * 1.1) * dt; F.cx += F.vx * dt; F.cy += F.vy * dt;
+      const orb = (e.inSub ? 5.5 : 2.4) * (1 + F.lv * 0.1), th = F.t * 0.33 + Math.sin(F.t * 0.21) * 1.2, tx = m.x + Math.cos(th) * orb * 1.3, ty = m.y + Math.sin(th) * orb * 0.45 - 0.4;
+      F.vx += ((tx - F.cx) * 2.6 - F.vx * 1.5) * dt; F.vy += ((ty - F.cy) * 2.6 - F.vy * 1.5) * dt; F.cx += F.vx * dt; F.cy += F.vy * dt;
       const want = Math.atan2(F.vy * 0.6, F.vx), dh = Math.atan2(Math.sin(want - F.hd), Math.cos(want - F.hd)); F.hd += dh * Math.min(1, dt * 3); const turn = Math.min(1, Math.abs(dh) * 2.2);
-      const sp = this.sardine || (this.sardine = SPECIES_BY_ID[49]), Lp = ppm * 0.26, ch = Math.cos(F.hd), shd = Math.sin(F.hd), SL = (2.2 + 0.6 * F.lv) * (e.inSub ? 1.8 : 1), SW = (0.8 + 0.2 * F.lv) * (e.inSub ? 1.6 : 1);
-      ctx.save(); for (let i = 0; i < n; i++) { const u = ((i * 0.618034) % 1) - 0.5, w = (((i * 0.754877) % 1) - 0.5), al = u * SL * (1 - w * w), ac = w * SW * (1 - Math.abs(u) * 0.6) + Math.sin(F.t * 1.1 + i * 1.9) * 0.08, ox = al * ch - ac * shd + Math.sin(F.t * 1.7 + i) * 0.06, oy = al * shd + ac * ch + Math.cos(F.t * 1.3 + i * 2.1) * 0.05;
-          const x = S(F.cx + ox), y = Sy(F.cy + oy), fh = F.hd + Math.sin(F.t * 2 + i * 1.3) * 0.12, right = Math.cos(fh) >= 0, angf = clamp(Math.atan2(Math.sin(fh), Math.abs(Math.cos(fh))), -0.6, 0.6);
-          ctx.save(); ctx.translate(x, y); ctx.globalAlpha = fade; if (right) { ctx.rotate(angf); ctx.scale(-1, 1); } else ctx.rotate(-angf); drawSpecies(ctx, sp, Lp * (0.85 + 0.3 * ((i * 0.37) % 1)), F.t * 3 + i, 1, i); ctx.restore();
-          const fl = turn * (0.5 + 0.5 * Math.sin(i * 2.3 + F.t * 5)); if (fl > 0.35) { ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = fade * Math.min(1, (fl - 0.35) * 2.5); const fg = ctx.createRadialGradient(x, y, 0, x, y, Lp * 0.45); fg.addColorStop(0, 'rgba(236,244,244,0.85)'); fg.addColorStop(1, 'rgba(236,244,244,0)'); ctx.fillStyle = fg; ctx.beginPath(); ctx.ellipse(x, y, Lp * 0.45, Lp * 0.16, -fh, 0, TAU); ctx.fill(); ctx.restore(); } }
+      // (7.6.14, owner) each fish its own: a small flock. Every fish has its own place and speed and keeps three rules:
+      // stay with the school (its own loose spot in it, drawn from a bell curve, never a pattern), swim as the school swims,
+      // and keep a body's length from its neighbours; a little restlessness of its own on top. So the shape lives and
+      // stretches, thickens and thins, and never falls into rows
+      const sp = this.sardine || (this.sardine = SPECIES_BY_ID[49]), Lp = ppm * 0.28, ch = Math.cos(F.hd), shd = Math.sin(F.hd), SL = (1.1 + 0.3 * F.lv) * (e.inSub ? 1.8 : 1), SW = (0.45 + 0.1 * F.lv) * (e.inSub ? 1.6 : 1);
+      if (!F.fish) { const rnd = (k) => { const v = Math.sin(k * 127.1 + 311.7) * 43758.5453; return v - Math.floor(v); }, gs = (k) => Math.sqrt(-2 * Math.log(Math.max(1e-6, rnd(k)))) * Math.cos(TAU * rnd(k + 0.5));
+        F.fish = []; for (let i = 0; i < n; i++) { const oa = gs(i * 3.1) * 0.45, oc = gs(i * 5.7 + 2) * 0.45; F.fish.push({ x: F.cx + oa * SL * ch - oc * SW * shd, y: F.cy + oa * SL * shd + oc * SW * ch, vx: F.vx, vy: F.vy, oa, oc, ph: rnd(i * 9.3) * TAU, sz: 0.8 + 0.4 * rnd(i * 2.2) }); } }
+      const FF = F.fish; for (const f of FF) { const tx2 = F.cx + f.oa * SL * ch - f.oc * SW * shd, ty2 = F.cy + f.oa * SL * shd + f.oc * SW * ch;
+        let ax = (tx2 - f.x) * 2.2 + (F.vx - f.vx) * 1.6 + Math.sin(F.t * 1.3 + f.ph) * 0.5, ay = (ty2 - f.y) * 2.2 + (F.vy - f.vy) * 1.6 + Math.cos(F.t * 1.1 + f.ph * 1.7) * 0.35;
+        for (const o of FF) { if (o === f) continue; const dx = f.x - o.x, dy = f.y - o.y, d2 = dx * dx + dy * dy; if (d2 < 0.09 && d2 > 1e-6) { const d = Math.sqrt(d2), k = (0.3 - d) / 0.3 * 6; ax += dx / d * k; ay += dy / d * k; } }
+        f.vx += ax * dt; f.vy += ay * dt; const spd = Math.hypot(f.vx, f.vy), mx2 = Math.hypot(F.vx, F.vy) * 1.6 + 1.2; if (spd > mx2) { f.vx *= mx2 / spd; f.vy *= mx2 / spd; } f.x += f.vx * dt; f.y += f.vy * dt; }
+      ctx.save(); for (const f of FF) { const x = S(f.x), y = Sy(f.y), fh = Math.atan2(f.vy * 0.7, f.vx), right = Math.cos(fh) >= 0, angf = clamp(Math.atan2(Math.sin(fh), Math.abs(Math.cos(fh))), -0.6, 0.6);
+          ctx.save(); ctx.translate(x, y); ctx.globalAlpha = fade; if (right) { ctx.rotate(angf); ctx.scale(-1, 1); } else ctx.rotate(-angf); drawSpecies(ctx, sp, Lp * f.sz, F.t * 4 + f.ph, 1, f.ph); ctx.restore();
+          const fl = turn * (0.5 + 0.5 * Math.sin(f.ph * 3 + F.t * 5)); if (fl > 0.35) { ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = fade * Math.min(1, (fl - 0.35) * 2.5); const fg = ctx.createRadialGradient(x, y, 0, x, y, Lp * 0.45); fg.addColorStop(0, 'rgba(236,244,244,0.85)'); fg.addColorStop(1, 'rgba(236,244,244,0)'); ctx.fillStyle = fg; ctx.beginPath(); ctx.ellipse(x, y, Lp * 0.45, Lp * 0.16, -fh, 0, TAU); ctx.fill(); ctx.restore(); } }
       ctx.restore(); }
     // (7.6.6, owner) Revel: the water flickers with warm lantern colours in time with the music (Carnival: stronger, and
     // the glows in the water pulse with it); Ink: the water round him tinted its colour, a fading trail behind (Inkstorm)
