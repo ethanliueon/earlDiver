@@ -6,8 +6,8 @@
 // bands. Painted once per size and kept.
 const TAU = Math.PI * 2;
 
-export const ABILITY_FAMILIES = ['sprint', 'vigor', 'dash', 'flare', 'echo', 'ironhull', 'tidewarden', 'dauntless', 'breath', 'gust', 'temper', 'plunge', 'lookout']; // (7.6.5) the first new families
-export const ACCENT = { sprint: '#a6e6f2', vigor: '#9ad690', dash: '#efe0b8', flare: '#f6b45c', echo: '#f0c8a8', ironhull: '#c6cfd4', tidewarden: '#8cc2f4', dauntless: '#c8d2d6', breath: '#b8dcea', gust: '#d8e2e0', temper: '#c8c0b0', plunge: '#a8b0a8', lookout: '#e8c890' };
+export const ABILITY_FAMILIES = ['sprint', 'vigor', 'dash', 'flare', 'echo', 'ironhull', 'tidewarden', 'dauntless', 'breath', 'gust', 'temper', 'plunge', 'lookout', 'cast', 'snatch', 'ironskin', 'calm', 'tidecall', 'nacre', 'bloodmoon', 'shoal', 'revel', 'ink']; // (7.6.5, 7.6.6) the new families
+export const ACCENT = { sprint: '#a6e6f2', vigor: '#9ad690', dash: '#efe0b8', flare: '#f6b45c', echo: '#f0c8a8', ironhull: '#c6cfd4', tidewarden: '#8cc2f4', dauntless: '#c8d2d6', breath: '#b8dcea', gust: '#d8e2e0', temper: '#c8c0b0', plunge: '#a8b0a8', lookout: '#e8c890', cast: '#c8d0a8', snatch: '#d8c8a0', ironskin: '#b8bcc0', calm: '#a8c0c8', tidecall: '#a8d0c8', nacre: '#e8e0d0', bloodmoon: '#c84838', shoal: '#d0d8dc', revel: '#e0b870', ink: '#b090c0' };
 const BODY = {
   rare: { mid: '#2e4c70', dark: '#15253a', light: '#4d739c' },
   exotic: { mid: '#4c2d58', dark: '#25142c', light: '#714b83' },
@@ -516,6 +516,62 @@ function emblemTier(x, fam, tier) {
       const brow = P(); brow.moveTo(-22, -4); brow.bezierCurveTo(-10, -17, 8, -18, 23, -9); brow.lineTo(21, -6); brow.bezierCurveTo(8, -13, -8, -12, -19, -2); brow.closePath(); F(brow);
       for (let i = 0; i < 7; i++) { const a = Math.PI * (0.15 + i * 0.12), r1 = P(); r1.moveTo(Math.cos(a) * 13, 4 + Math.sin(a) * 9); r1.lineTo(Math.cos(a) * 19, 4 + Math.sin(a) * 15); S(r1, 1); } }
     x.restore(); return;
+  }
+  // (7.6.6, owner) the second batch: Cast, Snatch, the specials, Bloodmoon, and the three for the eye
+  const minnow = (cx, cy, L, a = 0) => { x.save(); x.translate(cx, cy); x.rotate(a); const b = P(); b.moveTo(L * 0.5, 0); b.bezierCurveTo(L * 0.3, -L * 0.22, -L * 0.25, -L * 0.2, -L * 0.42, 0); b.lineTo(-L * 0.62, -L * 0.2); b.lineTo(-L * 0.56, 0); b.lineTo(-L * 0.62, L * 0.2); b.lineTo(-L * 0.42, 0); b.bezierCurveTo(-L * 0.25, L * 0.2, L * 0.3, L * 0.22, L * 0.5, 0); b.closePath(); F(b); x.restore(); };
+  const netDisc = (r, mesh = 6) => { const o = P(); o.arc(0, 0, r, 0, TAU); S(o, 1.8); for (let i = 0; i < mesh; i++) { const a = i / mesh * Math.PI, l = P(); l.moveTo(Math.cos(a) * r, Math.sin(a) * r); l.lineTo(-Math.cos(a) * r, -Math.sin(a) * r); S(l, 0.9); } const c2 = P(); c2.arc(0, 0, r * 0.55, 0, TAU); S(c2, 0.9); for (let i = 0; i < 10; i++) { const a = i / 10 * TAU, w = P(); w.arc(Math.cos(a) * r, Math.sin(a) * r, 1.6, 0, TAU); F(w); } };
+  const hook = (sc = 1) => { x.save(); x.scale(sc, sc); const h = P(); h.moveTo(2, -20); h.lineTo(2, 6); h.bezierCurveTo(2, 15, -12, 15, -12, 5); h.lineTo(-12, 1); S(h, 3.2); const bb = P(); bb.moveTo(-12, 1); bb.lineTo(-15, 6); bb.lineTo(-11, 5); F(bb); const ey = P(); ey.arc(2, -22, 2.6, 0, TAU); S(ey, 1.8); x.restore(); };
+  const lantern = (cx, cy, sc = 1) => { x.save(); x.translate(cx, cy); x.scale(sc, sc); const top = P(); top.moveTo(-4, -9); top.lineTo(4, -9); top.lineTo(3, -12); top.lineTo(-3, -12); top.closePath(); F(top); const bd = P(); bd.moveTo(-5.5, -8); bd.bezierCurveTo(-8, -2, -8, 4, -5, 9); bd.lineTo(5, 9); bd.bezierCurveTo(8, 4, 8, -2, 5.5, -8); bd.closePath(); F(bd); for (const yy of [-3, 3]) { const rb = P(); rb.moveTo(-6.6, yy); rb.lineTo(6.6, yy); D(rb, 0.8); } const fl = P(); fl.moveTo(0, 4); fl.bezierCurveTo(-2, 1, 0, -2, 0, -4); fl.bezierCurveTo(1, -1, 2, 1, 0, 4); x.fillStyle = K; x.fill(fl); const hd = P(); hd.arc(0, -14, 2, Math.PI, 0); S(hd, 1); x.restore(); };
+  const drop = (cx, cy, r) => { const d0 = P(); d0.moveTo(cx, cy - r * 1.6); d0.bezierCurveTo(cx + r * 0.4, cy - r * 0.8, cx + r, cy - r * 0.2, cx + r, cy + r * 0.3); d0.arc(cx, cy + r * 0.3, r, 0, Math.PI); d0.bezierCurveTo(cx - r, cy - r * 0.2, cx - r * 0.4, cy - r * 0.8, cx, cy - r * 1.6); F(d0); const hl = P(); hl.arc(cx - r * 0.35, cy + r * 0.2, r * 0.45, Math.PI * 0.9, Math.PI * 1.5); D(hl, 1); };
+  const done2 = () => { x.restore(); };
+  if (fam === 'cast') {
+    if (tier === 'rare') { netDisc(18, 6); }
+    else if (exo) { ring(); x.save(); x.translate(4, -2); x.scale(1, 0.62); netDisc(15, 6); x.restore(); const ln = P(); ln.moveTo(-20, 16); ln.quadraticCurveTo(-14, 2, -6, 2); S(ln, 1.2); }
+    else { medallion(); netDisc(17, 8); minnow(-4, -3, 12, 0.3); minnow(6, 5, 10, -0.4); minnow(5, -8, 8, 0.8); }
+    done2(); return;
+  }
+  if (fam === 'snatch') {
+    if (tier === 'rare') { hook(1); }
+    else if (exo) { ring(); x.translate(3, 2); hook(0.8); const ln = P(); ln.moveTo(4.6, -20); ln.quadraticCurveTo(10, -26, 16, -24); S(ln, 1.1); }
+    else { medallion(); // Talon: a raptor's great hooked claw, its scaled toe, curled down over a fish
+      minnow(2, 11, 24, -0.05);
+      const tl = P(); tl.moveTo(-14, -18); tl.bezierCurveTo(-4, -22, 12, -18, 16, -4); tl.bezierCurveTo(18, 4, 14, 10, 9, 13); tl.bezierCurveTo(11, 6, 11, -2, 6, -8); tl.bezierCurveTo(1, -12, -6, -12, -14, -10); tl.closePath(); F(tl);
+      for (let k = 0; k < 4; k++) { const sc2 = P(); sc2.moveTo(-11 + k * 5, -18.5 + k * 0.6); sc2.quadraticCurveTo(-9 + k * 5, -14, -11 + k * 5.4, -10.5); D(sc2, 0.9); }
+      const gl = P(); gl.moveTo(10, -10); gl.bezierCurveTo(14, -4, 14, 2, 11, 8); D(gl, 0.8); }
+    done2(); return;
+  }
+  if (fam === 'ironskin') { medallion(); const sh = P(); sh.moveTo(0, -20); sh.bezierCurveTo(10, -16, 16, -16, 17, -14); sh.bezierCurveTo(17, 4, 10, 14, 0, 20); sh.bezierCurveTo(-10, 14, -17, 4, -17, -14); sh.bezierCurveTo(-16, -16, -10, -16, 0, -20); sh.closePath(); F(sh);
+    const pl = P(); pl.moveTo(0, -16); pl.lineTo(0, 16); pl.moveTo(-13, -4); pl.lineTo(13, -4); D(pl, 1.2); for (const [rx, ry] of [[-10, -11], [10, -11], [-10, 3], [10, 3], [-5, 12], [5, 12], [0, -4]]) { const rv = P(); rv.arc(rx, ry, 1.5, 0, TAU); x.fillStyle = K; x.fill(rv); } done2(); return; }
+  if (fam === 'calm') { medallion(); const ey = P(); ey.moveTo(-17, -2); ey.bezierCurveTo(-8, 7, 8, 7, 17, -2); S(ey, 2.6); for (let i = 0; i < 5; i++) { const a = Math.PI * (0.2 + i * 0.15), l = P(); l.moveTo(Math.cos(a) * 14, 1 + Math.sin(a) * 6); l.lineTo(Math.cos(a) * 17, 5 + Math.sin(a) * 9); S(l, 1.2); }
+    for (const [yy, w] of [[12, 24], [17, 16]]) { const wl = P(); wl.moveTo(-w / 2, yy); wl.lineTo(w / 2, yy); S(wl, 1.4); } const mo = P(); mo.arc(0, -15, 6, 0, TAU); F(mo); const mc = P(); mc.arc(2.6, -16.5, 5.2, 0, TAU); x.fillStyle = K; x.fill(mc); done2(); return; }
+  if (fam === 'tidecall') { medallion(); const cs = P(); cs.moveTo(-14, 10); cs.bezierCurveTo(-16, -4, -4, -16, 10, -12); cs.bezierCurveTo(16, -10, 12, -2, 6, -2); cs.bezierCurveTo(10, 4, 6, 10, -2, 8); cs.bezierCurveTo(-6, 12, -10, 13, -14, 10); cs.closePath(); F(cs);
+    for (let k = 0; k < 3; k++) { const sp = P(); sp.moveTo(-10 + k * 6, 8 - k * 2); sp.quadraticCurveTo(-4 + k * 6, -4 - k * 2, 6 + k * 2, -8 + k * 1.5); D(sp, 0.9); }
+    for (let k = 0; k < 3; k++) { const w = P(); w.arc(12, -13, 6 + k * 4.5, -0.9, 0.2); S(w, 1.3); } done2(); return; }
+  if (fam === 'nacre') { ring(); // a scallop shell open on its hinge, its ribs fanning out, the pearl at its heart
+    const fan = P(); fan.moveTo(0, 14); fan.lineTo(-17, -4); fan.bezierCurveTo(-14, -16, 14, -16, 17, -4); fan.closePath(); F(fan);
+    for (let i = 0; i < 7; i++) { const a = Math.PI * (1.12 + i * 0.11), rb = P(); rb.moveTo(0, 14); rb.lineTo(Math.cos(a) * 19, 14 + Math.sin(a) * 26); D(rb, 0.9); }
+    const hg = P(); hg.moveTo(-5, 14); hg.lineTo(5, 14); hg.lineTo(4, 18); hg.lineTo(-4, 18); hg.closePath(); F(hg);
+    const pe = P(); pe.arc(0, 3, 5.2, 0, TAU); x.fillStyle = K; x.fill(pe); const pw = P(); pw.arc(0, 3, 4, 0, TAU); F(pw); const ph = P(); ph.arc(-1.3, 1.6, 1.1, 0, TAU); x.fillStyle = K; x.fill(ph); done2(); return; }
+  if (fam === 'bloodmoon') { medallion(); heartMark(); const mo = P(); mo.arc(0, -6, 13, 0, TAU); F(mo); for (const [cx, cy, r] of [[-4, -10, 3], [5, -4, 2.2], [-2, 0, 1.6], [6, -12, 1.4]]) { const cr = P(); cr.arc(cx, cy, r, 0, TAU); D(cr, 0.9); }
+    const wv = P(); wv.moveTo(-22, 14); wv.bezierCurveTo(-14, 8, -8, 18, 0, 12); wv.bezierCurveTo(8, 6, 14, 16, 22, 12); wv.lineTo(22, 18); wv.lineTo(-22, 18); wv.closePath(); F(wv); for (const dx of [-5, 3]) { const dr = P(); dr.moveTo(dx, 7); dr.bezierCurveTo(dx - 1.4, 9, dx - 1.4, 11, dx, 11.5); dr.bezierCurveTo(dx + 1.4, 11, dx + 1.4, 9, dx, 7); F(dr); } done2(); return; }
+  if (fam === 'shoal') {
+    if (tier === 'rare') { minnow(-6, -8, 16, 0.2); minnow(6, 0, 18, -0.1); minnow(-4, 10, 14, 0.15); }
+    else if (exo) { ring(); for (let i = 0; i < 3; i++) { const a = i / 3 * TAU; minnow(Math.cos(a) * 11, Math.sin(a) * 11, 19, a + Math.PI / 2); } }
+    else { medallion(); for (let i = 0; i < 4; i++) { const a = i / 4 * TAU; minnow(Math.cos(a) * 13, Math.sin(a) * 13, 17, a + Math.PI / 2); } minnow(0, 0, 13, 0.4); }
+    done2(); return;
+  }
+  if (fam === 'revel') {
+    if (tier === 'rare') { lantern(0, 2, 1.4); }
+    else if (exo) { ring(); const st = P(); st.moveTo(-20, -12); st.quadraticCurveTo(0, -2, 20, -12); S(st, 1); lantern(-9, 2, 0.9); lantern(9, 2, 0.9); }
+    else { medallion(); const st = P(); st.moveTo(-22, -14); st.quadraticCurveTo(0, -2, 22, -14); S(st, 1); for (const [cx, sc] of [[-14, 0.65], [0, 0.85], [14, 0.65]]) lantern(cx, cx ? -2 : 4, sc);
+      for (let i = 0; i < 6; i++) { const a = Math.PI * (0.15 + i * 0.14), r1 = P(); r1.moveTo(Math.cos(a) * 18, 8 + Math.sin(a) * 8); r1.lineTo(Math.cos(a) * 22, 8 + Math.sin(a) * 11); S(r1, 1); } }
+    done2(); return;
+  }
+  if (fam === 'ink') {
+    if (tier === 'rare') { drop(0, 2, 11); }
+    else if (exo) { ring(); drop(-4, -2, 8); const sw = P(); for (let a = 0; a < TAU * 1.4; a += 0.15) { const r = 4 + a * 2.2, px = 6 + Math.cos(a) * r * 0.7, py = 8 + Math.sin(a) * r * 0.45; a ? sw.lineTo(px, py) : sw.moveTo(px, py); } S(sw, 1.3); }
+    else { medallion(); for (let k = 0; k < 3; k++) { const sw = P(); for (let a = 0; a < TAU * 1.2; a += 0.15) { const r = 3 + a * 2.6 + k, ph = a + k * 2.1, px = Math.cos(ph) * r * 0.9, py = Math.sin(ph) * r * 0.7; a ? sw.lineTo(px, py) : sw.moveTo(px, py); } S(sw, 1.8 - k * 0.4); } drop(14, -14, 3.4); drop(-15, 12, 2.6); }
+    done2(); return;
   }
   // (7.4.19, owner) the mythicals' own pictures: each the legendary's idea pushed further, on the medallion, with a small
   // heart at its foot (every mythical is a Heart)

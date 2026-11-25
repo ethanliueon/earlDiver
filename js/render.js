@@ -441,6 +441,14 @@ export class Renderer {
     const rbox = [1e9, 1e9, -1e9, -1e9]; // animals drawn live (not from baked frames) get the rim the old way
     const batches = new Map(), flatB = new Map();
     let glowSkip = 0;
+    // (7.6.6, owner) Cast waiting for its tap: every fish its net can take, within its throw, lit from behind in the long
+    // shape of its own body (a soft bone light along it, breathing; never a ring round it)
+    if (g.castAim && g.mode === 'play') { const A = g.castAim.A, e = g.earl, q = 0.7 + 0.3 * Math.sin(t * 3); ctx.save(); ctx.globalCompositeOperation = 'lighter';
+      for (const c of g.fauna.list) { if (c.dead || c.pet || (c.len || 0) > 2 || Math.hypot(c.x - e.x, c.y - e.y) > A.cast.range + A.cast.r || !inView(c.x, c.y, c.len)) continue;
+        const Ld = fishDrawLen(c.len) * ppm, hh = Math.max(3, Ld * Math.min(0.32, (c.sp.v.h || 0.3) * 0.6 + 0.06)), rot = c.dir > 0 ? 0 : Math.PI, x = S(c.x), y = Sy(c.y);
+        ctx.save(); ctx.translate(x, y); ctx.rotate(rot + clamp(Math.atan2(c.vy || 0, Math.abs(c.vx || 0) + 0.2), -0.5, 0.5) * (c.dir > 0 ? 1 : -1)); ctx.scale(Math.max(4, Ld * 0.62), hh * 1.9);
+        const gr = ctx.createRadialGradient(0, 0, 0, 0, 0, 1); gr.addColorStop(0, `rgba(236,228,204,${(0.42 * q).toFixed(3)})`); gr.addColorStop(0.6, `rgba(236,228,204,${(0.16 * q).toFixed(3)})`); gr.addColorStop(1, 'rgba(236,228,204,0)'); ctx.fillStyle = gr; ctx.beginPath(); ctx.arc(0, 0, 1, 0, TAU); ctx.fill(); ctx.restore(); }
+      ctx.restore(); }
     for (const c of g.fauna.list) {
       if (!inView(c.x, c.y, c.len)) continue;
       if (LEGENDARY.has(c.sp.id) && !c.dead) { // (4.16.5) a legend leaves a trail of small glowing bubbles that rise, twinkle and fade
@@ -1455,6 +1463,46 @@ export class Renderer {
     if (g.mode === 'play' && (g.breathGlow > 0 || g.breathFx) && !g.earl.inSub) { const e = g.earl, mx = S(e.x), my = Sy(e.y), q = 0.6 + 0.4 * Math.sin(g.time * 2.2), k = Math.min(1, g.breathGlow || 0);
       ctx.save(); ctx.globalCompositeOperation = 'lighter'; const gr = ctx.createRadialGradient(mx, my, ppm * 0.2, mx, my, ppm * 1.1); gr.addColorStop(0, `rgba(120,180,214,${(0.16 * k * q).toFixed(3)})`); gr.addColorStop(1, 'rgba(120,180,214,0)'); ctx.fillStyle = gr; ctx.beginPath(); ctx.arc(mx, my, ppm * 1.1, 0, TAU); ctx.fill(); ctx.restore();
       if (g.breathFx && g.breathFx.t < 0.05 && g.bubbles) for (let i = 0; i < 26; i++) { const a = i / 26 * TAU; g.bubbles.push({ x: e.x + Math.cos(a) * 0.5, y: e.y + Math.sin(a) * 0.5, r: 0.04 + Math.random() * 0.08, w: Math.random() * 6, t: 0 }); } }
+    // (7.6.6, owner) Cast: the net flying out in an arc, opening as it goes, a weighted rim and its mesh; on landing it
+    // draws shut. Snatch: a thin line whipped out to the fish and back
+    if (g.mode === 'play' && g.castNet) { const N = g.castNet, k = Math.min(1, N.t / N.dur), x = N.x0 + (N.x1 - N.x0) * k, y = N.y0 + (N.y1 - N.y0) * k - Math.sin(k * Math.PI) * 1.6, open = N.landed ? Math.max(0.25, 1 - (N.t - N.dur) * 1.5) : 0.3 + 0.7 * k, rr = N.r * open * ppm, cx = S(x), cy = Sy(y);
+      ctx.save(); ctx.lineCap = 'round';
+      ctx.strokeStyle = 'rgba(30,28,22,0.55)'; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(S(N.x0), Sy(N.y0)); ctx.quadraticCurveTo((S(N.x0) + cx) / 2, Math.min(Sy(N.y0), cy) - ppm * 1.2, cx, cy); ctx.stroke(); // the throw line
+      const rim = (t) => { const a = t * TAU, w = 1 + 0.07 * Math.sin(a * 5 + N.t * 9); return [cx + Math.cos(a) * rr * w, cy + Math.sin(a) * rr * 0.55 * w]; };
+      ctx.save(); ctx.beginPath(); for (let i = 0; i <= 40; i++) { const [px, py] = rim(i / 40); i ? ctx.lineTo(px, py) : ctx.moveTo(px, py); } ctx.closePath(); ctx.fillStyle = 'rgba(20,24,22,0.12)'; ctx.fill(); ctx.clip();
+      ctx.strokeStyle = N.tier === 'legendary' ? 'rgba(206,188,140,0.55)' : 'rgba(190,184,160,0.45)'; ctx.lineWidth = 0.7; const st = Math.max(4, rr / 5); ctx.beginPath(); for (let d = -rr * 2; d <= rr * 2; d += st) { ctx.moveTo(cx + d - rr, cy - rr); ctx.lineTo(cx + d + rr, cy + rr); ctx.moveTo(cx + d + rr, cy - rr); ctx.lineTo(cx + d - rr, cy + rr); } ctx.stroke(); ctx.restore();
+      ctx.strokeStyle = 'rgba(150,140,112,0.8)'; ctx.lineWidth = 1.3; ctx.beginPath(); for (let i = 0; i <= 40; i++) { const [px, py] = rim(i / 40); i ? ctx.lineTo(px, py) : ctx.moveTo(px, py); } ctx.closePath(); ctx.stroke();
+      ctx.fillStyle = '#2a261c'; for (let i = 0; i < 12; i++) { const [px, py] = rim(i / 12); ctx.beginPath(); ctx.ellipse(px, py, 1.7, 1.3, 0, 0, TAU); ctx.fill(); } // (7.6.6) the lead weights round the rim
+      ctx.restore(); }
+    if (g.mode === 'play' && g.snatchFx) { const F = g.snatchFx, k = F.t < 0.25 ? F.t / 0.25 : 1 - (F.t - 0.25) / 0.25, x0 = S(F.x0), y0 = Sy(F.y0), x1 = x0 + (S(F.x1) - x0) * k, y1 = y0 + (Sy(F.y1) - y0) * k;
+      ctx.save(); ctx.strokeStyle = 'rgba(214,206,180,0.7)'; ctx.lineWidth = 1.1; ctx.beginPath(); ctx.moveTo(x0, y0); ctx.quadraticCurveTo((x0 + x1) / 2, Math.min(y0, y1) - 12, x1, y1); ctx.stroke(); ctx.fillStyle = '#c8bc98'; ctx.beginPath(); ctx.arc(x1, y1, 2, 0, TAU); ctx.fill(); ctx.restore(); }
+    // (7.6.6, owner) Ironskin: a cold steel sheen on him and hard glints sliding across it, as light off worked metal (no ring round him); a bite throws sparks off it (slivers, not dots)
+    if (g.mode === 'play' && g.ironT > 0 && !g.earl.inSub) { const e = g.earl, mx = S(e.x), my = Sy(e.y), k = Math.min(1, g.ironT / 2, (g.ironFx ? g.ironFx.t : 9) * 2);
+      ctx.save(); ctx.globalCompositeOperation = 'screen'; const gr = ctx.createRadialGradient(mx, my - ppm * 0.1, ppm * 0.05, mx, my, ppm * 0.8); gr.addColorStop(0, `rgba(176,184,190,${(0.34 * k).toFixed(3)})`); gr.addColorStop(0.55, `rgba(120,128,134,${(0.18 * k).toFixed(3)})`); gr.addColorStop(1, 'rgba(120,128,134,0)'); ctx.fillStyle = gr; ctx.beginPath(); ctx.arc(mx, my, ppm * 0.8, 0, TAU); ctx.fill();
+      ctx.globalCompositeOperation = 'lighter'; ctx.lineCap = 'round'; for (let j = 0; j < 3; j++) { const ph = ((g.time * 0.55 + j * 0.37) % 1.6) / 1.6; if (ph > 0.6) continue; const q = ph / 0.6, a = Math.sin(q * Math.PI), ox = (q - 0.5) * ppm * 0.9, oy = (j - 1) * ppm * 0.22, ln = ppm * (0.18 + 0.08 * j);
+        const lg = ctx.createLinearGradient(mx + ox - ln, my + oy + ln * 0.6, mx + ox + ln, my + oy - ln * 0.6); lg.addColorStop(0, 'rgba(230,232,226,0)'); lg.addColorStop(0.5, `rgba(230,232,226,${(0.75 * a * k).toFixed(3)})`); lg.addColorStop(1, 'rgba(230,232,226,0)'); ctx.strokeStyle = lg; ctx.lineWidth = 1.4; ctx.beginPath(); ctx.moveTo(mx + ox - ln, my + oy + ln * 0.6); ctx.lineTo(mx + ox + ln, my + oy - ln * 0.6); ctx.stroke(); }
+      ctx.restore();
+      if (g.ironHit && g.time - g.ironHit.t < 0.4) { const h = 1 - (g.time - g.ironHit.t) / 0.4; ctx.save(); ctx.strokeStyle = `rgba(255,214,150,${(0.9 * h).toFixed(3)})`; ctx.lineWidth = 1.2; for (let i = 0; i < 9; i++) { const a = i * 0.7 + g.ironHit.t * 13, r0 = ppm * 0.35, r1 = r0 + ppm * 0.5 * (1 - h * 0.5); ctx.beginPath(); ctx.moveTo(mx + Math.cos(a) * r0, my + Math.sin(a) * r0); ctx.lineTo(mx + Math.cos(a) * r1, my + Math.sin(a) * r1); ctx.stroke(); } ctx.restore(); } }
+    // (7.6.6, owner) Shoal: small silver fish turning round him in a loose ring, each a slim body flashing as it turns
+    if (g.mode === 'play' && g.shoalFx) { const F = g.shoalFx, e = g.earl, m = e.inSub ? g.sub : e, mx = S(m.x), my = Sy(m.y), fade = Math.min(1, F.t / 1.2, (F.dur + 1.5 - F.t) / 1.5), n = [0, 18, 30, 48][F.lv], R = ppm * (e.inSub ? 4.2 : 1.6) * (1 + F.lv * 0.18);
+      ctx.save(); for (let i = 0; i < n; i++) { const ph = i / n * TAU + F.t * (0.9 + (i % 5) * 0.06), rr = R * (0.75 + 0.35 * Math.sin(i * 1.7 + F.t * 0.6)), x = mx + Math.cos(ph) * rr, y = my + Math.sin(ph) * rr * 0.55, ang = ph + Math.PI / 2, flash = 0.5 + 0.5 * Math.sin(ph * 3 + F.t * 4);
+        ctx.save(); ctx.translate(x, y); ctx.rotate(ang); ctx.globalAlpha = fade * (0.55 + 0.35 * flash); const L = ppm * 0.16; ctx.fillStyle = flash > 0.7 ? '#e8eef0' : '#a8b4b8'; ctx.beginPath(); ctx.ellipse(0, 0, L, L * 0.28, 0, 0, TAU); ctx.fill(); ctx.beginPath(); ctx.moveTo(-L * 0.9, 0); ctx.lineTo(-L * 1.4, -L * 0.25); ctx.lineTo(-L * 1.4, L * 0.25); ctx.closePath(); ctx.fill(); ctx.restore(); }
+      ctx.restore(); }
+    // (7.6.6, owner) Revel: the water flickers with warm lantern colours in time with the music (Carnival: stronger, and
+    // the glows in the water pulse with it); Ink: the water round him tinted its colour, a fading trail behind (Inkstorm)
+    if (g.mode === 'play' && g.revelFx) { const F = g.revelFx, fade = Math.min(1, F.t / 1, (F.dur + 1.5 - F.t) / 1.5), beat = 0.5 + 0.5 * Math.cos(F.t * Math.PI * 2 * 1.9), C = [[220, 150, 70], [196, 92, 86], [120, 160, 110], [210, 180, 110]][Math.floor(F.t * 1.9) % 4];
+      ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.globalCompositeOperation = 'soft-light'; ctx.fillStyle = `rgba(${C[0]},${C[1]},${C[2]},${(fade * (0.12 + 0.1 * F.lv) * (0.5 + 0.5 * beat)).toFixed(3)})`; ctx.fillRect(0, 0, this.W, this.H);
+      // (7.6.6) Revel+ and Carnival: coloured shafts of light from above, swaying in time, as stage lights through water (never round glows)
+      if (F.lv >= 2) { ctx.globalCompositeOperation = 'lighter'; const W = this.W, Hh = this.H; for (let i = 0; i < F.lv + 1; i++) { const Ci = [[220, 150, 70], [196, 92, 86], [120, 160, 110], [210, 180, 110]][(Math.floor(F.t * 1.9) + i) % 4], cx0 = W * (0.15 + i * 0.7 / F.lv) + Math.sin(F.t * 0.9 + i * 2) * W * 0.06, tilt = Math.sin(F.t * 0.7 + i) * 0.25, w0 = W * 0.03, w1 = W * 0.12, a = fade * (0.06 + 0.05 * F.lv) * (0.4 + 0.6 * beat);
+        const lg = ctx.createLinearGradient(0, 0, 0, Hh); lg.addColorStop(0, `rgba(${Ci[0]},${Ci[1]},${Ci[2]},${a.toFixed(3)})`); lg.addColorStop(1, `rgba(${Ci[0]},${Ci[1]},${Ci[2]},0)`); ctx.fillStyle = lg; ctx.beginPath(); ctx.moveTo(cx0 - w0, 0); ctx.lineTo(cx0 + w0, 0); ctx.lineTo(cx0 + tilt * Hh + w1, Hh); ctx.lineTo(cx0 + tilt * Hh - w1, Hh); ctx.closePath(); ctx.fill(); } }
+      ctx.restore(); }
+    if (g.mode === 'play' && g.inkFx) { const F = g.inkFx, e = g.earl, m = e.inSub ? g.sub : e, fade = Math.min(1, F.t / 1.5, (F.dur + 1.5 - F.t) / 1.5), C = F.col;
+      if (F.lv >= 3) { const T = F.trail; if (!T.length || Math.hypot(T[T.length - 1].x - m.x, T[T.length - 1].y - m.y) > 0.6) T.push({ x: m.x, y: m.y, t: F.t }); while (T.length && F.t - T[0].t > 8) T.shift(); }
+      ctx.save(); ctx.globalCompositeOperation = 'multiply';
+      const blot = (x, y, r, a) => { const gr = ctx.createRadialGradient(x, y, 0, x, y, r); gr.addColorStop(0, `rgba(${C[0]},${C[1]},${C[2]},${a.toFixed(3)})`); gr.addColorStop(1, `rgba(${C[0]},${C[1]},${C[2]},0)`); ctx.fillStyle = gr; ctx.fillRect(x - r, y - r, r * 2, r * 2); };
+      blot(S(m.x), Sy(m.y), ppm * (3 + F.lv * 2.5), fade * (0.35 + F.lv * 0.12));
+      if (F.lv >= 3) for (const p of F.trail) { const age = (F.t - p.t) / 8; blot(S(p.x), Sy(p.y), ppm * (1.2 + age * 2.5), fade * 0.4 * (1 - age)); }
+      ctx.restore(); }
     // (7.6.5, owner) Eagle Eye: the screen's edges darkened into the almond of a lid, a faint amber in the middle, while it runs
     if (g.mode === 'play' && (g.eagle || 0) > 0.01) { const k = g.eagle, W0 = this.W, H0 = this.H;
       ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.translate(W0 / 2, H0 / 2); ctx.scale(1, 0.56);

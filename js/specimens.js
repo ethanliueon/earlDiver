@@ -279,7 +279,7 @@ export const deepPremium = (y) => 1; // (7.3.0) retired: the price now follows w
 export function specimenValue(s) {
   const sp = SPECIES_BY_ID[s.id], dk = deepPremium(s.from);
   if (isDead(s)) return liveValue(sp, s.len) * 0.5 * dk;
-  return liveValue(sp, s.len) * conditionMult(s.cond) * (s.mult || 1) * (s.acc ? 1.25 : 1) * (s.blessed ? 2 : 1) * dk; // (5.16.0) Blessed: worth twice as much
+  return liveValue(sp, s.len) * conditionMult(s.cond) * (s.mult || 1) * (s.acc ? 1.25 : 1) * (s.blessed ? 2 : 1) * (s.cursed ? 5 : 1) * dk; // (5.16.0) Blessed: worth twice as much. (7.6.6, owner) Cursed (Bloodmoon): five times
 }
 // fragile animals (jellies, comb jellies) take more harm from a net
 export const fragile = (sp) => sp.cat === 'Jellyfish & Drifters';

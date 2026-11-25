@@ -77,6 +77,38 @@ export const ABILITY_DEFS = {
     exotic: { name: 'Lookout+', dur: 45, cd: 900, zoom: 1.35, light: 1.3, line: 'For 45 s you see much further round you, with brighter light.' },
     legendary: { name: 'Eagle Eye', dur: 90, cd: 3600, zoom: 1.6, light: 1.6, eagle: true, line: 'For 90 s the sea opens far round you, seen through a sharper eye, with bright light.' },
   },
+  // (7.6.6, owner) the second batch (docs/PLAN_SKILLS.md): a net thrown at what you tap; taps that catch; the specials
+  // (one rarity, few charges); Bloodmoon (an event Heart, only from the Test tab for now); and three for the eye alone
+  cast: {
+    rare: { name: 'Cast', dur: 4, cd: 300, cast: { range: 8, r: 1.1 }, line: 'Tap where to throw: a net flies there and takes what is in its mouth.' },
+    exotic: { name: 'Cast+', dur: 4, cd: 600, cast: { range: 11, r: 1.5 }, line: 'Tap where to throw: a wider net flies further and takes what is in its mouth.' },
+    legendary: { name: 'Dragnet', dur: 4, cd: 1800, cast: { range: 15, r: 2.2 }, line: 'Tap where to throw: a great net flies far and fast, and draws shut round a whole group.' },
+  },
+  snatch: {
+    rare: { name: 'Snatch', dur: 30, cd: 300, snatch: 3, snBonus: 0, line: 'For 30 s, tap three fish on screen: each is caught by your net\'s own chance.' },
+    exotic: { name: 'Snatch+', dur: 30, cd: 900, snatch: 5, snBonus: 0.2, line: 'For 30 s, tap five fish on screen, with fewer misses.' },
+    legendary: { name: 'Talon', dur: 45, cd: 2400, snatch: 8, snBonus: 0.35, zoom: 1.15, light: 1, line: 'For 45 s, tap eight fish on screen, rarely missing, the view a little wider and lit.' },
+  },
+  ironskin: { legendary: { name: 'Ironskin', special: true, maxLoad: 3, dur: 30, cd: 3600, iron: true, line: 'Every injury healed at once; for 30 s no animal can hurt you. Not the thing\'s jaws.' } },
+  calm: { legendary: { name: 'Calm', special: true, maxLoad: 3, dur: 30, cd: 7200, calm: true, line: 'While it is not hunting you: the mark is gone, and for 30 s the thing cannot notice you.' } },
+  tidecall: { legendary: { name: 'Tidecall', special: true, maxLoad: 2, dur: 20, cd: 5400, tidecall: true, line: 'A great school gathers round you at once. Hunters come for it too.' } },
+  nacre: { exotic: { name: 'Nacre', special: true, maxLoad: 3, dur: 60, cd: 3600, nacre: 0.25, line: 'For 60 s, a chance at a pearl with every catch.' } },
+  bloodmoon: { mythical: { name: 'Bloodmoon', special: true, event: true, maxLoad: 1, dur: 60, cd: 21600, blood: true, line: 'For 60 s the water turns to blood and the thing comes for you. Everything caught is Cursed: worth five times as much, and it never dies.' } },
+  shoal: {
+    rare: { name: 'Shoal', dur: 30, cd: 300, shoal: 1, light: 0.6, line: 'A school of small silver fish circles you for 30 s.' },
+    exotic: { name: 'Shoal+', dur: 45, cd: 600, shoal: 2, light: 0.8, line: 'A larger school circles you for 45 s, its flashing lighting the water.' },
+    legendary: { name: 'Silverstorm', dur: 60, cd: 1800, shoal: 3, light: 1, line: 'A storm of silver fish turns round you for 60 s.' },
+  },
+  revel: {
+    rare: { name: 'Revel', dur: 30, cd: 300, revel: 1, line: 'The water flickers with lantern colours for 30 s.' },
+    exotic: { name: 'Revel+', dur: 45, cd: 600, revel: 2, line: 'The water pulses with lantern colours in time with the music for 45 s.' },
+    legendary: { name: 'Carnival', dur: 60, cd: 1800, revel: 3, line: 'For 60 s the sea becomes a carnival: colours in time with the music, every glow in the water pulsing with it.' },
+  },
+  ink: {
+    rare: { name: 'Ink', dur: 30, cd: 300, ink: 1, line: 'The water round you tinted a colour for 30 s.' },
+    exotic: { name: 'Ink+', dur: 45, cd: 600, ink: 2, line: 'The water round you deeply tinted a colour for 45 s.' },
+    legendary: { name: 'Inkstorm', dur: 60, cd: 1800, ink: 3, line: 'For 60 s you colour the sea, and leave a slow-fading trail of it behind you.' },
+  },
   tidewarden: {
     legendary: { name: 'Tidewarden', maxLoad: 1, dur: 4, cd: 28800, ward: true, tide: true, line: 'When the water round you turns red: a wave of blue, it freezes, fades, and is gone for 5 minutes.' },
     mythical: { name: 'Warden Heart', maxLoad: 1, dur: 4, cd: 10800, ward: true, tide: true, any: true, line: 'Any time. In red water: a wave of blue, it freezes, fades, and is gone for 5 minutes. Marked, the mark is washed off you.' },
@@ -117,6 +149,7 @@ export function whyNot(g, P, A) {
   if (A.sub && !e.inSub) return 'From inside the sub';
   if (A.press && e.inSub) return 'Only in the water'; // (7.4.22, owner) Dauntless is the diver's alone
   if (A.tide && g.kill) return 'Too late'; // (6.0.0) never in its jaws
+  if (A.calm && g.entity && (g.entity.state === 'hunt' || g.entity.state === 'stalk' || g.kill || (g.entity.marked && g.entity.dist < 200))) return 'Not while it hunts you'; // (7.6.6, owner)
   if (A.tide && !A.any && !((g.fx && (g.fx.redTint || 0) > 0.03) || (g.entity && g.entity.dist < 160 && (g.entity.marked || g.entity.state === 'hunt' || g.entity.state === 'stalk')))) return 'Only when the water turns red'; // (6.0.0) once its red reaches him
   const cd = cooldownLeft(P); if (cd > 0 && !(A.charges && S.charges > 0) && !(A.loaded > 0)) return `Ready in ${fmtLeft(cd)}`;
   return null;

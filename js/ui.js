@@ -116,6 +116,11 @@ try { const m = drawTierEmblemMask('vigor', 'legendary', 96), c = document.creat
   const dark = tint('#1a1408'), gold = tint('#f2b84a'); for (const [dx, dy] of [[-2, 0], [2, 0], [0, -2], [0, 2], [1, 2]]) t.drawImage(dark, dx, dy); t.drawImage(gold, 0, 0);
   t.globalCompositeOperation = 'source-atop'; const lg = t.createLinearGradient(0, 0, 0, 96); lg.addColorStop(0, 'rgba(255,240,200,0.35)'); lg.addColorStop(0.5, 'rgba(255,240,200,0)'); lg.addColorStop(1, 'rgba(60,40,10,0.35)'); t.fillStyle = lg; t.fillRect(0, 0, 96, 96);
   document.documentElement.style.setProperty('--apex', `url(${c.toDataURL()})`); } catch (e) { /* no canvas */ }
+// (7.6.6, owner) Bloodmoon's emblem in oxblood, a dark edge: a Cursed animal's status
+try { const m = drawTierEmblemMask('bloodmoon', 'mythical', 96), c = document.createElement('canvas'); c.width = c.height = 96; const t = c.getContext('2d');
+  const tint = (col) => { const k = document.createElement('canvas'); k.width = k.height = 96; const q = k.getContext('2d'); q.drawImage(m, 0, 0); q.globalCompositeOperation = 'source-in'; q.fillStyle = col; q.fillRect(0, 0, 96, 96); return k; };
+  const dark = tint('#140806'), red = tint('#b8402c'); for (const [dx, dy] of [[-2, 0], [2, 0], [0, -2], [0, 2], [1, 2]]) t.drawImage(dark, dx, dy); t.drawImage(red, 0, 0);
+  document.documentElement.style.setProperty('--curse', `url(${c.toDataURL()})`); } catch (e) { /* no canvas */ }
 function powerStatus(P, key) {
   void key; const at = P.netPowerAt, left = at ? (at - Date.now()) / 1000 : 0; // (6.0.0) the one shared timer
   if (left <= 0) return '<em class="pw-st pw-ready">ready</em>';
@@ -1066,6 +1071,7 @@ export class UI {
     const status0 = s2.cond <= 0.05 ? ['Dead', 'dead'] : dying ? [`Dying <span class="sp-why">(pressure too ${low ? 'low' : 'high'})</span>`, 'dying'] : s2.cond < 0.6 ? [s2.cond < 0.3 ? 'Weak' : 'Stressed', 'weak'] : ['Healthy', 'live'];
     // (7.5.7, owner) caught under Apex and still well: Blessed, in legendary gold, Apex's emblem in place of the dot
     const blessedNow = s2.blessed && status0[1] === 'live'; if (blessedNow) { status0[0] = 'Blessed'; status0[1] = 'blessed'; }
+    const cursedNow = !!s2.cursed; if (cursedNow) { status0[0] = 'Cursed'; status0[1] = 'cursed'; } // (7.6.6, owner) Bloodmoon's catch
     const status = s2.safe && s2.cond > 0.05 ? [`${status0[0]} <span class="sp-safe">✓ safe at the surface</span>`, status0[1]] : status0; // (4.0.0)
     const where = { bag: 'Net bag', open: 'Open tank', chamber: `Pressure chamber ${(at.n || 0) + 1}`, big: 'Large pressure tank', floor: 'Sub, on the floor' }[at.place];
     const row = (k, v, cls = '') => `<div class="sp-r${cls}"><dt>${k}</dt><dd>${v}</dd></div>`;
@@ -1075,7 +1081,7 @@ export class UI {
     const kgTxt = kg < 0.1 ? kg.toFixed(3) : kg < 10 ? kg.toFixed(kg < 1 ? 2 : 1) : Math.round(kg).toLocaleString(), lb = kg * LB, lbTxt = lb < 10 ? lb.toFixed(lb < 1 ? 2 : 1) : Math.round(lb).toLocaleString();
     const rows = row('Found at', `${Math.round(s2.from || 0).toLocaleString()} m${u2()}`) + row('Habitat', `${hab[0].toLocaleString()}–${hab[1].toLocaleString()} m${u2()}`)
       + row('Length', `${len.toFixed(2)} m${u2()}${tooBig(s2) ? ' <small>over chamber limit</small>' : ''}`) + row('Weight', `${kgTxt} kg${u2()}`)
-      + row('Location', where) + row('Status', `<i class="${blessedNow ? 'sp-apex' : 'sp-dot'}"></i>${status[0]}`, ` st-${status[1]}`) + row('Value', money(specimenValue(s2) * statValue(P, 'payFish')) + (deepPremium(s2.from) > 1.001 ? u(`deep catch, ×${deepPremium(s2.from).toFixed(1)}`) : ''), ' val');
+      + row('Location', where) + row('Status', `<i class="${cursedNow ? 'sp-apex sp-curse' : blessedNow ? 'sp-apex' : 'sp-dot'}"></i>${status[0]}`, ` st-${status[1]}`) + row('Value', money(specimenValue(s2) * statValue(P, 'payFish')) + (deepPremium(s2.from) > 1.001 ? u(`deep catch, ×${deepPremium(s2.from).toFixed(1)}`) : ''), ' val');
     const inSub = this.h.inSub ? this.h.inSub() : false, w = at.where, i = at.i, mv = (label, act, to = -1, on = true) => `<button data-fm="${act}:${w}:${i}:${to}"${on ? '' : ' disabled'}>${label}</button>`;
     let acts = '';
     if (inSub) {

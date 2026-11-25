@@ -235,6 +235,7 @@ export function updateCapture(g, dt) {
         if (tgt.c) tgt.c.dead = true;
         if (tgt.s) { g.world.statics.splice(g.world.statics.indexOf(tgt.s), 1); g.world.staticsVer = (g.world.staticsVer || 0) + 1; }
         if (g.blessCatch) { spec.cond = 1; spec.blessed = true; } // (5.16.0) Apex: what it catches comes back whole, and Blessed
+        if (g.curseCatch) { spec.cond = 1; spec.cursed = true; } // (7.6.6, owner) Bloodmoon: Cursed
         g.bag.push(spec);
         g.captureFx.push({ sp: tgt.sp, len: tgt.len, x: tgt.x, y: tgt.y, dir: tgt.c ? tgt.c.dir : 1, t: 0, dur: kind === 'slurp' ? 0.25 : 0.3, kind });
         // (5.0) it fights the net: a pull on Earl the way it was swimming, as strong as it is big
@@ -337,7 +338,7 @@ export function updateSpecimens(g, dt) {
   // average of their own pressures, and each is kept healthy at it
   { const by = new Map(); for (const s of g.subTank) { if (s.pressed) { if (s.home === undefined) s.home = s.from || 0; const L = by.get(s.chamber) || []; L.push(s); by.set(s.chamber, L); } else delete s.shareHome; }
     for (const L of by.values()) { if (L.length < 2) { delete L[0].shareHome; continue; } const avg = L.reduce((a, q) => a + q.home, 0) / L.length; for (const q of L) q.shareHome = avg; } }
-  const tick = (s, inBag) => {
+  const tick = (s, inBag) => { if (s.cursed) { s.cond = 1; return; } // (7.6.6, owner) Cursed: never stressed, never dead
     if (s.home === undefined) s.home = s.from || 0;
     if (s.cond <= 0.05) return;
     // (4.1.1) out of the water, heaped on the floor of the sub (what the trawl hauls in lands there): it suffocates.

@@ -2226,3 +2226,5 @@ html body #inventory .lk-acts .ld-notches { display: inline-flex; gap: 3px; }
 html body #inventory .lk-acts .ld-notches i { width: 5px; height: 12px; border-radius: 2px; background: rgba(0, 0, 0, 0.45); box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.6); }
 html body #inventory .lk-acts .ld-notches i.on { background: linear-gradient(180deg, #efe6c8, #b8a880); box-shadow: 0 0 4px rgba(236, 224, 190, 0.35); }
 html body #inventory button img.st-pearl { width: 1.1em; height: 1.1em; vertical-align: -0.2em; margin: 0 0.2em; }
+html body #inventory .sp-r.st-cursed dd:not(#_a) { color: #b8402c; } /* (7.6.6) Cursed, in oxblood */
+html body #inventory .sp-apex.sp-curse { background-image: var(--curse); } /* (7.6.6) Cursed: Bloodmoon's emblem */

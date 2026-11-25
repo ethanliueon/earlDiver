@@ -134,3 +134,6 @@ Each new hybrid family gets a mythical Heart later, once it has proved itself.
 4. Charges.
 5. Two slots.
 6. New families: the pure ones and Lookout; then Cast, Snatch and the specials; then Shoal, Revel and Ink.
+
+Built: steps 1-5 in 7.6.0-7.6.4, the pure families and Lookout in 7.6.5, the rest in 7.6.6. Bloodmoon is only in the
+Test tab (never on the shelf or in chests) until Events and Special Offers are built.

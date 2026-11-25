@@ -351,3 +351,13 @@ last desktop build is kept on the branch `desktop-4.25.5`).
   Drowned Anchor (an iron anchor drags him or the sub down; stick up holds against it, the chain taut, bubbles driven
   up); hybrid Lookout / Lookout+ / Eagle Eye (the view drawn out, light; Eagle Eye darkens the edges into a lid's almond).
   Pure scrolls carry "Pure" on their card and are a third as likely in chests and on the shelf.
+- (7.6.6, owner) The second batch: Cast / Cast+ / Dragnet (pressed, it waits 4 s for a tap; every fish it can take within its
+  throw is lit from behind along its own body; a meshed net with a lead-weighted rim flies there and takes what its mouth
+  holds, up to 2 m, one by one until the bag tips over); Snatch / Snatch+ / Talon (tap 3/5/8 fish, each caught by the net's
+  chance plus its bonus); Ironskin (injuries healed, 30 s no animal hurts him, never the thing's jaws; a steel sheen and
+  glints on him, no ring); Calm (refused while it hunts; the mark wiped, 30 s unnoticed); Tidecall (schools of the kinds
+  near gather round him, and the thing's attention rises); Nacre (60 s, a pearl a catch at 25 %); Bloodmoon (Test tab
+  only: 60 s red water, the thing placed just past the radar, marking and hunting; catches Cursed, ×5, never stressed,
+  Bloodmoon's emblem in oxblood on the card); Shoal, Revel (coloured shafts of light from above in time, never round
+  glows), Ink (the water round him tinted, Inkstorm's trail) for the eye alone. The same line said again restarts the
+  one shown, never stacks.
