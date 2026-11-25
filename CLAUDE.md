@@ -393,3 +393,4 @@ last desktop build is kept on the branch `desktop-4.25.5`).
   Breath draws pale slivers of water streaming in to his tank; Nacre's shimmer chases round the net's rim and a lucky
   catch lets a real pearl rise (no "+1 pearl"); Eagle Eye closes real lids (feathered dark curves with lash shadows) round
   an almond of sight. Gust keeps Sprint's water streaks while he moves.
+- (7.6.10, owner) The loading screen's depth gauge is set in the game's olive steel (bezel, knurling, lip, screws and needle cap), no brass.

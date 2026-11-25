@@ -11,18 +11,18 @@ export function gaugeFace(px) {
   x.translate(R, R); sd = 7;
   // the shadow it casts
   x.fillStyle = 'rgba(0,0,0,0.5)'; x.beginPath(); x.arc(R * 0.02, R * 0.05, R * 0.97, 0, TAU); x.fill();
-  // the bezel: dark weathered bronze, lit from the upper left
-  const bz = x.createLinearGradient(-R, -R, R, R); bz.addColorStop(0, '#9a7c4a'); bz.addColorStop(0.45, '#6e5530'); bz.addColorStop(1, '#2e2414');
+  // the bezel: (7.6.9, owner) the game's olive steel, weathered, lit from the upper left
+  const bz = x.createLinearGradient(-R, -R, R, R); bz.addColorStop(0, '#7e845e'); bz.addColorStop(0.45, '#535a3c'); bz.addColorStop(1, '#1e2117');
   x.fillStyle = bz; x.beginPath(); x.arc(0, 0, R * 0.95, 0, TAU); x.fill();
   // knurling round its outer edge
-  x.lineWidth = Math.max(1, R * 0.012); for (let i = 0; i < 120; i++) { const a = (i / 120) * TAU, li = Math.cos(a + 2.4) * 0.5 + 0.5; x.strokeStyle = `rgba(${li > 0.5 ? '230,206,150' : '20,14,6'},${0.12 + 0.25 * Math.abs(li - 0.5)})`; x.beginPath(); x.moveTo(Math.cos(a) * R * 0.88, Math.sin(a) * R * 0.88); x.lineTo(Math.cos(a) * R * 0.945, Math.sin(a) * R * 0.945); x.stroke(); }
-  // wear and verdigris on the bronze
-  for (let i = 0; i < 70; i++) { const a = r() * TAU, d = R * (0.8 + r() * 0.13); x.fillStyle = r() < 0.4 ? `rgba(70,110,90,${0.12 + r() * 0.2})` : `rgba(${r() < 0.5 ? '230,210,160' : '20,14,6'},${0.06 + r() * 0.12})`; x.beginPath(); x.ellipse(Math.cos(a) * d, Math.sin(a) * d, R * (0.01 + r() * 0.03), R * (0.006 + r() * 0.015), a, 0, TAU); x.fill(); }
+  x.lineWidth = Math.max(1, R * 0.012); for (let i = 0; i < 120; i++) { const a = (i / 120) * TAU, li = Math.cos(a + 2.4) * 0.5 + 0.5; x.strokeStyle = `rgba(${li > 0.5 ? '206,210,176' : '12,14,8'},${0.12 + 0.25 * Math.abs(li - 0.5)})`; x.beginPath(); x.moveTo(Math.cos(a) * R * 0.88, Math.sin(a) * R * 0.88); x.lineTo(Math.cos(a) * R * 0.945, Math.sin(a) * R * 0.945); x.stroke(); }
+  // wear and rust on the steel
+  for (let i = 0; i < 70; i++) { const a = r() * TAU, d = R * (0.8 + r() * 0.13); x.fillStyle = r() < 0.4 ? `rgba(120,84,44,${0.12 + r() * 0.2})` : `rgba(${r() < 0.5 ? '208,212,180' : '12,14,8'},${0.06 + r() * 0.12})`; x.beginPath(); x.ellipse(Math.cos(a) * d, Math.sin(a) * d, R * (0.01 + r() * 0.03), R * (0.006 + r() * 0.015), a, 0, TAU); x.fill(); }
   // the inner lip, in shadow at the top (the face sits sunk in it)
-  const lip = x.createLinearGradient(0, -R * 0.8, 0, R * 0.8); lip.addColorStop(0, '#1e170c'); lip.addColorStop(1, '#5a4626');
+  const lip = x.createLinearGradient(0, -R * 0.8, 0, R * 0.8); lip.addColorStop(0, '#15180f'); lip.addColorStop(1, '#454b32');
   x.fillStyle = lip; x.beginPath(); x.arc(0, 0, R * 0.8, 0, TAU); x.fill();
   // four screws
-  for (const a of [0.78, 2.36, 3.93, 5.5]) { const sx = Math.cos(a) * R * 0.875, sy = Math.sin(a) * R * 0.875, sr = R * 0.04; x.fillStyle = '#3a2c16'; x.beginPath(); x.arc(sx, sy, sr * 1.15, 0, TAU); x.fill(); const sg = x.createLinearGradient(sx - sr, sy - sr, sx + sr, sy + sr); sg.addColorStop(0, '#b8995e'); sg.addColorStop(1, '#4a3818'); x.fillStyle = sg; x.beginPath(); x.arc(sx, sy, sr, 0, TAU); x.fill(); x.strokeStyle = 'rgba(20,14,6,0.8)'; x.lineWidth = Math.max(1, sr * 0.3); x.beginPath(); x.moveTo(sx - sr * 0.7 * Math.cos(a + 0.5), sy - sr * 0.7 * Math.sin(a + 0.5)); x.lineTo(sx + sr * 0.7 * Math.cos(a + 0.5), sy + sr * 0.7 * Math.sin(a + 0.5)); x.stroke(); }
+  for (const a of [0.78, 2.36, 3.93, 5.5]) { const sx = Math.cos(a) * R * 0.875, sy = Math.sin(a) * R * 0.875, sr = R * 0.04; x.fillStyle = '#262a1c'; x.beginPath(); x.arc(sx, sy, sr * 1.15, 0, TAU); x.fill(); const sg = x.createLinearGradient(sx - sr, sy - sr, sx + sr, sy + sr); sg.addColorStop(0, '#a4aa86'); sg.addColorStop(1, '#3a3f2a'); x.fillStyle = sg; x.beginPath(); x.arc(sx, sy, sr, 0, TAU); x.fill(); x.strokeStyle = 'rgba(20,14,6,0.8)'; x.lineWidth = Math.max(1, sr * 0.3); x.beginPath(); x.moveTo(sx - sr * 0.7 * Math.cos(a + 0.5), sy - sr * 0.7 * Math.sin(a + 0.5)); x.lineTo(sx + sr * 0.7 * Math.cos(a + 0.5), sy + sr * 0.7 * Math.sin(a + 0.5)); x.stroke(); }
   // the face: aged bone, yellowed and grimier toward the rim
   const fr = R * 0.74, fg = x.createRadialGradient(-fr * 0.2, -fr * 0.25, fr * 0.1, 0, 0, fr); fg.addColorStop(0, '#e4dcc2'); fg.addColorStop(0.7, '#cfc4a2'); fg.addColorStop(1, '#9a8c68');
   x.fillStyle = fg; x.beginPath(); x.arc(0, 0, fr, 0, TAU); x.fill();
@@ -48,7 +48,7 @@ export function gaugeNeedle(px) { // drawn pointing straight up from the centre 
   const ng = x.createLinearGradient(-R * 0.03, 0, R * 0.03, 0); ng.addColorStop(0, '#3a4048'); ng.addColorStop(0.5, '#1a1e24'); ng.addColorStop(1, '#0c0e10');
   x.fillStyle = ng; x.beginPath(); x.moveTo(-R * 0.03, R * 0.14); x.lineTo(-R * 0.012, -L * 0.75); x.lineTo(0, -L); x.lineTo(R * 0.012, -L * 0.75); x.lineTo(R * 0.03, R * 0.14); x.closePath(); x.fill();
   x.fillStyle = '#8a3424'; x.beginPath(); x.moveTo(-R * 0.012, -L * 0.75); x.lineTo(0, -L); x.lineTo(R * 0.012, -L * 0.75); x.closePath(); x.fill(); // the rust tip
-  const hg = x.createRadialGradient(-R * 0.02, -R * 0.02, 0, 0, 0, R * 0.07); hg.addColorStop(0, '#c8a868'); hg.addColorStop(1, '#4a3818'); x.fillStyle = hg; x.beginPath(); x.arc(0, 0, R * 0.065, 0, TAU); x.fill(); // the bronze cap
+  const hg = x.createRadialGradient(-R * 0.02, -R * 0.02, 0, 0, 0, R * 0.07); hg.addColorStop(0, '#a4aa86'); hg.addColorStop(1, '#2e3222'); x.fillStyle = hg; x.beginPath(); x.arc(0, 0, R * 0.065, 0, TAU); x.fill(); // the steel cap
   return c;
 }
 export function gaugeGlass(px) { // the glass over it all: one soft reflection and a fine scratch
