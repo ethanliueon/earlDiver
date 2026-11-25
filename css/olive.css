@@ -2051,7 +2051,7 @@ html body #inventory .ip-col.more.at-end:not(#_a):not(#_b)::after { opacity: 0; 
 
 /* ---------- (7.4.14, owner) pets: the shop by tier, a locked kind a dark outline; the pets he owns ---------- */
 html body .store-panel .st-petshop { position: relative; }
-html body .store-panel .st-petshop .pet-have { position: absolute; top: 22px; right: 74px; display: flex; align-items: center; gap: 5px; font: 600 17px 'Barlow Semi Condensed', sans-serif; color: #efe8d2; }
+html body .store-panel .st-petshop .pet-have { position: absolute; top: 6px; right: 74px; /* (7.5.1, owner) level with the tabs, clear of the cards */ display: flex; align-items: center; gap: 5px; font: 600 17px 'Barlow Semi Condensed', sans-serif; color: #efe8d2; }
 html body .store-panel .st-petshop .pet-have img { width: 18px; height: 18px; }
 html body .store-panel .pet-scroll { max-height: min(62vh, 300px); overflow-y: auto; overscroll-behavior: contain; padding-right: 4px; -webkit-overflow-scrolling: touch; }
 html body .store-panel .pet-tier { display: flex; align-items: center; gap: 10px; margin: 10px 2px 6px; font: 600 16px 'Barlow Semi Condensed', sans-serif; letter-spacing: 0.04em; text-transform: uppercase; text-align: left; }
@@ -2156,7 +2156,7 @@ html body .store-panel .st-pets .pet-card .pet-tierline img { width: 12px; heigh
 html body .store-panel .st-plate.st-shopplate:not(#_a) { height: 318px; max-height: 92vh; box-sizing: border-box; display: flex; flex-direction: column; }
 html body .store-panel .st-shopplate > .st-row, html body .store-panel .st-shopplate > .pet-scroll:not(#_a), html body .store-panel .st-shopplate > .tt-rows:not(#_a) { flex: 1 1 auto; min-height: 0; max-height: none; }
 html body .store-panel .st-shopplate > .st-tabs { flex: 0 0 auto; }
-html body .store-panel .st-shopplate .pet-have:not(#_a) { position: absolute; top: 22px; right: 74px; display: flex; align-items: center; gap: 5px; font: 600 17px 'Barlow Semi Condensed', sans-serif; color: #efe8d2; }
+html body .store-panel .st-shopplate .pet-have:not(#_a) { position: absolute; top: 6px; right: 74px; /* (7.5.1, owner) level with the tabs, clear of the cards */ display: flex; align-items: center; gap: 5px; font: 600 17px 'Barlow Semi Condensed', sans-serif; color: #efe8d2; }
 html body .store-panel .st-shopplate .pet-have img { width: 18px; height: 18px; }
 html body .store-panel .st-shopplate .pet-scroll .pet-tier:first-child { margin-top: 0; }
 /* (7.4.26, owner) no rubber stamps on a sale (the SOLD and PAID stamps read as clip art): the receipt ends as a till's does,
