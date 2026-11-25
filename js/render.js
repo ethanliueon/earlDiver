@@ -1353,6 +1353,7 @@ export class Renderer {
       for (const L of g.obsLabels) {
         if (L.c && !L.c.dead) { L.x = L.c.x; L.y = L.c.y; }
         if (L.stay && Math.hypot(g.earl.x - L.x, g.earl.y - L.y) < L.stay && !g.earl.inSub) L.t = Math.min(L.t, 2); // (6.5.7) held while he is by it
+        { const qx = S(L.x), qy = Sy(L.y); if (qx < -24 || qx > this.W + 24 || qy < -24 || qy > this.H + 24) L.t = Math.max(L.t, 3.9); } // (7.5.3, owner) its animal off the screen: the name goes with it (it was held at the edge)
         const a = Math.min(1, L.t / 0.7) * Math.min(1, (4.2 - L.t) / 1.1), ax = S(L.x), ay = Sy(L.y), rise = L.t * 5;
         let side = S(g.earl.x) > ax ? -1 : 1;
         // (5.6.7) the name is turned to the side it fits on, so it never runs off the screen

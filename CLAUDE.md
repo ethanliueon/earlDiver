@@ -300,3 +300,4 @@ last desktop build is kept on the branch `desktop-4.25.5`).
   below). A chest opened from the bag returns to the bag when its reveal closes.
 - (7.5.3, owner) Sparks on legendary and mythical pictures are drawn on a small canvas inside each picture's own frame
   (legendfx.js), so they scroll with it and never trail; never one canvas over the page chasing positions.
+- (7.5.4, owner) An observed animal's name fades out once the animal is off the screen (never held at the edge).
