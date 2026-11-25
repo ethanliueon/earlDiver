@@ -304,6 +304,10 @@ last desktop build is kept on the branch `desktop-4.25.5`).
   from the fish's side, a few cold pricks of light; light through the surface a broken net of wavering lines (never
   rings); a tight contact shadow. The hatchetfish's light organs pale bone, its fins and teeth silver (no cyan). On the
   loading screen the subtitle sits lower, centred under the word.
+- (7.6.36, owner) The name is one brightness across the word: the deep shows in hue (a 'color' blend that keeps each
+  letter's light: olive to greyed drowned green, never cyan), mottling, gouged scars, mid-tone silt stains, rust,
+  barnacles and threads, never by darkening. A worn scroll's card (a Heart's too) moves it to the other slot (Second slot
+  / Put it on; main.js `moveslot:`), the two swapping with their own cooldowns.
 - **(7.6.28, 7.6.33, owner) Saves carry over**: a change must not wipe or break the owner's saves (economy.js `migrate` fills
   anything new from a fresh profile), and the game quietly keeps the last version's save beside each slot
   (`earl.save.slotN.prev`; economy.js `restorePrevSave`). No backup or restore buttons (7.6.34, owner: unnecessary). Superseded:

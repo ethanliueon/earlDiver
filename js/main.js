@@ -991,6 +991,11 @@ function buy(kind) {
       ui.showGains([{ kind: 'item', id: it.id, how: 'Bought' }]); tipEquip();
       if (P.wish === it.id) P.wish = null;
     }
+  } else if (kind.startsWith('moveslot:')) { // (7.6.36, owner) a worn scroll to the other slot: the two swap (each keeping its own cooldown), or it moves across when the other is empty
+    const K = kitOf(P); if (K.on.ability && K.on.ability2) { abilSwap(); ok = true; }
+    else if (K.on.ability) { K.on.ability2 = K.on.ability; K.on.ability = null; P.abilReadyAt2 = P.abilReadyAt || 0; P.abilReadyAt = 0; [g.abil, g.abil2] = [{ activeT: 0, maxT: 0, def: null, charges: null, fx: 0 }, g.abil]; ok = true; }
+    else if (K.on.ability2) { K.on.ability = K.on.ability2; K.on.ability2 = null; P.abilReadyAt = P.abilReadyAt2 || 0; P.abilReadyAt2 = 0; [g.abil, g.abil2] = [g.abil2 || { activeT: 0, maxT: 0, def: null, charges: null, fx: 0 }, null]; ok = true; }
+    if (ok) { applyKit(e, P); saveProfile(P); }
   } else if (kind.startsWith('on2:')) { // (7.6.4, owner) the second scroll slot
     const r = putOn2(P, kind.slice(4));
     if (r === 'heart') { hud.toast('One Heart (mythical skill) at a time', 'warn'); return false; }

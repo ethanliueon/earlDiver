@@ -1463,6 +1463,7 @@ export class UI {
     if (on) {
       body = `<div class="ip-cols one">${this.chargeCol(P, q, 'You have it on')}</div>`;
       const starter = it.kind === 'net' ? null : FREE_IDS[it.kind]; // (6.9.1) a net unequipped leaves the hands empty, the hand net too
+      if (free && it.kind === 'ability') acts += `<button data-lk="moveslot:${q.u}">${on2 ? 'Put it on' : 'Second slot'}</button>`; // (7.6.36, owner) a worn scroll (a Heart too) moves to the other slot
       if (free && !(starter && q.id === starter)) acts += `<button data-lk="off:${on2 ? 'ability2' : it.kind}">Unequip${starter ? ` <small>(${ITEMS[starter].name} back on)</small>` : ''}</button>`;
     } else {
       // the numbers, a row each: his now, this one, which is better
