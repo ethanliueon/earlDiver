@@ -34,10 +34,10 @@ export class Entity {
     }
     this.teleported = false; // it may close the distance once a run (see closeIn)
     this.vx = 0; this.vy = 0;
-    this.state = 'roam'; // roam | hunt | search | drift | lured | away
+    this.state = 'roam'; // roam | hunt | search | drift | away
     this.awayT = 0; this.awayX = 0; this.awayY = 0;
     this.lastX = 500; this.lastY = 5; this.searchT = 0; this.senseT = 12;
-    this.heading = 0; this.lureT = 0; this.lure = null; this.repelT = 0;
+    this.heading = 0; this.repelT = 0;
     this.eyeOpen = 0; this.blink = 0; this.knows = 0;
     this.marked = false; this.attn = 0; this.shallowT = 0; this.fade = 1;
     this.roamX = this.x; this.roamY = this.y; this.roamT = 0;
@@ -273,11 +273,10 @@ export class Entity {
       this.state = 'roam';
     } else {
       // ---------- marked: the hunt ----------
-      const lured = this.lureT > 0;
       const away = this.awayT > 0;
-      if (d < per && !prot && !away && (!lured || d < 8) && e.y > SAFE_DEPTH - 20) {
+      if (d < per && !prot && !away && e.y > SAFE_DEPTH - 20) {
         this.lastX = e.x; this.lastY = e.y; this.knows = Math.min(1, this.knows + dt * 2);
-        if (!lured) this.state = 'hunt';
+        this.state = 'hunt';
       } else this.knows = Math.max(0, this.knows - dt * 0.15);
 
       // the sense: every so often a vague fix on him, so it always comes back
@@ -293,13 +292,7 @@ export class Entity {
       }
 
       tx = this.lastX; ty = this.lastY; speed = ENTITY_SPEED;
-      if (this.lureT > 0) {
-        this.lureT -= dt;
-        this.state = 'lured';
-        tx = this.lure.x; ty = this.lure.y; speed = ENTITY_SPEED * 0.9;
-        // the lure burns out: it has lost him, and wanders off a long way before it looks again
-        if (this.lureT <= 0) { this.goAway(this.lure.x, this.lure.y, bandLo, 20); this.lure = null; } // (5.10.10) then it gives up on it for about 20 s, and comes back hunting: a lure buys half a minute, the Tidewarden minutes
-      } else if (away) {
+      if (away) {
         // gone off: it does not wait outside a safe place for him, it leaves for a while
         this.awayT -= dt;
         this.state = 'away';
@@ -336,13 +329,13 @@ export class Entity {
       if (e.inSub && !cramped) {
         // ---------- at the sub: three approaches (see approach) ----------
         this.hunt = null;
-        const r = (this.state === 'hunt' || (this.ap && (this.ap.phase || this.ap.wait > 0))) && !lured && !away && !(prot && d < 70) ? this.approach(g, dt, d, bandLo) : null;
+        const r = (this.state === 'hunt' || (this.ap && (this.ap.phase || this.ap.wait > 0))) && !away && !(prot && d < 70) ? this.approach(g, dt, d, bandLo) : null;
         if (r) { tx = r.tx; ty = r.ty; speed = r.speed; if (r.swallow) this.swallowNow = true; }
       } else {
         if (this.ap) { this.ap.phase = null; this.flick = 0; }
       }
       // ---------- one turn: it comes for him once, jaws opening ----------
-      if ((!e.inSub || cramped) && this.state === 'hunt' && !lured && !away && !(prot && d < 70)) {
+      if ((!e.inSub || cramped) && this.state === 'hunt' && !away && !(prot && d < 70)) {
         const H = this.hunt;
         if (H && H.phase === 'glare') {
           // seen in his lamp: it hangs off at the edge of what he can see, its eyes coming up. Dark and
@@ -359,7 +352,7 @@ export class Entity {
         } else if (d < 80) { this.hunt = null; this.swallowNow = true; }
       } else if (!e.inSub || cramped) this.hunt = this.hunt && this.hunt.phase === 'glare' && this.state === 'hunt' ? this.hunt : null;
       // how high it will come: up toward 120 m only in a live chase, otherwise it keeps below 200 m
-      const chasing = this.state === 'hunt' || this.state === 'lured';
+      const chasing = this.state === 'hunt';
       ty = Math.max(ty, chasing ? SAFE_DEPTH + 2 : REST_CEILING + 10);
     }
 
@@ -500,7 +493,6 @@ export class Entity {
     if (this.rng.next ? this.rng.next() < 0.5 : Math.random() < 0.5) { this.slip = { t: 15, dir: Math.sign(this.x - g.earl.x) || 1 }; g.events.push('fooled'); return true; }
     g.events.push('notFooled'); return false;
   }
-  throwLure(x, y, T = 10) { this.lure = { x, y }; this.lureT = T; }
 }
 
 // "Dread" 0..1 from distance: begins at 200 m, heavy inside 50 m.

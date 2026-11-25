@@ -253,22 +253,7 @@ const ART = {
     bolt(-2, 2, 7);
   },
 
-  // the anglerfish's lure: the fleshy stalk curling up, the bulb at its end lit from within, a few specks drifting
-  lure(x) {
-    x.save(); x.scale(1.15, 1.15); x.translate(4, 4);
-    const gl = x.createRadialGradient(10, -18, 0, 10, -18, 30); gl.addColorStop(0, 'rgba(210,255,230,0.55)'); gl.addColorStop(1, 'rgba(120,220,190,0)');
-    x.fillStyle = gl; x.beginPath(); x.arc(10, -18, 30, 0, TAU); x.fill();
-    x.lineCap = 'round'; x.strokeStyle = '#0c0a08'; x.lineWidth = 9; x.beginPath(); x.moveTo(-30, 46); x.bezierCurveTo(-34, 10, -26, -26, 2, -24); x.stroke();
-    x.strokeStyle = '#6a4a3a'; x.lineWidth = 5.6; x.stroke();
-    x.strokeStyle = 'rgba(255,220,200,0.25)'; x.lineWidth = 1.6; x.beginPath(); x.moveTo(-33, 40); x.bezierCurveTo(-36, 8, -28, -24, 0, -26); x.stroke();
-    // little filaments off the bulb
-    x.strokeStyle = 'rgba(180,240,220,0.7)'; x.lineWidth = 1.2; for (const [a, l] of [[0.2, 14], [0.8, 11], [1.6, 12], [2.6, 9]]) { x.beginPath(); x.moveTo(10, -18); x.quadraticCurveTo(10 + Math.cos(a) * l * 0.6, -18 + Math.sin(a) * l * 0.2, 10 + Math.cos(a) * l, -18 + Math.sin(a) * l); x.stroke(); }
-    const bg = x.createRadialGradient(7, -21, 1, 10, -18, 12); bg.addColorStop(0, '#f4fff6'); bg.addColorStop(0.45, '#9ff0cc'); bg.addColorStop(1, '#2a7a64');
-    x.fillStyle = bg; x.strokeStyle = '#08100c'; x.lineWidth = 3; x.beginPath(); x.ellipse(10, -18, 11, 12, 0.2, 0, TAU); x.fill(); x.stroke();
-    x.fillStyle = 'rgba(255,255,255,0.9)'; x.beginPath(); x.ellipse(6, -23, 3, 2, -0.5, 0, TAU); x.fill();
-    x.fillStyle = 'rgba(200,250,230,0.7)'; for (const [a, b, r] of [[30, 6, 1.6], [26, 18, 1.1], [36, -6, 1.2], [-12, -40, 1]]) { x.beginPath(); x.arc(a, b, r, 0, TAU); x.fill(); }
-    x.restore();
-  },
+
   // a glow stick: a cracked chemical light in a cord loop, its liquid shining green through the plastic
   glow(x, look) {
     x.save(); x.rotate(-0.6); x.scale(1.3, 1.3);

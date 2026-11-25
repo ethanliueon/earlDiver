@@ -145,12 +145,3 @@ export function drawFilm3(x, w, h) {
   x.strokeStyle = 'rgba(80,76,68,0.35)'; x.lineWidth = 1; for (const f of [0.08, 0.92]) { const X = x0 + (x1 - x0) * f; x.beginPath(); x.moveTo(X, top(f) + sw * 0.2); x.lineTo(X, bot(f) - sw * 0.2); x.stroke(); }
   x.strokeStyle = 'rgba(230,224,210,0.45)'; x.lineWidth = 1.2; x.beginPath(); for (let i = 0; i <= 20; i++) { const f = i / 20, X = x0 + (x1 - x0) * f; i ? x.lineTo(X, top(f) + 0.6) : x.moveTo(X, top(f) + 0.6); } x.stroke();
 }
-// the anglerfish's lure: a pale bulb on its stalk, lit from inside
-export function drawLure3(x, w, h) {
-  const bx = w * 0.56, by = h * 0.4, r = h * 0.12;
-  const gl = x.createRadialGradient(bx, by, 1, bx, by, r * 3.2); gl.addColorStop(0, 'rgba(200,236,214,0.55)'); gl.addColorStop(1, 'rgba(200,236,214,0)'); x.fillStyle = gl; x.fillRect(0, 0, w, h);
-  x.strokeStyle = lin(x, w * 0.2, 0, bx, 0, [[0, '#2a2622'], [1, '#5a524a']]); x.lineWidth = h * 0.035; x.lineCap = 'round'; x.beginPath(); x.moveTo(w * 0.18, h * 0.82); x.bezierCurveTo(w * 0.24, h * 0.36, w * 0.4, h * 0.3, bx - r * 0.8, by + r * 0.3); x.stroke();
-  ball(x, bx, by, r, 'rgba(214,240,224,0.95)', 'rgba(255,255,248,1)', 'rgba(96,140,120,0.95)');
-  x.fillStyle = 'rgba(255,255,250,0.85)'; x.beginPath(); x.arc(bx - r * 0.25, by - r * 0.3, r * 0.22, 0, TAU); x.fill();
-  for (let i = 0; i < 3; i++) { x.strokeStyle = 'rgba(70,60,52,0.8)'; x.lineWidth = 1.2; x.beginPath(); x.moveTo(bx + r * 0.6, by + r * 0.4 + i * 2); x.quadraticCurveTo(bx + r * 1.4, by + r * (1 + i * 0.4), bx + r * (1.1 + i * 0.3), by + r * (1.8 + i * 0.3)); x.stroke(); } // its little filaments
-}

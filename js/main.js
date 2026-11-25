@@ -192,9 +192,9 @@ function newGame(mode) {
     fauna: new Fauna(world, rng),
     bubbles: [], events: [], debris: [],
     fx: { dread: 0, torchShift: 0, darken: 0, vignette: 0, disorient: 0, ghost: 0, shake: 0, flash: 0, black: 0, pressure: 0, lightPulse: 1, bioPulse: 1 },
-    items: { lure: P.items ? P.items.lure || 0 : 0, necklace: P.items ? P.items.necklace || 0 : 0, glowAdv: P.items ? P.items.glowAdv || 0 : 0, airTank: P.items && P.items.airTank !== undefined ? P.items.airTank : 0, sealant: P.items ? P.items.sealant || 0 : 0, plate: P.items ? P.items.plate || 0 : 0, film: P.items && P.items.film != null ? P.items.film : null, net: P.items && P.items.net !== undefined ? P.items.net : null, nets: P.items && P.items.nets ? Object.assign({}, P.items.nets) : null }, inv: {}, // a new diver starts with one backup air tank
+    items: { necklace: P.items ? P.items.necklace || 0 : 0, glowAdv: P.items ? P.items.glowAdv || 0 : 0, airTank: P.items && P.items.airTank !== undefined ? P.items.airTank : 0, sealant: P.items ? P.items.sealant || 0 : 0, plate: P.items ? P.items.plate || 0 : 0, film: P.items && P.items.film != null ? P.items.film : null, net: P.items && P.items.net !== undefined ? P.items.net : null, nets: P.items && P.items.nets ? Object.assign({}, P.items.nets) : null }, inv: {}, // a new diver starts with one backup air tank
     journal: new Map(P.journal || []), notes: P.notes || '', sapphires: 0, earned: 0,
-    lure: null, necklaceT: 0, glows: [], protection: null, prompt: null,
+    necklaceT: 0, glows: [], protection: null, prompt: null,
     waveBoost: 0, dayEff: 1, day: dayCycle(0), diverDrain: 1, subDrain: 1,
     deathT: 0, deathDelay: 0, deathCause: null, paused: false, audio, reduceFlash: readReduceFlash(),
     imploded: false, lowO2Warned: false, lastSafe: 0, breathT: 2, farShadow: null,
@@ -754,8 +754,7 @@ function caveTrade(keys) {
 function wareBuy(k) {
   const P = profile, W = WARES[k];
   if (!W || (P.coins || 0) < W.coins) return false;
-  if (k === 'oldlure') { if ((P.oldLures || 0) + ((g.items && g.items.lure) || 0) + ((P.spare && P.spare.lure) || 0) >= W.max) { hud.toast('You can carry only one lure', 'warn'); return false; } P.oldLures = (P.oldLures || 0) + 1; hud.toast('An old lure', 'big'); } // (5.10.10) one lure in all
-  else if (k === 'blessing') { if (g.blessed) return false; g.blessed = true; hud.toast('Blessed: the deep looks away', 'big'); }
+  if (k === 'blessing') { if (g.blessed) return false; g.blessed = true; hud.toast('Blessed: the deep looks away', 'big'); }
   else if (k === 'eye') { if (P.eye) return false; P.eye = true; hud.toast('Sapphires now show on sonar', 'big'); }
   P.coins -= W.coins;
   saveProfile(P); audio.ready && audio.sale();
@@ -910,7 +909,7 @@ function spawnReleased(r) {
 function syncProfile() {
   const P = profile;
   P.hull = g.sub.hull; P.subLost = !!g.sub.imploded;
-  P.items = { lure: g.items.lure, necklace: g.items.necklace, glowAdv: g.items.glowAdv || 0, airTank: g.items.airTank, nets: Object.assign({}, netsOf(g.items)), film: g.items.film };
+  P.items = { necklace: g.items.necklace, glowAdv: g.items.glowAdv || 0, airTank: g.items.airTank, nets: Object.assign({}, netsOf(g.items)), film: g.items.film };
   P.roll = g.photos.slice(); // (5.0) the pictures he carries, kept with the save
   P.journal = [...g.journal.entries()]; P.notes = g.notes;
   P.deepest = Math.max(P.deepest || 0, Math.round(g.earl.maxDepth));
@@ -938,7 +937,7 @@ function resumeDive(P) {
   hud.toast('Carrying on where you left off');
   return true;
 }
-// buy(kind): 'tank' | 'fins' | 'sub' | 'patch' | 'replace' | 'lure' | 'necklace'
+// buy(kind): 'tank' | 'fins' | 'sub' | 'patch' | 'replace' | 'necklace'
 function buy(kind) {
   const P = profile, sub = g.sub, e = g.earl;
   let ok = false;
@@ -1057,7 +1056,7 @@ function buy(kind) {
     P.addons = Object.assign({}, P.addons, { [kind]: true }); g.addons = P.addons; ok = true;
     if (kind === 'airBank') { const was = g.sub.o2Max; applySub(g.sub, P); g.sub.o2 = Math.min(g.sub.o2Max, g.sub.o2 + Math.max(0, g.sub.o2Max - was)); } // the new bottles come full
     hud.toast(`Fitted: ${SUB_ADDONS[kind].name.toLowerCase()}`, 'big');
-  } else if (SUPPLIES[kind] && (g.items[kind] || 0) + ((P.spare && P.spare[kind]) || 0) + (kind === 'lure' ? (P.oldLures || 0) : 0) < supplyMax(P, kind) && spend(P, SUPPLIES[kind].price)) { // (5.10.10) one lure in all, an old one included // (5.6.9) what is on the belt and what waits in the locker
+  } else if (SUPPLIES[kind] && (g.items[kind] || 0) + ((P.spare && P.spare[kind]) || 0) < supplyMax(P, kind) && spend(P, SUPPLIES[kind].price)) { // (5.10.10) one lure in all, an old one included // (5.6.9) what is on the belt and what waits in the locker
     if ((kind === 'necklace' || kind === 'glowAdv') && glowKind() !== kind) { P.spare = P.spare || {}; P.spare[kind] = (P.spare[kind] || 0) + 1; } // (6.0.1) the kind not on the belt waits in the locker
     else if (kind === 'film' && (g.items.film || 0) >= gear(P, 'cam').shots) { P.spare = P.spare || {}; P.spare.film = (P.spare.film || 0) + 1; } // (6.5.1) the camera is loaded: the spare stack
     else { g.items[kind] = g.items[kind] || 0; g.items[kind]++; }
@@ -1121,6 +1120,21 @@ function lessons() {
   const P = profile, e = g.earl, sub = g.sub; g.frozen = false; g.lesson = null; g.questHint = null; g.airCallout = false; g.trawlOnly = null; if (P && P.tut !== 'on') g.tutVig = 0;
   if (!P || g.mode !== 'play' || P.tut === 'on' || g.kill || sub.imploded) { lessonHold(false); return; }
   const tankO = !!(ui.tankOpen && ui.tankOpen()), invO = shown('inventory'), TR = ui.tankRoom;
+  // ---- (7.6.0, owner) a better sub is for sale: once ever, the first time the cash covers the next sub up. Led aboard,
+  // into the cabin, to the computer, its Submersibles page, and that sub's price lit; then never again ----
+  if (P.lessonYard !== 'done' && P.tut !== 'on') { const nx = lv(P, 'depth') + 1, NS = SUBS[nx];
+    if (NS && (P.lessonYard === 'on' || P.cash >= NS.price) && !(g.entity && g.entity.marked)) {
+      const atTop = g.aboard || (e.inSub ? sub.docked : (e.y < 2 && Math.abs(e.x - BOAT.x) < 60));
+      if (P.lessonYard !== 'on' && atTop) { P.lessonYard = 'on'; saveProfile(P); }
+      if (P.lessonYard === 'on') {
+        const yardO = shown('workshop') && ui.shopTab === 'sub';
+        if (yardO) { g.yardSeen = true; lessonSet(`The ${NS.name}: ${money(NS.price, false)}`, { sel: ['#shop-body .pay-tag[data-arg="up:tHull"]', `#shop-body .yd-card[data-yd="sub:${nx}"]`, '#shop-body .yd-plaque[data-yd="all"]'] }); return; } // its price tag; or its card among all the subs; or the way to all of them
+        if (g.yardSeen) { P.lessonYard = 'done'; saveProfile(P); g.yardSeen = false; } // seen and closed: never again
+        else if (shown('catalog')) { lessonSet('A better sub is for sale', { sel: ['#catalog [data-go="yard"]'] }); return; }
+        else if (ui.cabinOpen && ui.cabinOpen()) { if (ui.cabin) ui.cabin.tutMark = 'desk'; lessonSet('A better sub is for sale: the computer'); return; }
+        else if (g.aboard) { const bf = renderer.boatFrame, kx = innerWidth / renderer.c.width; lessonSet('A better sub is for sale: the cabin computer', bf ? { pt: [(bf.x + bf.sx * 19 * bf.k) * kx, (bf.y - 17.5 * bf.k) * kx, 5.4 * bf.k * kx, 14 * bf.k * kx] } : null); return; }
+        else if (atTop) { lessonSet('A better sub is for sale: aboard the Margaret', null, { x: BOAT.x + LADDER_M * Math.sign(Math.cos(BOAT.yaw || 0) || 1), y: 1 }); return; }
+      } } }
   // ---- the first trawl ----
   if (P.lessonTrawl !== 'done' && e.inSub && !sub.docked && sub.y >= 20 && sub.y < (sub.rated || 300) * 0.9 && !g.entity?.marked) { // (6.9.3) never at crush depth, nor with the thing on him // (6.8.0) the first sub dive below 20 m after the tutorial (the Log's trawl step is gone)
     if (!netTotal(g.items) && !P.lessonTrawl) { netsOf(g.items).basic = 1; syncProfile(); }
@@ -1128,6 +1142,7 @@ function lessons() {
     let J = g.lessonJelly; const jSp = SPECIES_BY_ID[171];
     if (st === 'drop' || st === 'tow') {
       if (!J || (J.dead && !J.netted) || (!J.dead && !g.fauna.list.includes(J))) { const d = sub.facing || 1; J = g.fauna.makeFish(jSp, sub.x + d * 12, sub.y + 4, /* (7.4.26, owner) in front of her, where she is facing (sub.dir was never set: it was always to the east) */ -d, /* (6.6.2) at the depth the net tows, 4 m under the sub */ g.fauna.groupId++, true); J.devKeep = true; J.vx = J.vy = 0; g.fauna.list.push(J); g.lessonJelly = J; }
+      if (Math.hypot((J.homeX ?? J.x) - sub.x, (J.homeY ?? J.y) - sub.y) > 20) { const d = sub.facing || 1; J.homeX = sub.x + d * 12; J.homeY = sub.y + 4; } // (7.6.0, owner) left far behind (she turned away): it hangs again 12 m in front of her, never 40 m off
       J.x = J.homeX ?? (J.homeX = J.x); J.y = J.homeY ?? (J.homeY = J.y); // it hangs where it was placed, pulsing in place
       g.trawlOnly = J; // the net takes only it
       g.tutVig = 1; /* (7.4.26, owner) the screen's edges darkened until it is in the net */
@@ -1178,7 +1193,7 @@ function tutorWelcome() {
   ui.confirmModal = true; // (5.5) answered with Start or Skip only (a tap beside it no longer dismisses it undecided), the game held still meanwhile
   ui.confirm('Welcome to the tutorial', 'This will be quick: just a look around the game.', 'Start', 'Skip tutorial',
     () => { P.tut = 'on'; saveProfile(P); g.tutSaid = null; refreshAir(); },
-    () => ui.confirm('Skip the tutorial?', 'Are you sure?', 'Skip it', 'Back', () => { P.tut = 'skip'; P.lessonAir = P.lessonTrawl = 'done'; P.tipEquip = P.tipSprint = true; saveProfile(P); }, () => tutorWelcome())); // (4.12.0) skipped: no lessons or tips after it either
+    () => ui.confirm('Skip the tutorial?', 'Are you sure?', 'Skip it', 'Back', () => { P.tut = 'skip'; P.lessonAir = P.lessonTrawl = P.lessonChamber = 'done'; /* (7.6.0) every taught-once lesson */ P.tipEquip = P.tipSprint = true; saveProfile(P); }, () => tutorWelcome())); // (4.12.0) skipped: no lessons or tips after it either
   { const cf = document.getElementById('confirm'); cf.classList.add('welcome'); setTimeout(() => { const y = cf.querySelector('.cf-yes'); y && y.focus(); }, 0); } // (6.0.19) Start is the one to press: it holds the focus, Skip sits quiet
 }
 // (4.3.0, 4.3.1) tutor(): one thing at a time. Each frame it works out the single next thing to do and sets g.tut:
@@ -1709,7 +1724,7 @@ function promptFor(t) {
   let p = null;
   if (t) {
     if (t.kind === 'pickup') {
-      const name = t.p.type === 'lure' ? 'anglerfish lure' : t.p.type === 'necklace' ? 'glow stick' : t.p.type === 'sapphire' ? 'deep sapphire' : (RESOURCES[t.p.type] ? RESOURCES[t.p.type].name.toLowerCase() : t.p.type);
+      const name = t.p.type === 'necklace' ? 'glow stick' : t.p.type === 'sapphire' ? 'deep sapphire' : (RESOURCES[t.p.type] ? RESOURCES[t.p.type].name.toLowerCase() : t.p.type);
       if (t.p.type === 'net') p = g.pry && g.pry.p === t.p ? (g.promptBar = g.pry.t / HOLD_TIME.net, 'Cutting the net free') : `Hold F  Cut the ${t.p.animal} free`;
       else p = PRY.has(t.p.type) ? (g.pry && g.pry.p === t.p ? (g.promptBar = g.pry.t / PRY_TIME, 'Prying loose') : `Hold F  Pry loose the ${name}`) : `F  Collect ${name}`;
     } else if (t.kind === 'board') {
@@ -1774,9 +1789,9 @@ function interact(t, exitSub) {
   if (t.kind === 'pickup') {
     const p = t.p;
     // taking things from the deep draws its attention
-    if (p.y > 200) g.entity.disturb(g, p.type === 'necklace' ? 0.3 : p.type === 'lure' ? 0.2 : p.type === 'sapphire' ? 0.25 : 0.04);
-    if (p.type === 'lure' || p.type === 'necklace') {
-      if (g.items[p.type] + (p.type === 'lure' ? (profile.oldLures || 0) : 0) >= supplyMax(profile, p.type)) { hud.toast(p.type === 'lure' ? 'You already carry a lure' : 'Your belt is full of glow sticks', 'warn'); return; }
+    if (p.y > 200) g.entity.disturb(g, p.type === 'necklace' ? 0.3 : p.type === 'sapphire' ? 0.25 : 0.04);
+    if (p.type === 'necklace') {
+      if (g.items[p.type] >= supplyMax(profile, p.type)) { hud.toast('Your belt is full of glow sticks', 'warn'); return; }
       g.items[p.type]++;
       ui.showGains([{ kind: 'supply', id: p.type }]);
     } else if (p.type === 'sapphire') {
@@ -1838,7 +1853,7 @@ function leaveSub() {
 // mouth already opening, the lower jaw dropping and the sack ballooning; he is in the open mouth (the
 // water shows through it, and him in it), and it shuts. In the sub there is nothing to be done: that is
 // the third approach. Swimming, there is one last moment as the jaws open: flash the lamp (once: it
-// learns), throw a lure or wear the necklace.
+// learns), or wear the necklace.
 const KILL_LUNGE = 0.95, KILL_CLOSE = 0.16;
 // which way it can come at him from: along a line of open water (no rock, not through the bottom or
 // out of the sea), sideways if it can, else rising at an angle from below, or down from above
@@ -1889,9 +1904,8 @@ function killUpdate(dt) {
     return;
   }
   // the moment to get free (swimming only)
-  if ((K.window && K.t > K.window[0] && K.t < K.window[1]) ) { // (5.6.4) the lure answers any time before the jaws shut
+  if ((K.window && K.t > K.window[0] && K.t < K.window[1]) ) { // (5.6.4) the moment before the jaws shut
     let how = null;
-    // (5.10.8) no escape by the lamp: only a lure, or the Tidewarden's ward, gets him out of the jaws
     /* (6.0.0) no Tidewarden in the jaws: once it strikes, nothing stops it (Rebirth, after, is the only way back) */
     if (how) { escapeKill(how); for (const k of ['l', 'q', 'e', 'ability']) pressed.delete(k); return; }
   }
@@ -1914,19 +1928,18 @@ function escapeKill(how) {
   K.esc = true; K.escT = 0;
   audio.ready && audio.restore(0.25);
   if (how === 'flash') { g.fx.flash = 0.7; g.lampFlashT = g.time; }
-  if (how === 'lure') { const old = !!g.lureOld; g.lure = { x: e.x, y: e.y, vx: 0, vy: 0, old, eaten: 0 }; ent.throwLure(e.x, e.y, old ? 20 : 10); } // (5.10.10) pushed into its mouth: the jaws close on the light, and it dims behind the teeth
   // it lets go, but not before it has done its damage (never enough, on its own, to kill)
   if (K.inSub) {
     g.sub.hull = Math.max(0, g.sub.hull - 0.35); audio.ready && audio.ram();
-    hud.toast(`${how === 'tide' ? 'The water turns blue' : how === 'lure' ? 'It goes for the lure' : 'The necklace burns it'}: it lets go · hull ${Math.round(g.sub.hull * 100)} %`, 'warn');
+    hud.toast(`${how === 'tide' ? 'The water turns blue' : 'The necklace burns it'}: it lets go · hull ${Math.round(g.sub.hull * 100)} %`, 'warn');
   } else {
     g.injury = Math.min(4, g.injury + 2); g.healT = 0; g.fx.redFlash = 1; // its teeth caught him as it turned
     for (let i = 0; i < 30; i++) g.blood.push({ x: e.x + (Math.random() - 0.5) * 0.8, y: e.y + (Math.random() - 0.5) * 0.8, vx: (Math.random() - 0.5) * 1.2, vy: (Math.random() - 0.5) * 1.2, r: 0.3 + Math.random() * 0.5, t: 0, life: 6 });
-    hud.toast(`${how === 'flash' ? 'The light burns it' : how === 'lure' ? 'It goes for the lure' : 'The necklace burns it'}: it turns away, but bit you`, 'warn');
+    hud.toast(`${how === 'flash' ? 'The light burns it' : 'The necklace burns it'}: it turns away, but bit you`, 'warn');
   }
   g.fx.shake = Math.max(g.fx.shake, 2);
   ent.hunt = null;
-  if (how !== 'lure') ent.goAway(e.x, e.y, ent.band(g)[0]);
+  ent.goAway(e.x, e.y, ent.band(g)[0]);
 }
 
 // ---------------- repairs during a dive ----------------
@@ -2108,7 +2121,7 @@ function die(cause, kind = 'normal', declined = false) {
   if (inTraps) lost.push(`${inTraps} animal${inTraps > 1 ? 's' : ''} in the traps`);
   g.bag = []; g.subTank = [];
   const taken = cause.startsWith('Taken');
-  if (taken) { const n = g.items.lure + g.items.necklace; if (n) lost.push(`${n} lure${n > 1 ? 's' : ''} and necklace${n > 1 ? 's' : ''}`); g.items.lure = g.items.necklace = 0; }
+  if (taken) { const n = g.items.necklace; if (n) lost.push(`${n} glow stick${n > 1 ? 's' : ''}`); g.items.necklace = 0; }
   const bill = kind === 'quit' ? 0 : Math.min(hospitalCap(profile), Math.round(profile.cash * HOSPITAL_SHARE * 100) / 100); // capped: late in the game 10 % would be ruinous
   g.inv = {};
   syncProfile();
@@ -2240,8 +2253,12 @@ function tickAbility(dt) {
     if (pm > 1) { const base = e.pressBase || 300, d = e.y; g.pressK = clamp((d - base) / (base * (pm - 1)), 0, 1); }
     if (pm > 1 && !g.pressFx) { g.pressFx = { t: 0, end: 0, tier: A.tier, def: A }; if (audio.ready) { audio.thud && audio.thud(0.6); audio.creak && audio.creak(0.5); } } // it opens: a deep thud, the hull's creak
     if (g.pressFx) { const F = g.pressFx; F.t += dt; if (pm > 1) { F.tier = A.tier; F.def = A; F.left = S.activeT; } else { if (!F.end && audio.ready && audio.groan) audio.groan(0.3); F.end += dt; if (F.end > 1.2) g.pressFx = null; } } } // it is crushed back: the pressure's groan
+  // (7.6.0, owner) Dauntless gives air back early in its run (2/3/5/10 % a second for 10/15/20/30 s); beside a mythical's
+  // +50 % the stronger rate wins, never the two together
+  const dRate = on && A.airBack && !e.inSub && (A.dur - S.activeT) < A.airBack[1] ? A.airBack[0] : 0;
+  if (dRate > 0 && !(g.mythT > 0 && MYTH.air >= dRate)) e.o2 = Math.min(e.o2Max, e.o2 + e.o2Max * dRate * dt);
   if (g.mythT > 0) { g.mythT = Math.max(0, g.mythT - dt); e.abilSpeed = Math.max(e.abilSpeed, MYTH.speed); e.abilNoAir = true;
-    const full = e.inSub ? (g.sub.o2Max || 0) : (e.o2Max || 0), add = Math.min(full * MYTH.air * dt, full * 0.5 - (g.mythAir || 0));
+    const full = e.inSub ? (g.sub.o2Max || 0) : (e.o2Max || 0), add = dRate > MYTH.air ? 0 : Math.min(full * MYTH.air * dt, full * 0.5 - (g.mythAir || 0));
     if (add > 0) { g.mythAir = (g.mythAir || 0) + add; if (e.inSub) g.sub.o2 = Math.min(g.sub.o2Max, g.sub.o2 + add); else e.o2 = Math.min(e.o2Max, e.o2 + add); } }
   if (g.mythFx) { g.mythFx.t += dt; if (g.mythFx.t > 1.6) g.mythFx = null; }
   if (g.songFx) { g.songFx.t += dt; if (g.songFx.t > 4) g.songFx = null; }
@@ -2859,16 +2876,6 @@ function update(dt) {
     if ((!e.inSub || g.sub.o2 <= 0) && !e.atSurface && e.o2 / e.o2Max < 0.1 && !g.lowO2Warned) { g.lowO2Warned = true; hud.toast('Air critical: surface', 'critical'); /* (6.1.4) the more urgent line holds: fish news waits */ }
     if (e.atSurface) g.lowO2Warned = false;
 
-    // lure physics
-    if (g.lure) {
-      const L = g.lure;
-      if (L.eaten != null) { L.eaten += dt; const mx = ent.x + Math.cos(ent.heading || 0) * 6, my = ent.y + Math.sin(ent.heading || 0) * 6; L.x += (mx - L.x) * Math.min(1, dt * 3); L.y += (my - L.y) * Math.min(1, dt * 3); L.vx = L.vy = 0; } // (5.10.10) it has the lure in its mouth
-      L.vx *= Math.exp(-dt * 0.85); L.vy = lerp(L.vy, 0.35, dt);
-      if (ent.lure) { ent.lure.x = L.x; ent.lure.y = L.y; }
-      L.x += L.vx * dt; L.y += L.vy * dt;
-      if (L.y > W.floorAt(L.x) - 0.3) { L.y = W.floorAt(L.x) - 0.3; L.vy = 0; }
-      if (ent.lureT <= 0) g.lure = null;
-    }
     // protection: necklace or a nearby lantern
     if (g.glows && g.glows.length) { for (const L of g.glows) { L.t -= dt; if (L.rest) continue; const fl = W.floorAt(L.x) - 0.15; L.y += 0.15 * dt; L.x += Math.sin(g.time * 0.7 + L.ph) * 0.05 * dt; if (L.y >= fl) { L.y = fl; L.rest = true; } } g.glows = g.glows.filter((L) => L.t > 0); } // (5.17.1) sinking, then resting
     g.protection = null; g.hunterWard = g.wardOn && (g.lightFade ?? 1) > 0.5 ? { x: e.x, y: e.y } : null; // (5.16.0) Lighthouse keeps hunters out of its light (while it burns), never the thing
@@ -3346,6 +3353,16 @@ window.addEventListener('pointerdown', (ev) => {
   if (navigator.vibrate) try { navigator.vibrate(6); } catch (e) { /* not allowed yet */ }
   if (b.closest(QUIET_SCREENS)) { audio.resume && audio.resume(); audio.ready && audio.uiSoft && audio.uiSoft(); }
 }, true);
+// (7.6.0, owner) iOS makes no click from a tap while another finger is on the glass: with a thumb on the stick, the
+// skip card's Skip (and every panel's buttons) did nothing until he stopped. A finger lifted from a button while another
+// is still down presses it by hand (the tap's own click is then held back, so nothing is pressed twice)
+window.addEventListener('touchend', (ev) => {
+  if (!ev.touches || ev.touches.length === 0) return; const t = ev.changedTouches && ev.changedTouches[0]; if (!t) return;
+  const under = document.elementFromPoint(t.clientX, t.clientY), b = under && under.closest && under.closest(PRESSABLE);
+  if (!b || b.disabled || b.closest('[hidden]') || b.closest('#hud, #game')) return;
+  const st = ev.target && ev.target.closest && ev.target.closest(PRESSABLE); if (st !== b) return; // ended on the button it began on
+  ev.preventDefault(); b.click();
+}, { capture: true, passive: false });
 function menuFold(now) {
   if (!hud.menuOpen || !profile || g.mode !== 'play') { if (!hud.menuOpen) menuUsedAt = now; return; } // (7.4.0) in the tutorial too: a step about the menu holds it open by itself
   if (ui.anyOpen && ui.anyOpen()) { menuUsedAt = now; return; } // while a panel from it is open, the clock waits

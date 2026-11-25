@@ -312,11 +312,11 @@ export class Hud {
 
   // (5.1.1) A touch screen's hands, bottom right: one big button for the main action (swing the net, take the picture,
   // set a trap; in the sub, the claw), and round action buttons in a fixed arc round its upper left (observe or
-  // whatever F does here, call the sub, the lamp, the lure, the glow stick, the pet; in the sub: leave, the tank room,
+  // whatever F does here, call the sub, the lamp, the glow stick, the pet; in the sub: leave, the tank room,
   // the autopilot, the trawl, the spare air, sell, the lamp). Each keeps its place: one that can't be used now is
   // greyed, never moved or hidden, so nothing jumps about. A picture and a word on each; no key letters.
   // (5.10.8) in the jaws: no lamp (the light no longer drives it off). If the Tidewarden is carried and ready, its
-  // coin waits where the big button was, quietly; a lure, if carried, is asked for by its own card
+  // coin waits where the big button was, quietly
   drawActions(g, W, H, s, dt, aboard) {
     const ctx = this.ctx, P = g.profile, e = g.earl, kx = window.innerWidth / this.c.width;
     const hot = (x, y, w, h, key) => this.hots.push({ x: (x + this.safeL) * kx, y: (y + this.safeT) * kx, w: w * kx, h: h * kx, key });
@@ -567,7 +567,7 @@ e.inSub ? [
       // (7.3.9, owner) on its own small plate of the panels' olive steel, the pearl set at its left end and the count beside it
       { const pr = 8 * u, py = my + ch * 0.55 + 6 * u + pr, im = hudIcon('pearl'), ptxt = String(Math.max(0, Math.floor(P.pearls || 0)).toLocaleString('en-US'));
         ctx.save(); ctx.font = `700 ${15 * u}px ${HUDF}`; const pw = ctx.measureText(ptxt).width, bx = mx - ch * 0.8, bh = pr * 2 + 4 * u, pcx = bx + 3 * u + pr * 1.2, ptx = pcx + pr * 1.2 + 5 * u, /* (7.4.0, owner) its left edge under the banknotes' */ bw = (ptx - bx) + pw + 9 * u; /* the count close after the pearl */
-        steelPlate(ctx, bx, py - bh / 2, bw, bh, u);
+        steelPlate(ctx, bx, py - bh / 2, bw, bh, u); this.pearlRect = { r: bx + bw, y: py, h: bh, u }; // (7.6.0) the marked eye sits beside it
         ctx.fillStyle = 'rgba(0,0,0,0.28)'; ctx.beginPath(); ctx.roundRect(bx + 2 * u, py - bh / 2 + 2 * u, bw - 4 * u, bh - 4 * u, 3 * u); ctx.fill(); /* a shallow well pressed into the plate */
         if (im) ctx.drawImage(im, pcx - pr * 1.2, py - pr * 1.2, pr * 2.4, pr * 2.4);
         ctx.textAlign = 'left'; ctx.textBaseline = 'middle'; ctx.shadowColor = 'rgba(0,0,0,0.85)'; ctx.shadowBlur = 3 * u; ctx.fillStyle = '#e6e0d0';
@@ -1078,8 +1078,7 @@ e.inSub ? [
         const bg2 = ctx.createRadialGradient(bxp, byp, 0, bxp, byp, 6 * s);
         bg2.addColorStop(0, `rgba(255,90,70,${this.blip.life})`); bg2.addColorStop(1, 'rgba(255,90,70,0)');
         ctx.fillStyle = bg2; ctx.beginPath(); ctx.arc(bxp, byp, 6 * s, 0, TAU); ctx.fill();
-        if (ent && ent.marked) { const q = 7 * s, c = 3 * s; ctx.strokeStyle = `rgba(230,80,64,${Math.min(1, this.blip.life * 1.4).toFixed(3)})`; ctx.lineWidth = 1.4 * s; // (5.13.0) it has marked him: a bracketed contact
-          for (const [sx2, sy2] of [[-1, -1], [1, -1], [1, 1], [-1, 1]]) { ctx.beginPath(); ctx.moveTo(bxp + sx2 * q, byp + sy2 * (q - c)); ctx.lineTo(bxp + sx2 * q, byp + sy2 * q); ctx.lineTo(bxp + sx2 * (q - c), byp + sy2 * q); ctx.stroke(); } }
+        ctx.fillStyle = `rgba(214,56,40,${Math.min(1, this.blip.life * 1.3).toFixed(3)})`; ctx.beginPath(); ctx.arc(bxp, byp, 2.4 * s, 0, TAU); ctx.fill(); // (7.6.0, owner) the thing is a red dot, nothing drawn round it (the bracket is gone)
       }
     }
     // (6.8.0) the radar ghost: when the sweep passes its bearing, a large contact at the very edge, there for half a
@@ -1158,7 +1157,7 @@ e.inSub ? [
       const mt = g.time - this.markT0, big = mt < 4.6 ? 1 : clamp(1 - (mt - 4.6) / 1.4, 0, 1), ease = (q) => q * q * (3 - 2 * q);
       // (6.2.0) back under the money, as in 6.0.7, but the larger, thicker eye: it opens at its largest, then settles
       const E = eyePicture(), ew = this.eyeRow ? (21 + 3 * ease(big)) * this.eyeRow.u * E.ew / E.eh : (52 + 20 * ease(big)) * s, sc = ew / E.ew;
-      const ER = this.eyeRow, ex = ER ? ER.x0 + ew * 1.15 : 60 * s, ey = ER ? ER.y + ER.h * 0.5 + E.eh * sc * 0.1 : 80 * s; /* (7.2.3) its fixed place beside the top of the menu column */
+      const ER = this.eyeRow, PR = this.pearlRect, ex = PR ? PR.r + 12 * PR.u + ew * 0.55 : ER ? ER.x0 + ew * 1.15 : 60 * s, ey = PR ? PR.y + 2 * PR.u : ER ? ER.y + ER.h * 0.5 + E.eh * sc * 0.1 : 80 * s; /* (7.6.0, owner) up beside the pearls' plate, level with it */ /* (7.2.3) its fixed place beside the top of the menu column */
       const close = near > 0.82, pulse = 0.5 + 0.5 * Math.sin(this.eyePh = (this.eyePh || 0) + clamp(g.time - (this.eyeT ?? g.time), 0, 0.1) * (2 + 5 * near)); this.eyeT = g.time; /* (7.2.8) the beat's phase moves by its speed each frame: the clock times a changing speed made it jump as the thing came near */
       const per = 9 - 3 * near, bt = g.time % per, blink = !close && mt > 6 && bt < 0.32 ? Math.sin(bt / 0.32 * Math.PI) : 0;
       const opening = clamp(mt / 1.3, 0, 1), rest = close ? 1 : 0.24 + 0.4 * near, open = Math.max(0.05, (1 - blink) * ease(opening) * (big * 0.92 + (1 - big) * rest));
@@ -1232,7 +1231,7 @@ e.inSub ? [
     const K = g.kill;
     if (K && K.window && !K.esc && K.t > K.window[0] && K.t < K.window[1] && g.mode === 'play') {
       const opts = [];
-      if (this.killTide) opts.push(['1', 'TIDEWARDEN']); // (5.10.8) no lamp: a lure or the Tidewarden
+      if (this.killTide) opts.push(['1', 'TIDEWARDEN']); // (5.10.8) no lamp: the Tidewarden
       const left = 1 - (K.t - K.window[0]) / (K.window[1] - K.window[0]);
       const pulse = 0.75 + 0.25 * Math.sin(K.t * 22);
       ctx.save(); ctx.textAlign = 'center'; ctx.textBaseline = 'middle';

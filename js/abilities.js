@@ -9,16 +9,16 @@
 // a legendary about once a session (they count in real time, closed or not)
 export const ABILITY_DEFS = {
   sprint: {
-    rare: { name: 'Sprint', dur: 15, cd: 120, speed: 1.5, line: '×1.5 speed for 15 s, using no air.' },
-    exotic: { name: 'Sprint+', dur: 15, cd: 300, speed: 2, line: '×2 speed for 15 s, using no air.' },
-    legendary: { name: 'Riptide', dur: 20, cd: 1800, speed: 3, noAir: true, line: '×3 speed for 20 s, using no air.' }, // (7.4.17, owner) 20 s
-    mythical: { name: 'Maelstrom Heart', dur: 30, cd: 1200, speed: 3.5, noAir: true, wake: true, line: '×3.5 speed for 30 s, using no air, and the water lit behind you as you go.' },
+    rare: { name: 'Sprint', dur: 20, cd: 120, speed: 1.5, line: '×1.5 speed for 20 s, using no air.' },
+    exotic: { name: 'Sprint+', dur: 25, cd: 300, speed: 2, line: '×2 speed for 25 s, using no air.' },
+    legendary: { name: 'Riptide', dur: 40, cd: 1800, speed: 3, noAir: true, line: '×3 speed for 40 s, using no air.' }, // (7.4.17, owner) 20 s
+    mythical: { name: 'Maelstrom Heart', dur: 60, cd: 1200, speed: 3.5, noAir: true, wake: true, line: '×3.5 speed for 60 s, using no air, and the water lit behind you as you go.' },
   },
   vigor: {
-    rare: { name: 'Vigor', dur: 20, cd: 180, reach: 1.5, line: '×1.5 net reach for 20 s.' },
-    exotic: { name: 'Vigor+', dur: 20, cd: 480, reach: 2, swing: 0.8, line: '×2 net reach and a quicker swing for 20 s.' },
-    legendary: { name: 'Apex', dur: 10, cd: 3600, reach: 2.5, sure: true, bless: true, line: 'For 10 s the net reaches two and a half times as far and cannot miss. What it catches comes back whole, and Blessed.' },
-    mythical: { name: 'Leviathan Heart', dur: 12, cd: 2400, reach: 3, sure: true, bless: true, multi: 3, line: 'For 12 s the net reaches three times as far, cannot miss, and takes up to three animals a swing. All come back whole, and Blessed.' },
+    rare: { name: 'Vigor', dur: 30, cd: 180, reach: 1.5, line: '×1.5 net reach for 30 s.' },
+    exotic: { name: 'Vigor+', dur: 30, cd: 480, reach: 2, swing: 0.8, line: '×2 net reach and a quicker swing for 30 s.' },
+    legendary: { name: 'Apex', dur: 60, cd: 3600, reach: 2.5, sure: true, bless: true, line: 'For 60 s the net reaches two and a half times as far and cannot miss. What it catches comes back whole, and Blessed.' },
+    mythical: { name: 'Leviathan Heart', dur: 90, cd: 2400, reach: 3, sure: true, bless: true, multi: 3, line: 'For 90 s the net reaches three times as far, cannot miss, and takes up to three animals a swing. All come back whole, and Blessed.' },
   },
   dash: { // (7.5.6, owner) charges: rare 2, exotic 2, legendary 3, mythical 5 dashes, then the rest
     rare: { name: 'Dash', dur: 0.3, cd: 45, dash: 1, zoom: 1, charges: 2, line: 'Two dashes before it rests: tap where to go, and you are there in an instant.' },
@@ -27,16 +27,16 @@ export const ABILITY_DEFS = {
     mythical: { name: 'Riven Heart', dur: 0.35, cd: 1200, dash: 3, zoom: 2.2, charges: 5, line: 'Five dashes before it rests: tap where to go, and again. The sea opens far round you, and tears as you pass.' },
   },
   flare: {
-    rare: { name: 'Flare', dur: 20, cd: 300, light: 1, line: '20 s of light 28 m round you. The thing does not see it.' },
-    exotic: { name: 'Flare+', dur: 40, cd: 720, light: 1.6, line: '40 s of brighter light, 45 m round you. The thing does not see it.' },
-    legendary: { name: 'Lighthouse', dur: 60, cd: 3600, light: 2.4, ward: true, line: '60 s of light 80 m round you, near as bright as the shallows, pulsing, its beams sweeping round. Hunters keep out of it, and the thing does not see it.' },
-    mythical: { name: 'Pharos Heart', dur: 90, cd: 1800, light: 3.2, ward: true, line: '90 s of light 110 m round you, brighter than the Lighthouse, three beams sweeping round. Hunters keep out of it, and the thing does not see it.' },
+    rare: { name: 'Flare', dur: 30, cd: 300, light: 1, line: '30 s of light 28 m round you. The thing does not see it.' },
+    exotic: { name: 'Flare+', dur: 50, cd: 720, light: 1.6, line: '50 s of brighter light, 45 m round you. The thing does not see it.' },
+    legendary: { name: 'Lighthouse', dur: 90, cd: 3600, light: 2.4, ward: true, line: '90 s of light 80 m round you, near as bright as the shallows, pulsing, its beams sweeping round. Hunters keep out of it, and the thing does not see it.' },
+    mythical: { name: 'Pharos Heart', dur: 120, cd: 1800, light: 3.2, ward: true, line: '120 s of light 110 m round you, brighter than the Lighthouse, three beams sweeping round. Hunters keep out of it, and the thing does not see it.' },
   },
   echo: {
-    rare: { name: 'Echo', dur: 20, cd: 480, echo: 1, line: 'A ping through the water: exotic and legendary animals near you show on the radar for 20 s.' },
-    exotic: { name: 'Echo+', dur: 35, cd: 1200, echo: 2, line: 'A ping through the water: exotic and legendary animals near you show on the radar for 35 s.' },
-    legendary: { name: 'Fathom', dur: 50, cd: 5400, echo: 3, line: 'A deep ping: exotic and legendary animals far round you show on the radar for 50 s.' },
-    mythical: { name: 'Whalesong Heart', dur: 60, cd: 3600, echo: 4, song: true, line: 'A long, deep call that carries through the sea: for 60 s exotic animals show on the radar twice as far round you, and legendary ones brighter, in their own colour.' },
+    rare: { name: 'Echo', dur: 30, cd: 480, echo: 1, line: 'A ping through the water: exotic and legendary animals near you show on the radar for 30 s.' },
+    exotic: { name: 'Echo+', dur: 45, cd: 1200, echo: 2, line: 'A ping through the water: exotic and legendary animals near you show on the radar for 45 s.' },
+    legendary: { name: 'Fathom', dur: 90, cd: 5400, echo: 3, line: 'A deep ping: exotic and legendary animals far round you show on the radar for 90 s.' },
+    mythical: { name: 'Whalesong Heart', dur: 120, cd: 3600, echo: 4, song: true, line: 'A long, deep call that carries through the sea: for 120 s exotic animals show on the radar twice as far round you, and legendary ones brighter, in their own colour.' },
   },
   ironhull: {
     rare: { name: 'Ironhull', dur: 0.5, cd: 3600, repair: true, sub: true, line: 'Mends the sub completely, from inside it.' },
@@ -44,10 +44,10 @@ export const ABILITY_DEFS = {
   // (7.4.19, owner) Dauntless: for its time the suit (or the hull) is rated deeper by its multiple, and what pressure
   // does past the old rating is that many times less. A force field round him shows how much of it he is using
   dauntless: {
-    rare: { name: 'Dauntless', dur: 20, cd: 1800, press: 1.5, line: 'For 20 s your suit takes half again its rated depth, and pressure costs you a third less below it.' },
-    exotic: { name: 'Dauntless+', dur: 20, cd: 3600, press: 2, light: 1.6, line: 'For 20 s your suit takes twice its rated depth, pressure costs you half as much below it, and light 45 m round you.' },
-    legendary: { name: 'Bathysphere', dur: 30, cd: 3600, press: 2.5, beyond: 5, light: 1.6, line: 'For 30 s your suit takes two and a half times its rated depth, with light 45 m round you. Deeper even than that, your air goes 5 times slower than the pressure would take it.' },
-    mythical: { name: 'Hadal Heart', dur: 45, cd: 3600, press: 3, beyond: 10, light: 1.6, line: 'For 45 s your suit takes three times its rated depth. Deeper even than that, your air goes 10 times slower than the pressure would take it.' },
+    rare: { name: 'Dauntless', dur: 25, cd: 1800, press: 1.5, airBack: [0.02, 10], line: 'For 25 s your suit takes half again its rated depth, and pressure costs you a third less below it. Air comes back, 2 % a second for its first 10 s.' },
+    exotic: { name: 'Dauntless+', dur: 30, cd: 3600, press: 2, light: 1.6, airBack: [0.03, 15], line: 'For 30 s your suit takes twice its rated depth, pressure costs you half as much below it, and light 45 m round you. Air comes back, 3 % a second for its first 15 s.' },
+    legendary: { name: 'Bathysphere', dur: 60, cd: 3600, press: 2.5, beyond: 5, light: 1.6, airBack: [0.05, 20], line: 'For 60 s your suit takes two and a half times its rated depth, with light 45 m round you. Deeper even than that, your air goes 5 times slower than the pressure would take it. Air comes back, 5 % a second for its first 20 s.' },
+    mythical: { name: 'Hadal Heart', dur: 90, cd: 3600, press: 3, beyond: 10, light: 1.6, airBack: [0.1, 30], line: 'For 90 s your suit takes three times its rated depth. Deeper even than that, your air goes 10 times slower than the pressure would take it. Air comes back, 10 % a second for its first 30 s.' },
   },
   tidewarden: {
     legendary: { name: 'Tidewarden', dur: 4, cd: 28800, ward: true, tide: true, line: 'When the water round you turns red: a wave of blue, it freezes, fades, and is gone for 5 minutes.' },

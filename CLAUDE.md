@@ -60,6 +60,15 @@ last desktop build is kept on the branch `desktop-4.25.5`).
 11. **Simple systems, one job each.** Prefer moving something to stacking options on it (the swap is net and camera;
    traps are used from the bag; one ability slot, one carried-over cooldown).
 
+## The game's direction (7.6, owner)
+
+- The philosophy above is the quality bar (painted, intentional, never generated) and a description of the game as it
+  is, not a limit on what it may become. Fantasy, magic, made-up animals and a 30,000 m trench are welcome.
+- Pay to win is fine and wanted. Pearls are a fuel spent every day (charges, skips, the scroll shelf, coins), not a
+  rare premium. Never argue against a design for being pay to win.
+- Skills are the heart of the game: many families, two slots, visible effects that make progress feel earned. The plan
+  is docs/PLAN_SKILLS.md.
+
 ## How to work
 
 - **The game as it is (6.2) is the standard.** What is in the game now is the owner's taste made real: the suits'
@@ -102,7 +111,7 @@ last desktop build is kept on the branch `desktop-4.25.5`).
   gain effect everywhere, as a find comes out of a chest (cash only inside a gift; otherwise it counts up by the
   money). Item names always in their rarity's colour (7.3.0: a common one in black on the catalog's pale pages, where its grey was faint). Every item has a written card line and description (js/item_words.js), never figures in place of words: the figures (Speed 1.18, sprint 1.5, as calculated before) stay on the item's page and in the inventory. Descriptions are plain and factual, like a catalogue or a museum label: no character voices (owner, 7.3.0). Exotics and Legendaries get a longer one. No rare forms (albino, golden, giant...). Things to use are
   outlined, never bracketed. Panels appear only when drawn; nothing behind a panel is drawn at a lower rate. The game's
-  sound is "ambient" on iOS (follows the silent switch, never "now playing"). Marine snow only below 150-200 m.
+  sound is "ambient" on iOS (follows the silent switch, never "now playing"). Marine snow only below 120 m, eased in to full at 260 m, in small uneven specks (7.6.0).
 
 - **Decided in 6.5.1**: the daily gift's first week is a new player's own, once (pine crate, $250, 3 advanced
   glow sticks, fish trap, station case, $1,000 (7.3.9), Siren's casket); from week 2 it repeats scaled by the hidden level
@@ -167,11 +176,11 @@ last desktop build is kept on the branch `desktop-4.25.5`).
   always 15x an exotic at its depth. The abyssal sleeper shark is an ordinary hunter (0.5 % of what is met below 3,000 m,
   no ambush timer): a far call and a radar ghost warn before it strikes; its bite is 4 injury points, or 80 % of the hull
   in the sub. **Pearls** are the premium currency: a new diver starts with 20, shown on their own small steel plate
-  under the money; a revive costs 50 pearls (no ad, no $0.99); no pay-to-win unless the owner asks. (7.4.12) Pearls come from
+  under the money; a revive costs pearls (no ad, no $0.99; 7.6: 100-500 by the haul). (7.4.12) Pearls come from
   the daily gift (2 a day, 5 more on the seventh) and from legendary catches (10 each); events and pearl packs are
   planned, not built (docs/PLAN_7.4.md). Close to his pet, the interact button becomes the pet (Stay / Follow); the word
   is written above the pet, with no line. The action arc keeps its places. (7.4.12) An ability's cooldown can be skipped
-  with pearls from its button: a flat 1 pearl for every 5 minutes left. The Lighthouse burns 60 s, pulses to half again
+  with pearls from its button: a flat 1 pearl for every 5 minutes left. The Lighthouse burns 90 s (7.6.0), pulses to half again
   as bright and sweeps two soft beams round him.
 - **Pets (7.4.14, owner):** only from pearls (js/petshop.js), never from the catch; never items (not in the bag, the
   locker or the aquarium) and never sold. Tiers: exotic 80 pearls (plain), legendary 150 (a soft glow and motes),
@@ -196,7 +205,7 @@ last desktop build is kept on the branch `desktop-4.25.5`).
   cradle again.
 - **Giant and colossal squid (7.4.17, owner):** drawn from life (creatures_draw.js drawGiantSquid): deep red, mantle
   first, eight sucker-lined arms and two long club-tipped tentacles; they never hang on end or turn over.
-- **Sprint durations (7.4.17, owner):** Sprint 15 s, Sprint+ 15 s, Riptide 20 s, Maelstrom Heart 30 s.
+- **Skill durations (7.6.0, owner; table in docs/PLAN_SKILLS.md):** Sprint 20 s, Sprint+ 25 s, Riptide 40 s, Maelstrom Heart 60 s; Apex 60 s, Leviathan Heart 90 s; Lighthouse 90 s, Pharos Heart 120 s; Bathysphere 60 s, Hadal Heart 90 s; Dauntless also gives air back (2/3/5/10 % a second for its first 10/15/20/30 s).
 - **Mythicals are Hearts (7.4.19, owner):** Maelstrom Heart, Pharos Heart, Whalesong Heart, Leviathan Heart, Riven Heart,
   Warden Heart, Hadal Heart. Each has its own picture (scroll and coin, scrolls.js emblemTier's mythical branch), with
   a small heart at the foot of its medallion; the scroll has an ember-gilt border, carved caps and a heart-stamped seal.
@@ -308,3 +317,17 @@ last desktop build is kept on the branch `desktop-4.25.5`).
   the interact button is a painted spanner (hold it to mend). Dash charges: rare 2, exotic 2, legendary 3, mythical 5,
   each used within 20 s of the last; a segment each round the skill button shows how many are left.
 - (7.5.7, owner) A Blessed animal (caught under Apex) shows Blessed as its status, in legendary gold with Apex's emblem.
+
+### 7.6.0 notes (owner)
+- Skipping the tutorial marks every taught-once lesson done; the trawl lesson's jellyfish hangs again 12 m in front of the
+  sub if it is left more than 20 m behind.
+- iOS makes no click from a tap while another finger is down: main.js presses a button by hand on such a touchend (the
+  cooldown skip and every panel work with a thumb on the stick).
+- The marked eye sits beside the pearls' plate; on the radar the thing is a plain red dot (no bracket).
+- Red water is the pre-4.0 blood-red glow again, over a red multiply that pulls every skill effect toward red.
+- The Barreleye Lens's glass grows out of a bone neck on the housing (no face-on oval).
+- "A better sub is for sale" (once ever, the first time cash covers the next sub): deck, cabin, the computer's new
+  Submersibles link, All submersibles, that sub's price tag.
+- Reach skills: a light in the hoop by tier and a wake of churned water along each swing (no dashed arc).
+- The diver's lure is gone from the code (the Old One's lure, the deep trap's light and Lanternmesh stay).
+

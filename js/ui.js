@@ -80,7 +80,6 @@ import { PETS, PET_BY_ID, petLevel, fedToday, atSurface } from './petshop.js'; /
 // the figures for the shop's cards, as dot points
 
 const SUPPLY_SPECS = {
-  lure: [['use', 'offered when the thing comes for you, in its jaws too'], ['effect', 'it follows the light for 10 s', 'good'], ['then', 'it loses you for about 20 s, and comes back'], ['carry', 'one lure in all']],
   necklace: [['use', 'the glow stick button, or Use in the bag, snaps one and lets it go'], ['effect', 'it hangs where you leave it, lighting the water 16 m round for 2 min, and slowly sinks; the thing in the deep does not mind it', 'good'], ['but', 'it stays behind, and fades when the thing comes near', 'bad']], // (5.17.1)
   film: [['use', 'the camera'], ['one each', 'every picture, sharp or not'], ['pays', 'Poor, Good or Excellent: an Excellent picture twice a Good one', 'good']],
   airTank: [['use', 'the air tank button, in the sub'], ['work', '3 s to connect'], ['effect', 'cabin air to full', 'good'], ['rack', 'one to start; can be enlarged']],
@@ -1314,7 +1313,7 @@ export class UI {
     const list = K.items.filter((q) => !onSet.has(q.u)).sort((a2, b2) => rk(a2) - rk(b2) || order.indexOf(ITEMS[a2.id].kind) - order.indexOf(ITEMS[b2.id].kind) || ITEMS[a2.id].name.localeCompare(ITEMS[b2.id].name));
     const tiles = list.map((q) => { const it = ITEMS[q.id];
       return `<div class="lk-tile r-${it.rarity}" data-u="${q.u}" data-kind="${it.kind}" draggable="${free}" title="${it.name}"><img src="${pic(q)}" alt="">${q.isNew ? '<i class="new">New</i>' : ''}${it.rarity === 'legendary' ? `<span class="glint" style="--d:${(q.u.length * 7 % 23) / 10}s;--x:${20 + q.u.charCodeAt(1) % 60}%;--y:${18 + q.u.charCodeAt(2) % 50}%"></span><span class="glint b" style="--d:${(q.u.length * 13 % 31) / 10 + 1.4}s;--x:${30 + q.u.charCodeAt(3) % 50}%;--y:${40 + q.u.charCodeAt(4) % 40}%"></span>` : ''}</div>`; }).join('');
-    // (5.6.9) the belt: glow sticks (up to 5), what he takes into the water; the rest wait in the locker. (5.17.0) no lure slot: lures are gone
+    // (5.6.9) the belt: glow sticks (up to 5), what he takes into the water; the rest wait in the locker
     // (6.0.1) two kinds of glow stick, two stacks: the one in the belt's slot is the one the glow button drops; the other
     // waits in the locker as its own tile (its rarity's edge), and a tap puts it on the belt in place of the first
     const SP = P.spare || {}, SUPN = { necklace: 'Glow stick', glowAdv: 'Advanced glow stick' }, GR = { necklace: 'rare', glowAdv: 'exotic' } /* (6.6.2) as their rarities since 6.5.8 */, GMAX = { necklace: 5, glowAdv: 3 };
@@ -1748,7 +1747,7 @@ export class UI {
     if (this.caveTab === 'wares') {
       for (const [k, W] of Object.entries(WARES)) {
         const g = this.h.getGame();
-        const have = k === 'oldlure' ? (P.oldLures || 0) : k === 'relic' ? (P.relics || 0) : k === 'eye' ? (P.eye ? 1 : 0) : (g.blessed ? 1 : 0);
+        const have = k === 'relic' ? (P.relics || 0) : k === 'eye' ? (P.eye ? 1 : 0) : (g.blessed ? 1 : 0);
         const done = (W.max && have >= W.max) || (W.once && have) || (k === 'blessing' && have);
         const owned = W.max ? `(${have}/${W.max})` : done ? (k === 'blessing' ? 'on you this dive' : 'yours') : '';
         html += this.row('ware:' + k, W.name, W.line, owned, `<button data-cave="ware:${k}" class="coinbtn" ${done || (P.coins || 0) < W.coins ? 'disabled' : ''}>${COIN}${W.coins}</button>`, '', W.desc, [['price', `${W.coins} old gold coin${W.coins > 1 ? 's' : ''}`, 'sheet']]);
@@ -2031,7 +2030,7 @@ export class UI {
         row('The thing in the deep', ent.marked ? 'it has marked me' : 'unaware of me', ent.marked ? 'turn every light off: it may lose you' : '' /* (5.16.0) going dark is the way out now */) +
         row('Submersible', sub.imploded ? 'lost' : `rated ${sub.rated} m`, sub.imploded ? 'a replacement can be bought at the boat' : `hull ${Math.round(sub.hull * 100)} %`) +
         row('Carrying', items) +
-        row('Lures', String(g.items.lure)) + row('Glow sticks', String(g.items.necklace));
+        row('Glow sticks', String(g.items.necklace));
     } else {
       this.journalCount(g);
       // (5.10.10) the desktop keys page is gone: a phone game has no keys. Any other tab shows the status page

@@ -156,8 +156,6 @@ export function replacementPrice(P) {
   return Math.max(40, Math.round(c * 0.3 + 40));
 }
 export const SUPPLIES = {
-  lure: { name: 'Anglerfish lure', price: 5000, max: 1, // (4.0.0) sold only at the station and Dave's
-    desc: 'The thing in the deep follows its light for 10 s, then loses interest for a little while. Offered when it comes for you, even in its jaws. You carry one lure in all.' },
   necklace: { name: 'Glow stick', price: 370, max: 5, rarity: 'rare', /* (6.5.8) a step up: rare, the advanced one exotic */ desc: 'A chemical glow stick. Snap it and let it go: it hangs where you leave it, lighting the water 16 m round in warm amber for 2 min, and slowly sinks. The thing in the deep does not mind it. Used up once snapped.' }, // (5.17.1)
   // (6.0.1) the advanced glow stick: a separate stack (rare), whiter and twice the reach; one kind sits on the belt at a time
   glowAdv: { name: 'Advanced glow stick', price: 1700, max: 3, rarity: 'exotic', desc: 'A heavier stick in a steel-capped tube. Snap it and let it go: it hangs where you leave it, lighting the water 32 m round in a pale, bone-white light for 3 min, and slowly sinks. The thing in the deep does not mind it. Used up once snapped.' },
@@ -184,7 +182,6 @@ export const GOODS = {
   sapphire: { name: 'Deep sapphire', price: 2400 },
   nodule: { name: 'Manganese nodule', price: 75 },
   bone: { name: 'Whalebone', price: 130 },
-  lure: { name: 'Anglerfish lure', price: 130 },
   necklace: { name: 'Fangtooth necklace', price: 220 },
 };
 export const SATURATE = 0.15;       // each sale knocks this much off the next one
@@ -347,7 +344,7 @@ export function upgradeCoins(P, id) { return 0; // (3.0.0) no coins
 
 // what the old one keeps in her cave, for coins
 export const WARES = {
-  // (5.16.0) no old lure: lures are gone; her blessing and the sapphire eye remain
+  // (5.16.0) her blessing and the sapphire eye
   blessing: { name: 'The old one\'s blessing', coins: 2, line: 'The old one breathes on you. The deep looks away, for a while.', desc: 'For the rest of this dive, the entity notices you half as fast.' },
   eye: { name: 'A sapphire eye', coins: 8, once: true, line: 'A blue stone that turns toward its own kind.', desc: 'Deep sapphires within 150 m show on the sonar as blue points. Kept for good.' },
 };

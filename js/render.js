@@ -638,7 +638,6 @@ export class Renderer {
           : `${n} inside, ${left > 0 ? (left >= 3600 ? `${Math.floor(left / 3600)} h ${String(Math.floor((left % 3600) / 60)).padStart(2, '0')} min` : `${Math.floor(left / 60)}:${String(Math.floor(left % 60)).padStart(2, '0')}`) : 'done'}`]);
       }
     }
-    if (g.lure && !(g.lure.eaten > 0.5)) this.drawLure(ctx, S(g.lure.x), Sy(g.lure.y), ppm, t);
 
     // brackets around what the net, slurp gun or claw will go for (a setting: pause menu)
     // (4.2.0, 4.3.1) the tutorial: a stream of brass chevrons flowing from Earl to where to go, a ring pulsing round
@@ -1389,7 +1388,19 @@ export class Renderer {
         const kick = Math.max(0, 1 - (g.time - (g.abil.at ?? -9)) / 0.5), T0 = A.tier === 'mythical' ? [0.2, 1.05] : A.tier === 'legendary' ? [0.16, 0.9] : A.tier === 'exotic' ? [0.08, 0.55] : [0.04, 0.32];
         if (!g.overenc) g.fx.shake = Math.max(g.fx.shake || 0, T0[0] + T0[1] * kick * kick); // (7.4.0, owner) no tremor while the bag drags him to half speed
       }
-      if (A.reach && !e.inSub) { const NG0 = netGeom((gear(g.profile, 'net') || {}).look), r0 = (NG0.arm + NG0.hoop * (g.netRange || 1.1) / 1.1 * (A.reach || 1)) * ppm, /* (7.4.0) where the hoop's sweep reaches */ fx2 = e.facing || 1; ctx.strokeStyle = `rgba(214,236,226,${(0.22 + 0.08 * Math.sin(g.time * 3)).toFixed(3)})`; ctx.lineWidth = 2; ctx.setLineDash([6, 7]); ctx.beginPath(); ctx.arc(ex, ey, r0, fx2 > 0 ? -0.9 : Math.PI - 0.9, fx2 > 0 ? 0.9 : Math.PI + 0.9); ctx.stroke(); ctx.setLineDash([]); }
+      if (A.reach && !e.inSub && g.toolTip) { // (7.6.0, owner) the reach skills: no dashed arc. A light in the net's hoop, by tier, and a wake of churned water along each swing as long as the reach
+        const TC = { rare: [226, 220, 196, 0.35], exotic: [214, 190, 140, 0.55], legendary: [242, 184, 74, 0.8], mythical: [236, 120, 84, 1] }[A.tier] || [226, 220, 196, 0.35];
+        const hx = S(g.toolTip.x), hy = Sy(g.toolTip.y), hr = Math.max(14, ppm * 0.7), q = 0.75 + 0.25 * Math.sin(g.time * 3.2);
+        ctx.save(); ctx.globalCompositeOperation = 'lighter';
+        { const hg = ctx.createRadialGradient(hx, hy, 0, hx, hy, hr); hg.addColorStop(0, `rgba(${TC[0]},${TC[1]},${TC[2]},${(0.34 * TC[3] * q).toFixed(3)})`); hg.addColorStop(1, `rgba(${TC[0]},${TC[1]},${TC[2]},0)`); ctx.fillStyle = hg; ctx.beginPath(); ctx.arc(hx, hy, hr, 0, TAU); ctx.fill(); }
+        const tr = this.reachTrail || (this.reachTrail = []);
+        if (g.capture && g.capture.kind === 'net') tr.push({ x: g.toolTip.x, y: g.toolTip.y, t: g.time });
+        while (tr.length && g.time - tr[0].t > 0.7) tr.shift();
+        for (let i = 0; i < tr.length; i++) { const P0 = tr[i], k0 = 1 - (g.time - P0.t) / 0.7, px = S(P0.x), py = Sy(P0.y), rr = Math.max(4, ppm * 0.22) * (1 + (1 - k0) * 1.6);
+          const wg = ctx.createRadialGradient(px, py, 0, px, py, rr); wg.addColorStop(0, `rgba(${TC[0]},${TC[1]},${TC[2]},${(0.16 * TC[3] * k0).toFixed(3)})`); wg.addColorStop(1, `rgba(${TC[0]},${TC[1]},${TC[2]},0)`); ctx.fillStyle = wg; ctx.beginPath(); ctx.arc(px, py, rr, 0, TAU); ctx.fill(); }
+        ctx.restore();
+        if (g.capture && g.capture.kind === 'net' && g.bubbles && Math.random() < 0.5 + 0.4 * TC[3]) g.bubbles.push({ x: g.toolTip.x + (Math.random() - 0.5) * 0.3, y: g.toolTip.y + (Math.random() - 0.5) * 0.3, r: 0.03 + Math.random() * 0.06, w: Math.random() * 6, t: 0 }); // the churned water of its swing
+      }
       /* (5.16.0) a Flare's light is drawn in the light map now (30 m round him) */
       ctx.restore();
     }
@@ -1581,16 +1592,15 @@ export class Renderer {
     }
     // its red, crept into the water round him: the black of the deep turns a black-red
     if ((fx.redTint || 0) > 0.01) {
-      // (7.2.2) a tint, not a light: what is lit is drawn toward rust and blood (multiply), and the black only lifts
-      // to a very dark red-brown (a faint screen), so the water stains and nothing glows
+      // (7.6.0, owner) back to the red of before 4.0 (a blood-red glow lifted over the water; the 7.2.2 rust stain read as
+      // too dark), and everything already drawn pulled toward red first: skill light, beams, motes and lamps no longer
+      // stay white over red water, they are reddened and dimmed with it, more the deeper the red
       const k = fx.redTint, cx = this.W / 2, cy = this.H / 2;
       ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.globalCompositeOperation = 'multiply';
-      const mg = ctx.createRadialGradient(cx, cy, Math.min(this.W, this.H) * 0.1, cx, cy, Math.max(this.W, this.H) * 0.75);
-      mg.addColorStop(0, `rgba(170,92,72,${(0.55 * k).toFixed(3)})`); mg.addColorStop(1, `rgba(120,50,38,${(0.75 * k).toFixed(3)})`);
-      ctx.fillStyle = mg; ctx.fillRect(0, 0, this.W, this.H);
+      ctx.fillStyle = `rgba(255,96,84,${(0.6 * k).toFixed(3)})`; ctx.fillRect(0, 0, this.W, this.H);
       ctx.globalCompositeOperation = 'screen';
       const rg = ctx.createRadialGradient(cx, cy, Math.min(this.W, this.H) * 0.1, cx, cy, Math.max(this.W, this.H) * 0.75);
-      rg.addColorStop(0, `rgba(44,10,6,${(0.35 * k).toFixed(3)})`); rg.addColorStop(1, `rgba(58,12,7,${(0.5 * k).toFixed(3)})`);
+      rg.addColorStop(0, `rgba(110,4,10,${(0.42 * k).toFixed(3)})`); rg.addColorStop(1, `rgba(150,6,12,${(0.62 * k).toFixed(3)})`);
       ctx.fillStyle = rg; ctx.fillRect(0, 0, this.W, this.H);
       ctx.restore();
     }
@@ -2985,11 +2995,6 @@ export class Renderer {
         for (let k = 0; k < 5; k++) { ctx.beginPath(); ctx.moveTo(-u * 0.2 + k * u * 0.1, 0); ctx.lineTo(-u * 0.1 + k * u * 0.06, -u * 0.35); ctx.stroke(); }
         ctx.beginPath(); ctx.moveTo(-u * 0.2, -u * 0.12); ctx.lineTo(u * 0.22, -u * 0.18); ctx.moveTo(-u * 0.18, -u * 0.26); ctx.lineTo(u * 0.14, -u * 0.3); ctx.stroke();
         break;
-      case 'lure':
-        ctx.strokeStyle = '#2a2420'; ctx.lineWidth = u * 0.04;
-        ctx.beginPath(); ctx.moveTo(0, 0); ctx.quadraticCurveTo(u * 0.2, -u * 0.3, u * 0.05, -u * 0.5); ctx.stroke();
-        ctx.fillStyle = '#d8f2ff'; ctx.beginPath(); ctx.arc(u * 0.05, -u * 0.55, u * 0.07, 0, TAU); ctx.fill();
-        break;
       case 'necklace': { // (3.0.1) a glow stick lying in the silt, still faintly lit
         const gg = ctx.createRadialGradient(0, -u * 0.05, 0, 0, -u * 0.05, u * 0.45); gg.addColorStop(0, 'rgba(160,255,180,0.35)'); gg.addColorStop(1, 'rgba(160,255,180,0)'); ctx.fillStyle = gg; ctx.beginPath(); ctx.arc(0, -u * 0.05, u * 0.45, 0, TAU); ctx.fill();
         ctx.save(); ctx.rotate(-0.25); ctx.fillStyle = '#9af0b0'; ctx.beginPath(); ctx.roundRect(-u * 0.22, -u * 0.09, u * 0.44, u * 0.07, u * 0.035); ctx.fill();
@@ -3108,9 +3113,6 @@ export class Renderer {
     ctx.fillStyle = ng; ctx.beginPath(); ctx.arc(x, y, r * 0.45 * p, 0, TAU); ctx.fill();
   }
 
-  drawLure(ctx, x, y, ppm, t) {
-    ctx.fillStyle = '#e8f8ff'; ctx.beginPath(); ctx.arc(x, y, ppm * 0.08, 0, TAU); ctx.fill();
-  }
 
   drawSay(g, S, Sy, ppm) {
     // (6.0.5) the scene's messages: each written beside what it is about (him, the sub), with a short line to it, the
@@ -3157,13 +3159,13 @@ export class Renderer {
     if (!this.snowL) { let sd = 4242; const r = () => ((sd = (sd * 16807) % 2147483647) / 2147483647);
       const mk = (n, s0, s1, a0, a1, fall, par, sway) => Array.from({ length: n }, () => ({ u: r(), v: r(), s: s0 + r() * (s1 - s0), a: a0 + r() * (a1 - a0), f: fall * (0.7 + r() * 0.6), ph: r() * 6.28, par, sway }));
       this.snowL = [mk(720, 0.9, 1.3, 0.2, 0.36, 0.22, 0.55, 0.2), mk(330, 1.2, 1.8, 0.28, 0.46, 0.42, 0.8, 0.35), mk(90, 1.6, 2.4, 0.26, 0.42, 0.75, 1.0, 0.6)]; } // (6.5.1) the near layer moves with the water, no faster // (6.1.9) many more and much smaller: fine motes, not flakes
-    const depth = Math.max(0, cam.y), dens = clamp((depth - 150) / 50, 0, 1); // (6.5.0) none in sunlit water: fades in from 150 m, full from 200 m
+    const depth = Math.max(0, cam.y), dens0 = clamp((depth - 120) / 140, 0, 1), dens = dens0 * dens0 * (3 - 2 * dens0); // (6.5.0) none in sunlit water. (7.6.0, owner) never abrupt: eased in from 120 m, full only at 260 m, count and brightness together
     if (dens <= 0) return;
     const surf = Sy(0), TW = W * 1.1, TH = H * 1.1;
     // the seabed's line on screen, a column every 24 px, once a frame
     const step = 24, cols = Math.ceil(W / step) + 1, floorY = this.snowFloor || (this.snowFloor = new Float32Array(cols + 1));
     for (let i = 0; i <= cols; i++) floorY[i] = Sy(g.world.floorAt(clamp(cam.x + (i * step - W / 2) / ppm, 0, 4999)));
-    const sz = clamp(ppm / 24, 0.8, 1.1); /* (6.1.9) never swelling with the zoom */
+    const sz = clamp(ppm / 24, 0.8, 1.1) * 0.6; /* (6.1.9) never swelling with the zoom. (7.6.0, owner) smaller: specks, not discs */
     ctx.save(); ctx.fillStyle = '#dfe6e8';
     this.snowL.forEach((L, li) => {
       const n = Math.floor(L.length * dens); if (!n) return;
@@ -3182,8 +3184,8 @@ export class Renderer {
         let y = (f.v * TH - oy + fall * f.f) % TH; if (y < 0) y += TH; y -= (TH - H) / 2;
         if (y < surf || x < -4 || x > W + 4) continue;
         const fy = floorY[clamp(Math.round(x / step), 0, cols)]; if (y > fy) continue;
-        const s2 = f.s * sz; ctx.globalAlpha = f.a;
-        if (li === 2) { ctx.beginPath(); ctx.arc(x, y, s2 * 0.6, 0, TAU); ctx.fill(); } else ctx.fillRect(x, y, s2, s2);
+        const s2 = f.s * sz; ctx.globalAlpha = f.a * (0.35 + 0.65 * dens);
+        { const w2 = Math.max(0.7, s2 * (0.8 + ((f.ph * 7) % 1) * 0.6)), h2 = Math.max(0.7, s2 * (0.7 + ((f.ph * 13) % 1) * 0.7)); ctx.fillRect(x, y, w2, h2); } // (7.6.0, owner) every flake a small uneven speck (the near layer's round discs read as big circles)
       } });
     ctx.restore();
   }
@@ -3418,13 +3420,12 @@ export class Renderer {
     }
     for (const p of g.world.pickups) {
       if (p.taken) continue;
-      if (p.type === 'sapphire' || p.type === 'lure') {
+      if (p.type === 'sapphire') {
         const x = S(p.x), y = Sy(p.y);
         if (x < -100 || x > this.W + 100 || y < -100 || y > this.H + 100) continue;
-        radial(x, y, (p.type === 'lure' ? 2.5 : 1.6 * (1 + 0.8 * (e.prospector || 0))) * ppm, p.type === 'lure' ? [170, 230, 255] : [80, 120, 255], p.type === 'lure' ? 0.5 : 0.5 + 0.1 * (e.prospector || 0)); // (Prospector: sapphires shine from farther off)
+        radial(x, y, (1.6 * (1 + 0.8 * (e.prospector || 0))) * ppm, [80, 120, 255], 0.5 + 0.1 * (e.prospector || 0)); // (Prospector: sapphires shine from farther off)
       }
     }
-    if (g.lure) { const f = g.lure.eaten != null ? Math.max(0.12, 1 - g.lure.eaten / 0.9) : 1; radial(S(g.lure.x), Sy(g.lure.y), (g.lure.old ? 12 : 8) * ppm * (0.5 + 0.5 * f), g.lure.old ? [120, 170, 255] : [170, 230, 255], 0.9 * f); } // (5.10.10) swallowed, its light dims behind the teeth
     if (this.escaW) { radial(S(this.escaW.x), Sy(this.escaW.y), 11 * ppm, [190, 216, 200], 0.55 + 0.08 * Math.sin(g.time * 1.7)); radial(S(this.escaW.x + 4), Sy(this.escaW.y + 4), 22 * ppm, [150, 180, 170], 0.22); /* (6.1.4) softer, bone-green, not cyan */ radial(S(TABLE.x0 + 10), Sy(TABLE.y - 3), 18 * ppm, [140, 200, 225], 0.45); lamps.push({ x: S(TABLE.x0 + 10), y: Sy(TABLE.y - 3), r: 18 * ppm, a: 0.45 }); } // (3.0.0) and further: the sea round her, and her table
     for (const v of g.world.vents) {
       const x = S(v.x), y = Sy(v.y - v.h);
@@ -3731,13 +3732,12 @@ export class Renderer {
       ctx.fillStyle = rgbStr(mixRgb(c, [255, 255, 255], 0.45), Math.min(1, 0.85 * k * fx.bioPulse) * BIO_BRIGHT * (0.3 + 0.7 * dim));
       ctx.beginPath(); ctx.arc(x, y, core, 0, TAU); ctx.fill();
     }
-    if (g.lure && g.lure.eaten == null) halo(S(g.lure.x), Sy(g.lure.y), ppm * 1.5, [180, 235, 255], 0.6);
     if (this.escaW) halo(S(this.escaW.x), Sy(this.escaW.y), ppm * 1.5, [196, 220, 204], 0.45 * haze);
     for (const p of g.world.pickups) {
-      if (p.taken || (p.type !== 'sapphire' && p.type !== 'lure')) continue;
+      if (p.taken || p.type !== 'sapphire') continue;
       const x = S(p.x), y = Sy(p.y);
       if (x < -50 || x > this.W + 50 || y < -50 || y > this.H + 50) continue;
-      halo(x, y - ppm * 0.2, ppm * 0.5, p.type === 'lure' ? [190, 240, 255] : [90, 140, 255], 0.35 * haze + 0.1);
+      halo(x, y - ppm * 0.2, ppm * 0.5, [90, 140, 255], 0.35 * haze + 0.1);
     }
     { const e0 = g.earl; if (e0.biolum && !e0.inSub && g.mode === 'play') { const f0 = g.lightFade ?? 1, bx = S(e0.x), by = Sy(e0.y), c0 = [130, 158, 206]; // (6.0.9) Bioluminescence's glow in the water, as a glow stick's
       halo(bx, by, ppm * 16, c0, 0.08 * f0); halo(bx, by, ppm * 9, c0, 0.09 * f0); halo(bx, by, ppm * 2.5, [170, 196, 230], 0.12 * f0); } }

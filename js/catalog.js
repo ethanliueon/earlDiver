@@ -16,14 +16,14 @@ import { TAU } from './util.js';
 import { chestsOf, oddsText, chestPicture } from './chests.js';
 import { rarKind } from './itemcard.js';
 import { drawCash } from './coins.js';
-import { drawTrawl3, drawTrap3, drawFilm3, drawLure3 } from './kit_art.js'; // (6.5.1) the trawl nets, traps and small supplies, drawn solid
+import { drawTrawl3, drawTrap3, drawFilm3 } from './kit_art.js'; // (6.5.1) the trawl nets, traps and small supplies, drawn solid
 
 // the shops with a website: their names, look and stock. cats: the categories in the side bar (null: a gap)
 export const WEBSHOPS = {
   bayside: { title: 'Bayside Marine Supply', sub: 'Harbour Road, since 1974', stock: 'catalog', theme: 'bayside',
     lede: 'Diving gear and supplies, sent out to the boat the same day.', newIn: ['item:sipper', 'item:macro', 'item:long', 'item:split', 'item:s130'],
     cats: [['home', 'Home'], null, ['net', 'Hand nets'], ['cam', 'Cameras'], ['trawl', 'Trawl nets'], ['trap', 'Traps'], null,
-      ['suit', 'Suits'], ['fins', 'Fins'], ['tank', 'Air'], ['bag', 'Bags'], null, ['supply', 'Supplies'], ['sell', 'Sell your gear']] /* (6.4.0) chests are in the game's own Shop now */, // (4.0.0: the yard is on the Margaret now, P)
+      ['suit', 'Suits'], ['fins', 'Fins'], ['tank', 'Air'], ['bag', 'Bags'], null, ['supply', 'Supplies'], ['sell', 'Sell your gear'], null, ['yard', 'Submersibles']] /* (6.4.0) chests are in the game's own Shop now. (7.6.0, owner) the sub yard on the computer too: it was found only from the docked sub */, // (4.0.0: the yard is on the Margaret now, P)
     chestTitle: 'Surplus crates', chestLede: 'Returns and odd lots from the back room, sold sealed. You get one thing, whatever is in it.' },
   station: { title: 'Station Stores', sub: 'Abyssal Research Station, 280 m, requisitions', stock: 'station', theme: 'station',
     lede: 'Surplus and spare equipment from the station stores, released to visiting divers. Delivered to your locker.', newIn: [],
@@ -145,11 +145,8 @@ export class Catalog {
       const LINE = { pot: 'A galvanised box with one funnel.', fish: 'A mesh box with a funnel at each end.', cage: TRAPS.cage.desc }, GOOD = { pot: 'Five animals in five minutes', fish: 'Fifteen animals in half an hour', cage: 'Twenty animals in four hours' };
       return (this.id === 'dave' ? ['cage'] : ['pot', 'fish']).map((k) => { const T = TRAPS[k], have = tr[k] || 0, i = ['pot', 'fish', 'cage'].indexOf(k); return { key: 'trap:' + k, id: k, kind: 'trap', name: T.name, rarity: T.rarity, price: T.price, line: LINE[k], good: GOOD[k], bad: T.winch ? "Emptied with the Margaret's winch" : '', count: `you have (${have}/${T.max})`, full: have >= T.max, pic: ['trap', k] }; void i; });
     }
-    // (4.0.0) the anglerfish lure: not at Bayside, only at the station and Dave's, and dear
-    if (cat === 'lure') { const S = SUPPLIES.lure, have = ((g && g.items.lure) || 0) + ((P.spare && P.spare.lure) || 0) + (P.oldLures || 0), mx = supplyMax(P, 'lure');
-      return [{ key: 'lure', id: 'lure', kind: 'supply', name: S.name, price: S.price, line: S.desc.split(/[.:]/)[0] + '.', count: `you carry ${have} of ${mx}`, full: have >= mx, pic: ['supply', 'lure'] }]; }
     if (cat === 'supply') {
-      return Object.entries(SUPPLIES).filter(([k, S]) => k !== 'lure' && (!S.needs || owns(P, S.needs))).map(([k, S]) => { const have = ((g && g.items[k]) || 0) + ((P.spare && P.spare[k]) || 0), mx = supplyMax(P, k); return { key: k, id: k, kind: 'supply', name: S.name, price: S.price, line: S.desc, count: `you have (${have}/${mx})`, full: have >= mx, pic: ['supply', k] }; });
+      return Object.entries(SUPPLIES).filter(([k, S]) => !S.needs || owns(P, S.needs)).map(([k, S]) => { const have = ((g && g.items[k]) || 0) + ((P.spare && P.spare[k]) || 0), mx = supplyMax(P, k); return { key: k, id: k, kind: 'supply', name: S.name, price: S.price, line: S.desc, count: `you have (${have}/${mx})`, full: have >= mx, pic: ['supply', k] }; });
     }
     return [];
   }
@@ -280,11 +277,10 @@ export function pictureOf(kind, v, w, h, plain = false) {
     if (v && typeof v === 'object' && v.id && kind === 'cam') { drawCam3(ctx, w, h, v); const url = c.toDataURL(); PICS.set(key, url); return url; } // (5.12.7)
     if (v && typeof v === 'object' && v.id && kind === 'fins') { drawFins3(ctx, w, h, v); const url = c.toDataURL(); PICS.set(key, url); return url; } // (5.12.6) fins photographed as a solid pair
     if (v && typeof v === 'object' && (v.rarity === 'legendary' || v.rarity === 'exotic' || v.finLook || v.tankLook || v.bagLook) && v.id) { drawSpecialPicture(ctx, v, w, h); const url = c.toDataURL(); PICS.set(key, url); return url; } // (2.8.1) their own drawings, on the usual background
-    // (6.5.1) drawn as turned, lit, worn things (kit_art.js): the trawl nets, the traps, film, the lure, the backup tank
+    // (6.5.1) drawn as turned, lit, worn things (kit_art.js): the trawl nets, the traps, film, the backup tank
     if (kind === 'trawl') { drawTrawl3(ctx, w, h, v); const url = c.toDataURL(); PICS.set(key, url); return url; }
     if (kind === 'trap' && typeof v === 'string') { drawTrap3(ctx, w, h, v); const url = c.toDataURL(); PICS.set(key, url); return url; }
     if (kind === 'supply' && v === 'film') { drawFilm3(ctx, w, h); const url = c.toDataURL(); PICS.set(key, url); return url; }
-    if (kind === 'supply' && v === 'lure') { drawLure3(ctx, w, h); const url = c.toDataURL(); PICS.set(key, url); return url; }
     if (kind === 'supply' && v === 'airTank') { drawTank3(ctx, w, h, { id: 'airTank', arch: 'al', rarity: 'common', air: 70, name: 'Backup air tank' }); const url = c.toDataURL(); PICS.set(key, url); return url; }
     const tool = { net: 'net', slurp: 'slurp', tag: 'tag', cam: 'cam', trap: 'trap' }[kind];
     if (tool) {

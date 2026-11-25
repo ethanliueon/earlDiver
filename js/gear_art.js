@@ -542,20 +542,35 @@ const LEGEND_ART = {
     shade(x, body, Y0 - 20, Y0 + BH + 20, 0.45, 0.6);
     // the shutter: a curved spine on top, its tip worn pale
     x.fillStyle = lin(x, X0 + 80, Y0 - 60, X0 + 120, Y0, [[0, '#e8dcc0'], [1, '#7a6a4c']]); x.beginPath(); x.moveTo(X0 + 70, Y0 - 6); x.quadraticCurveTo(X0 + 80, Y0 - 70, X0 + 128, Y0 - 76); x.quadraticCurveTo(X0 + 100, Y0 - 50, X0 + 104, Y0 - 10); x.closePath(); x.fill(); x.strokeStyle = 'rgba(0,0,0,0.5)'; x.lineWidth = 2; x.stroke();
-    // the front port: the barreleye's head, a clear dome set in a ring of bone, its eyes inside
-    const pcx = X0 + BW - 10, pcy = Y0 + BH * 0.52, PR = 112;
-    x.fillStyle = lin(x, pcx - PR, pcy - PR, pcx + PR, pcy + PR, [[0, '#d8ccb0'], [0.5, '#8a7a5a'], [1, '#3a3020']]); x.beginPath(); x.ellipse(pcx, pcy, PR * 0.62 + 16, PR + 16, 0, 0, TAU); x.fill(); x.strokeStyle = 'rgba(0,0,0,0.6)'; x.lineWidth = 3; x.stroke();
-    for (let k = 0; k < 14; k++) { const a = k / 14 * TAU; x.fillStyle = 'rgba(40,30,18,0.5)'; x.beginPath(); x.arc(pcx + Math.cos(a) * (PR * 0.62 + 8), pcy + Math.sin(a) * (PR + 8), 3, 0, TAU); x.fill(); }
-    const dome = () => { x.beginPath(); x.ellipse(pcx, pcy, PR * 0.62, PR, 0, 0, TAU); };
-    x.save(); dome(); x.clip(); x.fillStyle = lin(x, 0, pcy - PR, 0, pcy + PR, [[0, 'rgba(26,48,44,0.95)'], [1, 'rgba(6,14,12,0.98)']]); x.fillRect(pcx - PR, pcy - PR, PR * 2, PR * 2);
-    halo(x, pcx, pcy - PR * 0.35, PR * 1.1, '#7ad890', 0.35);
-    for (const dx of [-26, 26]) { const ex = pcx + dx, top = pcy - PR * 0.72, bot2 = pcy + PR * 0.25, ew = 34; // a barrel eye, wider at its top, ringed, its lens lit
-      x.fillStyle = lin(x, ex - ew, 0, ex + ew, 0, [[0, '#0e2a16'], [0.38, '#3e8a50'], [0.55, '#8ad48c'], [1, '#0e2a16']]); x.beginPath(); x.moveTo(ex - ew * 0.3, bot2); x.bezierCurveTo(ex - ew * 0.36, top + 40, ex - ew * 0.56, top + 14, ex - ew * 0.5, top); x.lineTo(ex + ew * 0.5, top); x.bezierCurveTo(ex + ew * 0.56, top + 14, ex + ew * 0.36, top + 40, ex + ew * 0.3, bot2); x.closePath(); x.fill();
-      for (let k = 1; k < 5; k++) { x.strokeStyle = 'rgba(10,30,16,0.45)'; x.lineWidth = 1.5; x.beginPath(); x.moveTo(ex - ew * (0.32 + k * 0.03), top + k * 22); x.lineTo(ex + ew * (0.32 + k * 0.03), top + k * 22); x.stroke(); }
-      halo(x, ex, top, 44, '#b8ffb0', 0.75 + 0.2 * Math.sin(t * 2 + dx)); x.fillStyle = '#0c2a14'; x.beginPath(); x.ellipse(ex, top, ew * 0.5, ew * 0.2, 0, 0, TAU); x.fill(); x.fillStyle = '#e8ffe0'; x.beginPath(); x.ellipse(ex, top, ew * 0.36, ew * 0.13, 0, 0, TAU); x.fill(); }
-    x.fillStyle = 'rgba(180,220,200,0.07)'; x.fillRect(pcx - PR, pcy - PR, PR * 2, PR * 2); x.restore(); // the dome's own faint green
-    gloss(x, pcx - PR * 0.22, pcy - PR * 0.55, PR * 0.32, PR * 0.12, -0.5, 0.7); gloss(x, pcx + PR * 0.3, pcy + PR * 0.55, PR * 0.12, PR * 0.05, -0.4, 0.4); // the glass catches the light
-    x.save(); dome(); x.strokeStyle = 'rgba(210,240,225,0.55)'; x.lineWidth = 2.5; x.stroke(); x.restore();
+    // the front port, seen from the side as the body is (7.6.0, owner: it was a face-on oval laid on the end): a narrow
+    // collar of bone fitted round the housing's end, and the barreleye's clear head bulging forward out of it, a glass
+    // dome seen in profile with the two green barrel eyes inside, one behind the other, looking up
+    const pcx = X0 + BW + 14, pcy = Y0 + BH * 0.52, PR = BH * 0.41, cw = PR * 0.16, DW = PR * 1.4; /* (7.6.0, owner) no wider than the housing's front end */
+    // the housing narrows into a short neck of bone that carries the glass: the dome grows out of the body, no plate on it
+    x.save(); x.beginPath(); x.moveTo(pcx - 34, pcy - PR - 16); x.quadraticCurveTo(pcx - 6, pcy - PR - 8, pcx, pcy - PR - 2); x.lineTo(pcx, pcy + PR + 2); x.quadraticCurveTo(pcx - 6, pcy + PR + 8, pcx - 34, pcy + PR + 16); x.closePath();
+    x.fillStyle = lin(x, 0, pcy - PR - 16, 0, pcy + PR + 16, [[0, '#9a8a6a'], [0.45, '#6a5c44'], [1, '#2a2218']]); x.fill(); x.strokeStyle = 'rgba(0,0,0,0.55)'; x.lineWidth = 2.5; x.stroke(); x.restore();
+    // the dome: from the collar's front edge, a deep half-ellipse of glass forward
+    const dome = () => { x.beginPath(); x.ellipse(pcx + cw * 0.5, pcy, DW, PR, 0, -Math.PI / 2, Math.PI / 2); x.ellipse(pcx, pcy, cw, PR, 0, Math.PI / 2, -Math.PI / 2, true); x.closePath(); };
+    x.save(); dome(); x.clip();
+    x.fillStyle = lin(x, pcx, pcy - PR, pcx + DW, pcy + PR, [[0, 'rgba(34,62,54,0.96)'], [0.6, 'rgba(14,30,26,0.97)'], [1, 'rgba(6,14,12,0.98)']]); x.fillRect(pcx - PR, pcy - PR, PR * 3, PR * 2);
+    halo(x, pcx + DW * 0.45, pcy - PR * 0.3, PR * 1.05, '#7ad890', 0.32);
+    for (const [dx, back] of [[DW * 0.64, true], [DW * 0.42, false]]) { // two barrel eyes, the far one dimmer, pointing up through the glass
+      const ex = pcx + cw * 0.5 + dx, top = pcy - PR * 0.62, bot2 = pcy + PR * 0.42, ew = PR * 0.36;
+      x.globalAlpha = back ? 0.6 : 1;
+      x.fillStyle = lin(x, ex - ew, 0, ex + ew, 0, [[0, '#0e2a16'], [0.38, '#3e8a50'], [0.55, '#8ad48c'], [1, '#0e2a16']]);
+      x.beginPath(); x.moveTo(ex - ew * 0.32, bot2); x.bezierCurveTo(ex - ew * 0.38, top + PR * 0.35, ex - ew * 0.56, top + PR * 0.12, ex - ew * 0.5, top); x.lineTo(ex + ew * 0.5, top); x.bezierCurveTo(ex + ew * 0.56, top + PR * 0.12, ex + ew * 0.38, top + PR * 0.35, ex + ew * 0.32, bot2); x.closePath(); x.fill();
+      for (let k = 1; k < 5; k++) { x.strokeStyle = 'rgba(10,30,16,0.45)'; x.lineWidth = 1.4; x.beginPath(); x.moveTo(ex - ew * (0.33 + k * 0.03), top + k * PR * 0.19); x.lineTo(ex + ew * (0.33 + k * 0.03), top + k * PR * 0.19); x.stroke(); }
+      halo(x, ex, top, PR * 0.4, '#b8ffb0', (0.7 + 0.2 * Math.sin(t * 2 + dx)) * (back ? 0.6 : 1));
+      x.fillStyle = '#0c2a14'; x.beginPath(); x.ellipse(ex, top, ew * 0.5, ew * 0.18, 0, 0, TAU); x.fill(); x.fillStyle = '#e8ffe0'; x.beginPath(); x.ellipse(ex, top, ew * 0.36, ew * 0.12, 0, 0, TAU); x.fill();
+      x.globalAlpha = 1; }
+    // the glass's thickness: darker toward its far edge, a pale line where it meets the collar
+    x.fillStyle = 'rgba(180,220,200,0.06)'; x.fillRect(pcx - PR, pcy - PR, PR * 3, PR * 2);
+    const ed = x.createRadialGradient(pcx, pcy, PR * 0.55, pcx, pcy, PR * 1.05); ed.addColorStop(0, 'rgba(0,0,0,0)'); ed.addColorStop(1, 'rgba(0,8,6,0.5)'); x.fillStyle = ed; x.fillRect(pcx - PR, pcy - PR, PR * 3, PR * 2);
+    x.restore();
+    gloss(x, pcx + DW * 0.45, pcy - PR * 0.62, DW * 0.42, PR * 0.1, 0.35, 0.65); gloss(x, pcx + DW * 0.8, pcy + PR * 0.35, DW * 0.12, PR * 0.06, -1.2, 0.35); // the glass catches the light along its crown
+    x.save(); dome(); x.strokeStyle = 'rgba(210,240,225,0.5)'; x.lineWidth = 2.2; x.stroke(); x.restore();
+    // a thin band of bone where glass meets neck: seen from the side, only its rim shows
+    x.save(); x.beginPath(); x.ellipse(pcx, pcy, cw, PR + 2, 0, -Math.PI / 2, Math.PI / 2); x.strokeStyle = '#1c160e'; x.lineWidth = 9; x.stroke(); x.strokeStyle = lin(x, 0, pcy - PR, 0, pcy + PR, [[0, '#d8ccb0'], [0.5, '#8a7a5a'], [1, '#3a3020']]); x.lineWidth = 5.5; x.stroke(); x.restore();
     return '#8ae08a';
   },
   // the gulper eel's mouth on a bone pole: a hoop of its vertebrae (each a knuckle with short spines, joined by a band of
