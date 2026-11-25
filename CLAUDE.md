@@ -289,6 +289,11 @@ last desktop build is kept on the branch `desktop-4.25.5`).
 - (7.6.31, owner) The Lighthouse keeps its old beams (owner: "a light, not a beam of light"; god-ray beams were tried and
   rejected). Pharos Heart's beams and pulse run only for its first 10 s, then ease away over 1.5 s (g.beamK, g.pulseK)
   and its steady light stays to the end.
+- (7.6.32, owner) Shoal's school is drawn with the world (lit by the water and his lamp); Silverstorm is six oversized
+  whipnose anglers whose lures light the water; at the end every school turns away and swims off, fading (3.5 s).
+  Ironskin blocks every injury, heat too (never the thing's jaws, air or pressure), and three small steel shields circle
+  him on a tilted orbit, each turning on its own upright, dimmer behind him, a glint now and then. Dauntless's motes drift
+  and slowly sink (never streaming sideways).
 - **(7.6.28, owner) Saves now carry over**: the owner's test saves take time to set up, so a change must not wipe or break them (how is being agreed). Superseded:
   **Never care about saves unless the owner asks (7.4.12, owner).** This is not a packaged game: the owner is the only
   player, and test saves may be wiped or changed at any time. Write no migration code, no "keep what they already

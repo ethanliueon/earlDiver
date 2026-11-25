@@ -1308,6 +1308,39 @@ export class Renderer {
       if (g.bubbles && Math.random() < (hold ? 0.9 : 0.35)) g.bubbles.push({ x: m.x + (Math.random() - 0.5) * (e.inSub ? 3 : 1.2), y: m.y + (e.inSub ? 1.5 : 0.4), r: 0.03 + Math.random() * 0.07, w: Math.random() * 6, t: 0 });
       if (hold) { ctx.save(); ctx.strokeStyle = 'rgba(150,140,110,0.28)'; ctx.lineWidth = 1; for (let i = 0; i < 14; i++) { const px = S(m.x) + Math.sin(i * 12.9 + t) * ppm * 1.6, py = Sy(m.y) + ((t * 2.4 + i * 0.37) % 1) * ppm * 3 - ppm * 0.6; ctx.beginPath(); ctx.moveTo(px, py); ctx.lineTo(px + 0.5, py + ppm * 0.18); ctx.stroke(); } ctx.restore(); }
     }
+    // (7.6.32, owner) drawn with the world, before the light, so the deep's dark and his lamp fall on the school as on any fish;
+    // Silverstorm is six oversized whipnose anglers whose lures light the water. When it ends the school swims off
+    if (g.mode === 'play' && g.shoalFx) { const F = g.shoalFx, e = g.earl, m = e.inSub ? g.sub : e, fade = Math.min(1, F.t / 0.15), out = Math.max(0, F.t - F.dur), outK = Math.min(1, out / 3.5), n = [0, 16, 28, 6][F.lv], big = F.lv >= 3, now = g.time, dt = Math.min(0.05, Math.max(0, now - (F.rt ?? now))); F.rt = now;
+      if (F.cx == null) { const side = -(e.facing || 1); F.cx = m.x + side * (this.W / 2 / ppm + 4); F.cy = m.y + 1.5; F.vx = -side * 9; F.vy = -0.4; F.hd = Math.atan2(0, F.vx); } /* (7.6.19, owner) the school rushes in from off the screen behind him, never appearing out of nowhere */
+      const orb = (e.inSub ? 5.5 : 2.4) * (1 + F.lv * 0.1), th = F.t * 0.33 + Math.sin(F.t * 0.21) * 1.2, tx = m.x + Math.cos(th) * orb * 1.3, ty = m.y + Math.sin(th) * orb * 0.45 - 0.4;
+      F.vx += ((tx - F.cx) * 2.6 - F.vx * 1.5) * dt; F.vy += ((ty - F.cy) * 2.6 - F.vy * 1.5) * dt; F.cx += F.vx * dt; F.cy += F.vy * dt;
+      const want = Math.atan2(F.vy * 0.6, F.vx), dh = Math.atan2(Math.sin(want - F.hd), Math.cos(want - F.hd)); F.hd += dh * Math.min(1, dt * 3); const turn = Math.min(1, Math.abs(dh) * 2.2);
+      // (7.6.14, owner) each fish its own: a small flock. Every fish has its own place and speed and keeps three rules:
+      // stay with the school (its own loose spot in it, drawn from a bell curve, never a pattern), swim as the school swims,
+      // and keep a body's length from its neighbours; a little restlessness of its own on top. So the shape lives and
+      // stretches, thickens and thins, and never falls into rows
+      const sp = SPECIES_BY_ID[F.fish || 49] || SPECIES_BY_ID[49], Lp = ppm * (big ? Math.max(1.1, (sp.len || 0.3) * 2.6) : Math.max(0.28, (sp.len || 0.3) * 0.9)), ch = Math.cos(F.hd), shd = Math.sin(F.hd), SL = (2.2 + 0.5 * F.lv) * (e.inSub ? 1.8 : 1) * (F.lv >= 3 ? 1.35 : 1), SW = (0.9 + 0.2 * F.lv) * (e.inSub ? 1.6 : 1) * (F.lv >= 3 ? 1.35 : 1), sep = big ? 2.6 : 0.6; /* (7.6.19, owner) the anglers further apart */ // (7.6.15) twice the room round each fish; sardines, mackerel, seadevils
+      if (!F.fishN) { const rnd = (k) => { const v = Math.sin(k * 127.1 + 311.7) * 43758.5453; return v - Math.floor(v); }, gs = (k) => Math.sqrt(-2 * Math.log(Math.max(1e-6, rnd(k)))) * Math.cos(TAU * rnd(k + 0.5));
+        F.fishN = []; for (let i = 0; i < n; i++) { const oa = gs(i * 3.1) * 0.45, oc = gs(i * 5.7 + 2) * 0.45; F.fishN.push({ x: F.cx + oa * SL * ch - oc * SW * shd, y: F.cy + oa * SL * shd + oc * SW * ch, vx: F.vx, vy: F.vy, oa, oc, ph: rnd(i * 9.3) * TAU, sz: 0.8 + 0.4 * rnd(i * 2.2) }); } }
+      // (7.6.15) a strike taken: the school bursts open round the hunter's mouth (fish flung out, bubbles, a flash of scales)
+      if (F.hit && F.t - F.hit.t < 0.9) { const hk = (F.t - F.hit.t) / 0.9; for (const f of F.fishN) { const dx = f.x - F.hit.x, dy = f.y - F.hit.y, dd = Math.hypot(dx, dy) || 1; if (dd < 4) { f.vx += dx / dd * (1 - hk) * 9 * dt; f.vy += dy / dd * (1 - hk) * 9 * dt; } } if (!F.hit.bub) { F.hit.bub = 1; for (let i = 0; i < 18; i++) g.bubbles && g.bubbles.push({ x: F.hit.x + (Math.random() - 0.5) * 1.2, y: F.hit.y + (Math.random() - 0.5) * 0.8, r: 0.02 + Math.random() * 0.08, w: Math.random() * 6, t: 0 }); } }
+      if (F.fishN && F.used && F.lostTo !== F.used) { F.lostTo = F.used; const keep = Math.max(3, Math.round(F.fishN.length * (1 - 0.55 / F.guard))); F.fishN.splice(keep); }
+      // (7.6.24, owner) once it has arrived the school circles him: each fish its own place on a loose ring round him (or the
+      // sub), the ring turning slowly; when a hunter comes in, the school surges out toward it, between it and him
+      const ringK = smoothstep(1.4, 3.2, F.t), R0 = (e.inSub ? 6.2 : 2.3) * (1 + 0.12 * F.lv) * (big ? 1.5 : 1), thr = F.threat && F.t - F.threat.t < 1.6 ? F.threat : null;
+      const FF = F.fishN; for (const f of FF) { let tx2 = F.cx + f.oa * SL * ch - f.oc * SW * shd, ty2 = F.cy + f.oa * SL * shd + f.oc * SW * ch;
+        if (ringK > 0) { const th = f.ph + F.t * (0.55 + 0.1 * f.oc) * (F.lv % 2 ? -1 : 1), rr = R0 * (0.8 + 0.45 * Math.abs(f.oa) + 0.15 * Math.sin(F.t * 0.7 + f.ph)); let rx = m.x + Math.cos(th) * rr, ry = m.y + Math.sin(th) * rr * 0.62;
+          if (thr) { const tk = Math.max(0, 1 - (F.t - thr.t) / 1.6); rx += (thr.x - m.x) * 0.55 * tk + Math.cos(th) * 0.6; ry += (thr.y - m.y) * 0.55 * tk; }
+          tx2 += (rx - tx2) * ringK; ty2 += (ry - ty2) * ringK; }
+        if (out > 0) { const ox = f.x - m.x, oy = f.y - m.y, od = Math.hypot(ox, oy) || 1; f.ox = f.ox ?? ox / od; f.oy = f.oy ?? oy / od * 0.5; tx2 = f.x + f.ox * 12; ty2 = f.y + f.oy * 12; } // (7.6.32, owner) the school leaves: each fish turns away from him and swims off into the water
+        let ax = (tx2 - f.x) * 2.2 + (F.vx - f.vx) * 1.6 + Math.sin(F.t * 1.3 + f.ph) * 0.5, ay = (ty2 - f.y) * 2.2 + (F.vy - f.vy) * 1.6 + Math.cos(F.t * 1.1 + f.ph * 1.7) * 0.35;
+        for (const o of FF) { if (o === f) continue; const dx = f.x - o.x, dy = f.y - o.y, d2 = dx * dx + dy * dy; if (d2 < sep * sep && d2 > 1e-6) { const d = Math.sqrt(d2), k = (sep - d) / sep * 6; ax += dx / d * k; ay += dy / d * k; } }
+        f.vx += ax * dt; f.vy += ay * dt; const spd = Math.hypot(f.vx, f.vy), mx2 = Math.max(Math.hypot(F.vx, F.vy) * 1.6 + 1.2, ringK * (thr ? 7 : 3.2)); if (spd > mx2) { f.vx *= mx2 / spd; f.vy *= mx2 / spd; } f.x += f.vx * dt; f.y += f.vy * dt; }
+      ctx.save(); for (const f of FF) { const x = S(f.x), y = Sy(f.y), fh = Math.atan2(f.vy * 0.7, f.vx), right = Math.cos(fh) >= 0, angf = clamp(Math.atan2(Math.sin(fh), Math.abs(Math.cos(fh))), -0.6, 0.6);
+          if (big) { const lb = 0.75 + 0.25 * Math.sin(F.t * 2.1 + f.ph * 3); glowPts.push([x + (right ? 1 : -1) * Lp * 0.55, y - Lp * 0.32, '#f2dca6', ppm * 3.4, 0.9 * fade * (1 - outK) * lb, Math.max(1.2, ppm * 0.09)]); } // (7.6.32, owner) each angler's lure lights the water round it
+          ctx.save(); ctx.translate(x, y); ctx.globalAlpha = fade * (1 - outK); if (right) { ctx.rotate(angf); ctx.scale(-1, 1); } else ctx.rotate(-angf); drawSpecies(ctx, sp, Lp * f.sz, F.t * 4 + f.ph, 1, f.ph); ctx.restore();
+          const fl = turn * (0.5 + 0.5 * Math.sin(f.ph * 3 + F.t * 5)); if (fl > 0.35) { ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = fade * Math.min(1, (fl - 0.35) * 2.5); const fg = ctx.createRadialGradient(x, y, 0, x, y, Lp * 0.45); fg.addColorStop(0, 'rgba(236,244,244,0.85)'); fg.addColorStop(1, 'rgba(236,244,244,0)'); ctx.fillStyle = fg; ctx.beginPath(); ctx.ellipse(x, y, Lp * 0.45, Lp * 0.16, -fh, 0, TAU); ctx.fill(); ctx.restore(); } }
+      ctx.restore(); }
     // ================= LIGHTING =================
     // (3.0.26) a cap on the living lights a frame: those off screen dropped, and past 90 the small ones thinned
     // evenly (a swarm of firefly squid could put hundreds here, each drawn twice)
@@ -1583,35 +1616,6 @@ export class Renderer {
     // drifts slowly round him (beside him, ahead, behind), so it trails, overtakes and sweeps past him as a school does; the
     // fish keep places in a long ragged shoal along its heading, each facing the way it swims, and they flash together
     // as the school turns. More fish, and a longer school, by tier
-    if (g.mode === 'play' && g.shoalFx) { const F = g.shoalFx, e = g.earl, m = e.inSub ? g.sub : e, fade = Math.min(1, F.t / 0.15, (F.dur + 1.5 - F.t) / 1.5), n = [0, 16, 28, 44][F.lv], now = g.time, dt = Math.min(0.05, Math.max(0, now - (F.rt ?? now))); F.rt = now;
-      if (F.cx == null) { const side = -(e.facing || 1); F.cx = m.x + side * (this.W / 2 / ppm + 4); F.cy = m.y + 1.5; F.vx = -side * 9; F.vy = -0.4; F.hd = Math.atan2(0, F.vx); } /* (7.6.19, owner) the school rushes in from off the screen behind him, never appearing out of nowhere */
-      const orb = (e.inSub ? 5.5 : 2.4) * (1 + F.lv * 0.1), th = F.t * 0.33 + Math.sin(F.t * 0.21) * 1.2, tx = m.x + Math.cos(th) * orb * 1.3, ty = m.y + Math.sin(th) * orb * 0.45 - 0.4;
-      F.vx += ((tx - F.cx) * 2.6 - F.vx * 1.5) * dt; F.vy += ((ty - F.cy) * 2.6 - F.vy * 1.5) * dt; F.cx += F.vx * dt; F.cy += F.vy * dt;
-      const want = Math.atan2(F.vy * 0.6, F.vx), dh = Math.atan2(Math.sin(want - F.hd), Math.cos(want - F.hd)); F.hd += dh * Math.min(1, dt * 3); const turn = Math.min(1, Math.abs(dh) * 2.2);
-      // (7.6.14, owner) each fish its own: a small flock. Every fish has its own place and speed and keeps three rules:
-      // stay with the school (its own loose spot in it, drawn from a bell curve, never a pattern), swim as the school swims,
-      // and keep a body's length from its neighbours; a little restlessness of its own on top. So the shape lives and
-      // stretches, thickens and thins, and never falls into rows
-      const sp = SPECIES_BY_ID[F.fish || 49] || SPECIES_BY_ID[49], Lp = ppm * Math.max(0.28, (sp.len || 0.3) * 0.9), ch = Math.cos(F.hd), shd = Math.sin(F.hd), SL = (2.2 + 0.5 * F.lv) * (e.inSub ? 1.8 : 1) * (F.lv >= 3 ? 1.35 : 1), SW = (0.9 + 0.2 * F.lv) * (e.inSub ? 1.6 : 1) * (F.lv >= 3 ? 1.35 : 1), sep = F.lv >= 3 ? 1.05 : 0.6; /* (7.6.19, owner) the anglers further apart */ // (7.6.15) twice the room round each fish; sardines, mackerel, seadevils
-      if (!F.fishN) { const rnd = (k) => { const v = Math.sin(k * 127.1 + 311.7) * 43758.5453; return v - Math.floor(v); }, gs = (k) => Math.sqrt(-2 * Math.log(Math.max(1e-6, rnd(k)))) * Math.cos(TAU * rnd(k + 0.5));
-        F.fishN = []; for (let i = 0; i < n; i++) { const oa = gs(i * 3.1) * 0.45, oc = gs(i * 5.7 + 2) * 0.45; F.fishN.push({ x: F.cx + oa * SL * ch - oc * SW * shd, y: F.cy + oa * SL * shd + oc * SW * ch, vx: F.vx, vy: F.vy, oa, oc, ph: rnd(i * 9.3) * TAU, sz: 0.8 + 0.4 * rnd(i * 2.2) }); } }
-      // (7.6.15) a strike taken: the school bursts open round the hunter's mouth (fish flung out, bubbles, a flash of scales)
-      if (F.hit && F.t - F.hit.t < 0.9) { const hk = (F.t - F.hit.t) / 0.9; for (const f of F.fishN) { const dx = f.x - F.hit.x, dy = f.y - F.hit.y, dd = Math.hypot(dx, dy) || 1; if (dd < 4) { f.vx += dx / dd * (1 - hk) * 9 * dt; f.vy += dy / dd * (1 - hk) * 9 * dt; } } if (!F.hit.bub) { F.hit.bub = 1; for (let i = 0; i < 18; i++) g.bubbles && g.bubbles.push({ x: F.hit.x + (Math.random() - 0.5) * 1.2, y: F.hit.y + (Math.random() - 0.5) * 0.8, r: 0.02 + Math.random() * 0.08, w: Math.random() * 6, t: 0 }); } }
-      if (F.fishN && F.used && F.lostTo !== F.used) { F.lostTo = F.used; const keep = Math.max(3, Math.round(F.fishN.length * (1 - 0.55 / F.guard))); F.fishN.splice(keep); }
-      // (7.6.24, owner) once it has arrived the school circles him: each fish its own place on a loose ring round him (or the
-      // sub), the ring turning slowly; when a hunter comes in, the school surges out toward it, between it and him
-      const ringK = smoothstep(1.4, 3.2, F.t), R0 = (e.inSub ? 6.2 : 2.3) * (1 + 0.12 * F.lv), thr = F.threat && F.t - F.threat.t < 1.6 ? F.threat : null;
-      const FF = F.fishN; for (const f of FF) { let tx2 = F.cx + f.oa * SL * ch - f.oc * SW * shd, ty2 = F.cy + f.oa * SL * shd + f.oc * SW * ch;
-        if (ringK > 0) { const th = f.ph + F.t * (0.55 + 0.1 * f.oc) * (F.lv % 2 ? -1 : 1), rr = R0 * (0.8 + 0.45 * Math.abs(f.oa) + 0.15 * Math.sin(F.t * 0.7 + f.ph)); let rx = m.x + Math.cos(th) * rr, ry = m.y + Math.sin(th) * rr * 0.62;
-          if (thr) { const tk = Math.max(0, 1 - (F.t - thr.t) / 1.6); rx += (thr.x - m.x) * 0.55 * tk + Math.cos(th) * 0.6; ry += (thr.y - m.y) * 0.55 * tk; }
-          tx2 += (rx - tx2) * ringK; ty2 += (ry - ty2) * ringK; }
-        let ax = (tx2 - f.x) * 2.2 + (F.vx - f.vx) * 1.6 + Math.sin(F.t * 1.3 + f.ph) * 0.5, ay = (ty2 - f.y) * 2.2 + (F.vy - f.vy) * 1.6 + Math.cos(F.t * 1.1 + f.ph * 1.7) * 0.35;
-        for (const o of FF) { if (o === f) continue; const dx = f.x - o.x, dy = f.y - o.y, d2 = dx * dx + dy * dy; if (d2 < sep * sep && d2 > 1e-6) { const d = Math.sqrt(d2), k = (sep - d) / sep * 6; ax += dx / d * k; ay += dy / d * k; } }
-        f.vx += ax * dt; f.vy += ay * dt; const spd = Math.hypot(f.vx, f.vy), mx2 = Math.max(Math.hypot(F.vx, F.vy) * 1.6 + 1.2, ringK * (thr ? 7 : 3.2)); if (spd > mx2) { f.vx *= mx2 / spd; f.vy *= mx2 / spd; } f.x += f.vx * dt; f.y += f.vy * dt; }
-      ctx.save(); for (const f of FF) { const x = S(f.x), y = Sy(f.y), fh = Math.atan2(f.vy * 0.7, f.vx), right = Math.cos(fh) >= 0, angf = clamp(Math.atan2(Math.sin(fh), Math.abs(Math.cos(fh))), -0.6, 0.6);
-          ctx.save(); ctx.translate(x, y); ctx.globalAlpha = fade; if (right) { ctx.rotate(angf); ctx.scale(-1, 1); } else ctx.rotate(-angf); drawSpecies(ctx, sp, Lp * f.sz, F.t * 4 + f.ph, 1, f.ph); ctx.restore();
-          const fl = turn * (0.5 + 0.5 * Math.sin(f.ph * 3 + F.t * 5)); if (fl > 0.35) { ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = fade * Math.min(1, (fl - 0.35) * 2.5); const fg = ctx.createRadialGradient(x, y, 0, x, y, Lp * 0.45); fg.addColorStop(0, 'rgba(236,244,244,0.85)'); fg.addColorStop(1, 'rgba(236,244,244,0)'); ctx.fillStyle = fg; ctx.beginPath(); ctx.ellipse(x, y, Lp * 0.45, Lp * 0.16, -fh, 0, TAU); ctx.fill(); ctx.restore(); } }
-      ctx.restore(); }
     // (7.6.6, owner) Revel: the water flickers with warm lantern colours in time with the music (Carnival: stronger, and
     // the glows in the water pulse with it); Ink: the water round him tinted its colour, a fading trail behind (Inkstorm)
     // (7.6.7, owner) Revel: the sea lit in vivid lantern colours. The water's own colour swings through crimson, amber,
@@ -1619,6 +1623,21 @@ export class Renderer {
     // ribbed bell with a hot heart and trailing threads, each its own colour) drift round him, lighting the water round
     // themselves, more of them by tier. The light itself (as bright as a Flare+) comes through the light map
     // (7.6.7) Temper's heated figure, laid over him here, after the deep's darkness, so it glows as hot metal does
+    // (7.6.32, owner) Ironskin: three small steel shields circling him on a tilted orbit, each turning on its own upright as
+    // it goes (narrowing to its edge and back), lit across its face, a dark rim and a domed boss; those passing behind him
+    // dimmer and smaller. A glint runs over one now and then. They fade in and out with the skill
+    if (g.mode === 'play' && g.ironT > 0 && !g.earl.inSub) { const e = g.earl, k = Math.min(1, g.ironT / 1.5, (g.ironFx ? g.ironFx.t : 9) * 2), cx = S(e.x), cy = Sy(e.y) - ppm * 0.15, R = ppm * 1.05, sz = ppm * 0.36, t = g.time;
+      ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0);
+      for (let i = 0; i < 3; i++) { const a = t * 1.5 + i * TAU / 3, z = Math.sin(a), x = cx + Math.cos(a) * R, y = cy + z * R * 0.32 - Math.cos(a) * R * 0.12, sc = 0.82 + 0.18 * z, turn = Math.cos(t * 2.3 + i * 1.9), w = Math.max(0.12, Math.abs(turn));
+        ctx.save(); ctx.translate(x, y); ctx.rotate(Math.sin(a) * 0.18); ctx.scale(w * sc, sc); ctx.globalAlpha = k * (z < 0 ? 0.55 : 0.95);
+        const sh = new Path2D(); sh.moveTo(-sz * 0.5, -sz * 0.55); sh.quadraticCurveTo(0, -sz * 0.66, sz * 0.5, -sz * 0.55); sh.bezierCurveTo(sz * 0.52, sz * 0.05, sz * 0.3, sz * 0.45, 0, sz * 0.66); sh.bezierCurveTo(-sz * 0.3, sz * 0.45, -sz * 0.52, sz * 0.05, -sz * 0.5, sz * 0.55 * -1); sh.closePath();
+        const lit = turn > 0 ? 1 : 0.7, gr = ctx.createLinearGradient(-sz * 0.5, -sz * 0.6, sz * 0.4, sz * 0.6); gr.addColorStop(0, `rgb(${Math.round(200 * lit)},${Math.round(206 * lit)},${Math.round(208 * lit)})`); gr.addColorStop(0.45, `rgb(${Math.round(120 * lit)},${Math.round(128 * lit)},${Math.round(134 * lit)})`); gr.addColorStop(1, '#3a3f44');
+        ctx.fillStyle = gr; ctx.fill(sh); ctx.lineWidth = Math.max(1, sz * 0.09); ctx.strokeStyle = '#24282c'; ctx.stroke(sh);
+        ctx.lineWidth = Math.max(0.6, sz * 0.035); ctx.strokeStyle = 'rgba(220,226,228,0.55)'; ctx.beginPath(); ctx.moveTo(-sz * 0.42, -sz * 0.47); ctx.quadraticCurveTo(0, -sz * 0.57, sz * 0.42, -sz * 0.47); ctx.stroke(); // the top edge catching light
+        const bg = ctx.createRadialGradient(-sz * 0.04, -sz * 0.06, 0, 0, 0, sz * 0.14); bg.addColorStop(0, '#e2e6e8'); bg.addColorStop(1, '#4a5056'); ctx.fillStyle = bg; ctx.beginPath(); ctx.ellipse(0, -sz * 0.02, sz * 0.13, sz * 0.13, 0, 0, TAU); ctx.fill(); // the boss
+        const gl = (t * 0.6 + i * 0.37) % 1; if (gl < 0.18 && z > 0) { const q = Math.sin(gl / 0.18 * Math.PI); ctx.globalCompositeOperation = 'lighter'; glint(ctx, sz * 0.2, -sz * 0.3, sz * 0.5, q * k, 0); }
+        ctx.restore(); }
+      ctx.restore(); }
     if (this.temperDraw && this.suitC && g.mode === 'play') { const T = this.temperDraw; ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = T.k * T.lv * (0.85 + 0.15 * Math.sin(g.time * 1.7)); ctx.drawImage(this.suitC, 0, 0);
       if (T.leg) { ctx.globalAlpha = T.k * (0.25 + 0.12 * Math.sin(g.time * 2.2)); ctx.drawImage(this.suitC, 0, 0); } ctx.restore(); }
     if (g.mode === 'play' && g.revelFx) { const F = g.revelFx, fade = Math.min(1, F.t / 0.8, (F.dur + 1.5 - F.t) / 1.5), beat = 0.5 + 0.5 * Math.cos(F.t * Math.PI * 2 * 1.9);
@@ -1710,11 +1729,11 @@ export class Renderer {
           ctx.restore(); }
         // (7.4.23, owner) particles: fine motes held in the field, slowly swirling round him, drawn outward to the rim as
         // the pressure builds; a few more drifting in the dark outside, all in the same twilight blue
-        { const nM = 26 + TI * 12, sw = 0.12 + 0.35 * k;
+        { const nM = 26 + TI * 12, sw = 0.03 + 0.05 * k; /* (7.6.32, owner) the motes drift and slowly sink, never streaming sideways round him */
           for (let j = 0; j < nM; j++) { const h1 = Math.sin(j * 12.9898) * 43758.5453, u = h1 - Math.floor(h1), h2 = Math.sin(j * 78.233) * 12543.123, v = h2 - Math.floor(h2);
-            const a = u * TAU + tt * sw * (0.6 + v), rr = R * (0.25 + 0.68 * Math.pow(v, 0.7 - 0.4 * k)) * (1 + 0.03 * Math.sin(tt * 2 + j)), px = mx + Math.cos(a) * rr, py = my + Math.sin(a) * rr * ry + Math.sin(tt * 0.8 + j) * ppm * 0.08;
+            const a = u * TAU + tt * sw * (0.6 + v), rr = R * (0.25 + 0.68 * Math.pow(v, 0.7 - 0.4 * k)) * (1 + 0.03 * Math.sin(tt * 2 + j)), px = mx + Math.cos(a) * rr, py = my + Math.sin(a) * rr * ry + Math.sin(tt * 0.8 + j) * ppm * 0.08 + (((tt * 0.12 + v) % 1) - 0.5) * R * 0.35;
             const tw = 0.5 + 0.5 * Math.sin(tt * (1.5 + v * 2) + j * 3), al = (0.25 + 0.45 * tw) * (0.5 + 0.5 * vis) * shut * Math.min(1, sc * 1.5);
-            const pr = Math.max(1, ppm * (0.03 + 0.04 * v)), fa = a + Math.PI / 2 + Math.sin(tt + j) * 0.6; ctx.strokeStyle = `rgba(132,150,180,${al.toFixed(3)})`; ctx.lineWidth = Math.max(0.7, pr * 0.45); ctx.beginPath(); ctx.moveTo(px - Math.cos(fa) * pr, py - Math.sin(fa) * pr); ctx.quadraticCurveTo(px + Math.sin(fa) * pr * 0.4, py - Math.cos(fa) * pr * 0.4, px + Math.cos(fa) * pr, py + Math.sin(fa) * pr); ctx.stroke(); } } // (7.4.24) flecks, not dots
+            const pr = Math.max(1, ppm * (0.03 + 0.04 * v)), fa = Math.PI / 2 + Math.sin(tt * 0.3 + j) * 0.5; ctx.strokeStyle = `rgba(132,150,180,${al.toFixed(3)})`; ctx.lineWidth = Math.max(0.7, pr * 0.45); ctx.beginPath(); ctx.moveTo(px - Math.cos(fa) * pr, py - Math.sin(fa) * pr); ctx.quadraticCurveTo(px + Math.sin(fa) * pr * 0.4, py - Math.cos(fa) * pr * 0.4, px + Math.cos(fa) * pr, py + Math.sin(fa) * pr); ctx.stroke(); } } // (7.4.24) flecks, not dots
         // (7.4.21, owner) the crush outside: the water beyond the field darkened and pressed, harder the more of the limit is
         // used; and just outside the rim a band of squeezed water (the scene drawn again, pulled in toward him)
         { const cw = ctx.canvas.width, ch = ctx.canvas.height, dk = (0.09 + 0.07 * TI) * (0.3 + 1.6 * k) * shut;

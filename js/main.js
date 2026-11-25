@@ -447,7 +447,7 @@ const INJURY = {
 };
 function hurt(dmg, sp, how) {
   if (g.siphon && how !== 'heat') return; // (7.6.8) mid-change, nothing touches him
-  if (g.ironT > 0 && how !== 'heat') { g.ironHit = { t: g.time }; for (let i = 0; i < 10; i++) g.bubbles.push({ x: g.earl.x + (Math.random() - 0.5) * 0.6, y: g.earl.y + (Math.random() - 0.5) * 0.6, r: 0.03, w: Math.random() * 6, t: 0 }); return; } // (7.6.6, owner) Ironskin
+  if (g.ironT > 0) { /* (7.6.32, owner) every injury, heat too; the thing's jaws, air and pressure are not injuries */ g.ironHit = { t: g.time }; for (let i = 0; i < 10; i++) g.bubbles.push({ x: g.earl.x + (Math.random() - 0.5) * 0.6, y: g.earl.y + (Math.random() - 0.5) * 0.6, r: 0.03, w: Math.random() * 6, t: 0 }); return; } // (7.6.6, owner) Ironskin
   if (g.mode !== 'play') return;
   const suit = suitOf(profile);
   if (g.earl.hardened && Math.random() < 0.15 * g.earl.hardened) dmg = Math.max(0, dmg - 1); // (2.8.0) Hardened: a bite now and then does one less
@@ -2460,7 +2460,7 @@ function tickAbility(dt) {
   if (g.nacreT > 0) g.nacreT = Math.max(0, g.nacreT - dt);
   if (g.pearlFx) { for (const p of g.pearlFx) p.t += dt; g.pearlFx = g.pearlFx.filter((p) => p.t < 1.8); if (!g.pearlFx.length) g.pearlFx = null; }
   if (g.bloodT > 0) { g.bloodT = Math.max(0, g.bloodT - dt); g.fx.redTint = Math.max(g.fx.redTint || 0, 0.85 * Math.min(1, g.bloodT / 2, (60 - g.bloodT) / 1.5 + 0.2)); } g.curseCatch = g.bloodT > 0;
-  for (const k of ['shoalFx', 'revelFx']) { const F = g[k]; if (F) { F.t += dt; if (F.t > F.dur + 1.5) g[k] = null; } }
+  for (const k of ['shoalFx', 'revelFx']) { const F = g[k]; if (F) { F.t += dt; if (F.t > F.dur + (k === 'shoalFx' ? 3.5 : 1.5)) g[k] = null; } } // (7.6.32) the school takes its time swimming off
   if (g.songFx) { g.songFx.t += dt; if (g.songFx.t > 4) g.songFx = null; }
   if (g.markWashFx) { g.markWashFx.t += dt; if (g.markWashFx.t > 2) g.markWashFx = null; }
   { const RA = on && A.reach ? A : on2 && A2.reach ? A2 : null; g.multiCatch = RA && RA.multi ? RA.multi : 1; g.reachMul = RA ? RA.reach : 1; g.swingMul = RA && RA.swing ? RA.swing : 1; g.sureCatch = !!(RA && RA.sure); g.blessCatch = !!(RA && RA.bless); g.reachDef = RA; }
