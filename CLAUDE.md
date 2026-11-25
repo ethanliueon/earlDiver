@@ -331,3 +331,5 @@ last desktop build is kept on the branch `desktop-4.25.5`).
 - Reach skills: a light in the hoop by tier and a wake of churned water along each swing (no dashed arc).
 - The diver's lure is gone from the code (the Old One's lure, the deep trap's light and Lanternmesh stay).
 
+- (7.6.1) Speed: the diver's own (fins, suit, bag) times the strongest boost running (a skill, the sprint button, the
+  low-air push), never the boosts multiplied; the sub the same. Light already took the strongest.

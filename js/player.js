@@ -73,7 +73,7 @@ export function updateEarl(g, dt, inp) {
     // ---- submersible ----
     // (on the way home under autopilot the autopilot moves the sub; nothing here steers it)
     if (!g.homeRun) {
-    const sp = SUB_SPEED * (inp.sprint ? 1.5 : 1) * (sub.speedMul || 1) * (e.abilSpeed || 1); // (5.9.0) the Sprint ability drives her too
+    const sp = SUB_SPEED * (sub.speedMul || 1) * Math.max(inp.sprint ? 1.5 : 1, e.abilSpeed || 1); // (5.9.0) the Sprint ability drives her too. (7.6.0, owner) the strongest boost wins, on her own speed, never multiplied together
     // diagonal input is normalised, so going right and down at once is no faster than one way
     const im = Math.hypot(inp.x, inp.y), nx = im > 1 ? inp.x / im : inp.x, ny = im > 1 ? inp.y / im : inp.y;
     // the ballast boost only applies to (mostly) straight dives and ascents, never to diagonals
@@ -112,7 +112,7 @@ export function updateEarl(g, dt, inp) {
     }
   } else {
     // ---- diver ----
-    let sp = DIVE_SPEED * (inp.sprint ? e.sprintMul || 1.5 : 1) * (lowO2 ? 1.5 : 1) * e.speedMul * e.finSpeed * (e.abilSpeed || 1); // (5.9.0)
+    let sp = DIVE_SPEED * e.speedMul * e.finSpeed * Math.max(inp.sprint ? e.sprintMul || 1.5 : 1, lowO2 ? 1.5 : 1, e.abilSpeed || 1); // (5.9.0). (7.6.0, owner) his own speed (fins, suit, the bag's weight) times the strongest boost running, never the boosts multiplied
     // (5.0) the camera's shutter is open: he holds still (he can still aim)
     const hold = !!g.photo;
     const mag = hold ? 0 : Math.hypot(inp.x, inp.y);
