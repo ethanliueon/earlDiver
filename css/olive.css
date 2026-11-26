@@ -2391,8 +2391,15 @@ html body #inventory .eq-stage > .eq-deep { position: absolute; inset: -2px; z-i
 html body #inventory .eq-stage > .eq-col, html body #inventory .eq-stage > canvas.eq-earl { position: relative; z-index: 1; }
 html body #inventory .eq-pouch .eq-slot .belt-n:not(#_a):not(#_b) { top: 4px !important; right: 6px !important; bottom: auto !important; }
 /* (7.6.53, owner) the scene behind the diver, changed by a small olive plate at the top of the stage */
-html body #inventory .eq-stage > .eq-scene:not(#_a) { position: absolute; bottom: 40px; left: calc(50% - 30px); transform: translateX(-50%); z-index: 3; padding: 2px 12px !important; min-height: 0 !important; border: 6px solid transparent !important; border-image: var(--o-btn, url("../assets/ui/olive/btn-olive.png")) 28 fill / 6px stretch !important; background: none !important; box-shadow: none !important; font: 600 13px var(--o-text) !important; letter-spacing: 0.06em; color: var(--o-cream, #e6dec4) !important; opacity: 0.85; }
-html body #inventory .eq-stage > .eq-scene::before { content: 'Scene: '; color: rgba(230, 222, 196, 0.55); }
+html body #inventory .eq-stage > .eq-scene:not(#_a) { position: absolute; z-index: 3; left: 108px; bottom: 39px; height: 46px; padding: 0 16px !important; min-height: 0 !important; display: inline-flex; align-items: center; gap: 5px; white-space: nowrap;
+  border: 8px solid transparent !important; border-image: url("../assets/ui/olive/well.png") 30 / 8px stretch !important; background: url("../assets/ui/olive/slot_deep3.png") center / 100% 100% no-repeat !important; background-clip: padding-box !important; box-shadow: none !important; overflow: hidden; }
+html body #inventory .eq-stage > .eq-scene span { position: relative; z-index: 1; font: 600 13px var(--o-text); letter-spacing: 0.06em; text-transform: uppercase; color: rgba(230, 222, 196, 0.6); }
+html body #inventory .eq-stage > .eq-scene b { position: relative; z-index: 1; font: 700 15px var(--o-text); letter-spacing: 0.02em; text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8); }
+/* the scene's rarity as the slots show theirs: its light pooling up from the bottom, a fine lit edge along the foot */
+html body #inventory .eq-stage > .eq-scene::before { content: ''; position: absolute; inset: 0; pointer-events: none; background: radial-gradient(120% 70% at 50% 120%, color-mix(in srgb, var(--rc) 40%, transparent), transparent 75%); }
+html body #inventory .eq-stage > .eq-scene::after { content: ''; position: absolute; inset: 0; pointer-events: none; border-bottom: 1px solid color-mix(in srgb, var(--rc) 75%, transparent); }
+html body #inventory .eq-stage > .eq-scene.r-common::before, html body #inventory .eq-stage > .eq-scene.r-common::after { opacity: 0.4; }
+html body #inventory .eq-stage > .eq-scene.r-mythical::before, html body #inventory .eq-stage > .eq-scene.r-legendary::before { animation: slot-breathe 4.5s ease-in-out infinite; }
 /* (7.6.54, owner) the scenes panel: a grid of small pictures, each with its name and price */
 html body #inventory .scene-pick .ip-box:not(#_a):not(#_b) { max-width: 760px; }
 html body #inventory .scene-pick .sc-grid { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 10px; max-height: 420px; overflow-y: auto; scrollbar-width: none; }

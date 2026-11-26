@@ -54,9 +54,10 @@ function anemone(y, rnd, ax, ay, s, col) {
   y.strokeStyle = col; y.lineCap = 'round'; for (let k = 0; k < 11; k++) { const a = -Math.PI + (k / 10) * Math.PI + (rnd() - 0.5) * 0.2, l = (6 + rnd() * 4) * s; y.lineWidth = 1.2 * s; y.beginPath(); y.moveTo(ax, ay - 7 * s); y.quadraticCurveTo(ax + Math.cos(a) * l * 0.6, ay - 7 * s + Math.sin(a) * l * 0.9 - 2, ax + Math.cos(a) * l, ay - 7 * s + Math.sin(a) * l * 0.7); y.stroke(); }
 }
 
+// (7.6.58, owner) each scene has a rarity (its name is shown in that rarity's colour): the free ones common, It Watches the one mythical
 export const BAG_SCENES = {
   // ---------------- free ----------------
-  reef: { name: 'Reef', price: 0, water: ['#1d3a44', '#0f232b', '#060e12'], light: 'rgba(70, 106, 108, 0.22)', line: 'A deep reef: fans and whips in the current.',
+  reef: { rarity: 'common', name: 'Reef', price: 0, water: ['#1d3a44', '#0f232b', '#060e12'], light: 'rgba(70, 106, 108, 0.22)', line: 'A deep reef: fans and whips in the current.',
     draw(y, rnd, FW, PH) { const c = FW / 2;
       for (let i = 0; i < 5; i++) rock(y, rnd, c + (rnd() - 0.5) * FW * 0.9, PH * 0.86, 30 + rnd() * 40, 16 + rnd() * 26, [26, 36, 38]); // rocks far back
       school(y, rnd, c + FW * 0.22, PH * 0.3, 14, 60, 'rgba(10, 22, 26, 0.55)', -1);
@@ -75,7 +76,7 @@ export const BAG_SCENES = {
       anemone(y, rnd, c + 38, PH * 0.915, 1.2, 'rgba(150, 96, 70, 0.75)'); anemone(y, rnd, c - 140, PH * 0.92, 0.9, 'rgba(140, 120, 90, 0.6)');
       rock(y, rnd, c + 150, PH * 0.93, 34, 22, [40, 46, 42]); rock(y, rnd, c - 170, PH * 0.94, 28, 16, [38, 44, 42]);
       { y.strokeStyle = 'rgba(160, 120, 80, 0.55)'; y.lineWidth = 1.4; const sx = c + 120, sy = PH * 0.93; for (let k = 0; k < 5; k++) { const a = k / 5 * TAU; y.beginPath(); y.moveTo(sx, sy); y.quadraticCurveTo(sx + Math.cos(a) * 6, sy + Math.sin(a) * 2.4 - 2, sx + Math.cos(a + 0.4) * 11, sy + Math.sin(a + 0.4) * 3); y.stroke(); } } } }, // a brittle star
-  kelp: { name: 'Kelp', price: 0, water: ['#2f5249', '#173530', '#0a1c19'], light: 'rgba(150, 170, 110, 0.2)', line: 'The kelp forest, near the light.',
+  kelp: { rarity: 'common', name: 'Kelp', price: 0, water: ['#2f5249', '#173530', '#0a1c19'], light: 'rgba(150, 170, 110, 0.2)', line: 'The kelp forest, near the light.',
     draw(y, rnd, FW, PH) { const c = FW / 2;
       const forest = (n, a, dark, tall) => { for (let i = 0; i < n; i++) { const bx = (i + 0.5 + (rnd() - 0.5) * 0.6) * FW / n, by = PH * 0.92, len = PH * tall * (0.75 + rnd() * 0.3), sway = (rnd() - 0.5) * 50, col = `rgba(${dark ? 52 : 92 + rnd() * 20}, ${dark ? 70 : 96 + rnd() * 14}, ${dark ? 50 : 50}, ${a})`;
         const P = (t) => [bx + sway * Math.sin(t * 2.2) * t, by - len * t]; y.strokeStyle = col; y.lineWidth = dark ? 2.2 : 3.4; y.lineCap = 'round'; y.beginPath(); for (let k = 0; k <= 24; k++) { const [px, py] = P(k / 24); k ? y.lineTo(px, py) : y.moveTo(px, py); } y.stroke();
@@ -88,7 +89,7 @@ export const BAG_SCENES = {
       seabed(y, rnd, FW, PH, PH * 0.9, '#3a4634', '#141c14');
       for (let i = 0; i < 6; i++) rock(y, rnd, rnd() * FW, PH * 0.93, 14 + rnd() * 22, 8 + rnd() * 12, [54, 60, 46]);
       forest(5, 0.75, false, 0.95); } },
-  midnight: { name: 'Midnight', price: 0, water: ['#0d1a22', '#060d12', '#020507'], light: 'rgba(40, 60, 70, 0.1)', snow: 220, line: 'The midnight zone: only the living make light.',
+  midnight: { rarity: 'common', name: 'Midnight', price: 0, water: ['#0d1a22', '#060d12', '#020507'], light: 'rgba(40, 60, 70, 0.1)', snow: 220, line: 'The midnight zone: only the living make light.',
     draw(y, rnd, FW, PH) { const c = FW / 2;
       for (let i = 0; i < 7; i++) { const lx = rnd() * FW, ly = PH * (0.15 + rnd() * 0.6), d = rnd() < 0.5 ? 1 : -1; // lanternfish: a dim body and a row of lights
         school(y, rnd, lx, ly, 1, 1, 'rgba(26, 34, 38, 0.7)', d, 1.6); for (let k = 0; k < 5; k++) glowDot(y, lx - d * 5 + d * k * 2.4, ly + 1.4, 0.45, '170, 210, 190', 0.45); }
@@ -97,7 +98,7 @@ export const BAG_SCENES = {
       { y.strokeStyle = 'rgba(120, 140, 130, 0.18)'; y.lineWidth = 1.2; y.beginPath(); const sx = c - 70; for (let k = 0; k <= 40; k++) { const t = k / 40, px = sx + Math.sin(t * 6) * 12, py = PH * (0.05 + t * 0.7); k ? y.lineTo(px, py) : y.moveTo(px, py); if (k % 4 === 0) glowDot(y, px, py, 0.6, '160, 200, 180', 0.3); } y.stroke(); } // a siphonophore's long thread
       { const dx = c + 60, dy = PH * 0.7; y.fillStyle = 'rgba(12, 16, 18, 0.9)'; y.beginPath(); y.moveTo(dx - 40, dy); y.quadraticCurveTo(dx - 10, dy - 8, dx + 14, dy - 3); y.lineTo(dx + 22, dy + 2); y.quadraticCurveTo(dx - 10, dy + 6, dx - 40, dy); y.fill(); // a dragonfish, its barbel lure lit
         y.strokeStyle = 'rgba(40, 50, 52, 0.8)'; y.lineWidth = 0.8; y.beginPath(); y.moveTo(dx + 16, dy + 3); y.quadraticCurveTo(dx + 24, dy + 18, dx + 30, dy + 22); y.stroke(); glowDot(y, dx + 30, dy + 22, 1.4, '200, 160, 120', 0.7); glowDot(y, dx + 8, dy - 2, 0.9, '200, 120, 100', 0.6); } } },
-  vents: { name: 'Vents', price: 0, water: ['#1c2427', '#0f1416', '#07090a'], light: 'rgba(110, 80, 60, 0.1)', line: 'Hydrothermal vents, black smoke and heat.',
+  vents: { rarity: 'common', name: 'Vents', price: 0, water: ['#1c2427', '#0f1416', '#07090a'], light: 'rgba(110, 80, 60, 0.1)', line: 'Hydrothermal vents, black smoke and heat.',
     draw(y, rnd, FW, PH) { const c = FW / 2;
       { y.fillStyle = 'rgba(20, 22, 22, 0.85)'; y.beginPath(); y.moveTo(0, PH); y.lineTo(0, PH * 0.3); for (let i = 0; i <= 10; i++) y.lineTo(FW * 0.16 * (i / 10) + rnd() * 8, PH * (0.3 + i * 0.06)); y.lineTo(FW * 0.2, PH); y.closePath(); y.fill(); // a rock wall at the left, far
         y.beginPath(); y.moveTo(FW, PH); y.lineTo(FW, PH * 0.4); for (let i = 0; i <= 10; i++) y.lineTo(FW - FW * 0.14 * (i / 10) - rnd() * 8, PH * (0.4 + i * 0.05)); y.lineTo(FW * 0.8, PH); y.closePath(); y.fill(); }
@@ -113,7 +114,7 @@ export const BAG_SCENES = {
         y.fillStyle = 'rgba(160, 60, 42, 0.8)'; y.beginPath(); y.ellipse(bx, PH * 0.92 - h - 2, 2.6, 3.6, 0, 0, TAU); y.fill(); }
       for (let i = 0; i < 3; i++) { const kx = c - 150 + i * 120 + rnd() * 30, ky = PH * 0.925; y.fillStyle = 'rgba(210, 204, 190, 0.55)'; y.beginPath(); y.ellipse(kx, ky, 4, 2.6, 0, 0, TAU); y.fill(); y.strokeStyle = 'rgba(210, 204, 190, 0.45)'; y.lineWidth = 0.8; for (let k = -2; k <= 2; k++) { y.beginPath(); y.moveTo(kx + k * 1.5, ky); y.lineTo(kx + k * 3.2, ky + 3); y.stroke(); } } } }, // pale vent crabs
   // ---------------- for pearls ----------------
-  wreck: { name: 'The Wreck', price: 60, water: ['#213a40', '#0f2228', '#060e11'], light: 'rgba(90, 120, 110, 0.18)', line: "A freighter's bow, settled on its side long ago.",
+  wreck: { rarity: 'rare', name: 'The Wreck', price: 60, water: ['#213a40', '#0f2228', '#060e11'], light: 'rgba(90, 120, 110, 0.18)', line: "A freighter's bow, settled on its side long ago.",
     draw(y, rnd, FW, PH) { const c = FW / 2, base = PH * 0.9;
       { y.save(); y.translate(c - FW * 0.06, base); y.rotate(-0.12); const L = FW * 0.62, H = 120; // the hull, bow up to the right
         const g = y.createLinearGradient(0, -H, 0, 0); g.addColorStop(0, 'rgba(60, 50, 40, 0.95)'); g.addColorStop(1, 'rgba(26, 24, 22, 0.98)'); y.fillStyle = g;
@@ -131,7 +132,7 @@ export const BAG_SCENES = {
       for (let i = 0; i < 4; i++) stalk(y, c - FW * 0.3 + i * 12, PH * 0.92, 30 + rnd() * 30, 8 + rnd() * 10, 2.6, (t) => `rgba(100, 96, 64, ${0.7 - t * 0.3})`);
       { y.strokeStyle = 'rgba(60, 54, 44, 0.9)'; y.lineWidth = 2.4; y.beginPath(); y.moveTo(c + FW * 0.2, PH * 0.93); y.bezierCurveTo(c + FW * 0.25, PH * 0.9, c + FW * 0.32, PH * 0.95, c + FW * 0.38, PH * 0.925); y.stroke(); // the anchor chain
         y.fillStyle = 'rgba(56, 50, 42, 0.95)'; y.beginPath(); y.moveTo(c + FW * 0.38, PH * 0.9); y.lineTo(c + FW * 0.385, PH * 0.94); y.lineTo(c + FW * 0.36, PH * 0.93); y.closePath(); y.fill(); } } },
-  whalefall: { name: 'Whale Fall', price: 90, water: ['#16282e', '#0a161a', '#04090b'], light: 'rgba(70, 90, 90, 0.14)', line: 'A whale come to rest. A whole world eats from it for decades.',
+  whalefall: { rarity: 'rare', name: 'Whale Fall', price: 90, water: ['#16282e', '#0a161a', '#04090b'], light: 'rgba(70, 90, 90, 0.14)', line: 'A whale come to rest. A whole world eats from it for decades.',
     draw(y, rnd, FW, PH) { const c = FW / 2, base = PH * 0.91;
       seabed(y, rnd, FW, PH, base, '#1e2a2a', '#090f10');
       for (let i = 0; i < 8; i++) { const px = c - FW * 0.35 + rnd() * FW * 0.7, g = y.createRadialGradient(px, base + 4, 0, px, base + 4, 30); g.addColorStop(0, 'rgba(200, 196, 170, 0.18)'); g.addColorStop(1, 'rgba(200, 196, 170, 0)'); y.fillStyle = g; y.fillRect(px - 30, base - 26, 60, 60); } // pale bacterial mats
@@ -145,12 +146,12 @@ export const BAG_SCENES = {
       for (let i = 0; i < 40; i++) { const px = c - FW * 0.35 + rnd() * FW * 0.75, py = base - rnd() * 8; y.strokeStyle = 'rgba(170, 70, 60, 0.6)'; y.lineWidth = 1; y.beginPath(); y.moveTo(px, py); y.lineTo(px + (rnd() - 0.5) * 2, py - 3 - rnd() * 3); y.stroke(); } // bone-eating worms, a red fuzz
       for (let i = 0; i < 4; i++) { const hx = c - FW * 0.3 + rnd() * FW * 0.6, hy = base - 20 - rnd() * 60; y.strokeStyle = 'rgba(120, 100, 96, 0.6)'; y.lineWidth = 3; y.beginPath(); y.moveTo(hx, hy); y.bezierCurveTo(hx + 10, hy - 6, hx + 20, hy + 6, hx + 30, hy); y.stroke(); } // hagfish
       school(y, rnd, c - FW * 0.2, PH * 0.4, 10, 50, 'rgba(14, 22, 24, 0.6)', 1); } },
-  jellies: { name: 'Jelly Bloom', price: 120, water: ['#14232c', '#0a141a', '#04080b'], light: 'rgba(60, 80, 90, 0.12)', snow: 120, line: 'A bloom of jellies drifting past in the dark.',
+  jellies: { rarity: 'exotic', name: 'Jelly Bloom', price: 120, water: ['#14232c', '#0a141a', '#04080b'], light: 'rgba(60, 80, 90, 0.12)', snow: 120, line: 'A bloom of jellies drifting past in the dark.',
     draw(y, rnd, FW, PH) { const c = FW / 2;
       for (let i = 0; i < 14; i++) jelly(y, rnd, rnd() * FW, PH * (0.08 + rnd() * 0.5), 6 + rnd() * 8, '150, 170, 170', 0.25); // far, small, faint
       for (let i = 0; i < 7; i++) jelly(y, rnd, rnd() * FW, PH * (0.12 + rnd() * 0.55), 14 + rnd() * 14, rnd() < 0.3 ? '200, 160, 140' : '170, 196, 190', 0.55);
       jelly(y, rnd, c - 82, PH * 0.3, 32, '200, 170, 140', 0.7); jelly(y, rnd, c + 84, PH * 0.16, 26, '170, 196, 190', 0.6); jelly(y, rnd, c + 70, PH * 0.62, 16, '170, 196, 190', 0.5); } },
-  lanterns: { name: 'Lantern Choir', price: 160, water: ['#0b151a', '#05090c', '#010304'], light: 'rgba(30, 40, 46, 0.08)', snow: 80, line: "Anglerfish, waiting in the dark, each with its own light.",
+  lanterns: { rarity: 'legendary', name: 'Lantern Choir', price: 160, water: ['#0b151a', '#05090c', '#010304'], light: 'rgba(30, 40, 46, 0.08)', snow: 80, line: "Anglerfish, waiting in the dark, each with its own light.",
     draw(y, rnd, FW, PH) { const c = FW / 2;
       const angler = (ax, ay, s, d) => { y.fillStyle = 'rgba(14, 16, 16, 0.92)'; y.beginPath(); y.ellipse(ax, ay, 16 * s, 13 * s, 0, 0, TAU); y.fill(); // body
         y.beginPath(); y.moveTo(ax - d * 14 * s, ay); y.lineTo(ax - d * 26 * s, ay - 7 * s); y.lineTo(ax - d * 26 * s, ay + 7 * s); y.closePath(); y.fill(); // tail
@@ -159,7 +160,7 @@ export const BAG_SCENES = {
         glowDot(y, ax + d * 22 * s, ay - 20 * s, 2.2 * s, rnd() < 0.7 ? '190, 220, 200' : '220, 170, 120', 0.85); };
       for (let i = 0; i < 9; i++) { const s = 0.35 + rnd() * 0.3; angler(c + (rnd() - 0.5) * 240, PH * (0.1 + rnd() * 0.7), s, rnd() < 0.5 ? 1 : -1); } // far off
       angler(c - 80, PH * 0.6, 1.2, 1); angler(c + 82, PH * 0.42, 1.0, -1); angler(c + 60, PH * 0.82, 0.75, -1); angler(c - 60, PH * 0.2, 0.6, 1); } },
-  watcher: { name: 'It Watches', price: 300, water: ['#120c0c', '#080506', '#030202'], light: 'rgba(60, 20, 16, 0.12)', snow: 100, snowCol: '190, 170, 160', line: 'Something in the deep has noticed you.',
+  watcher: { rarity: 'mythical', name: 'It Watches', price: 300, water: ['#120c0c', '#080506', '#030202'], light: 'rgba(60, 20, 16, 0.12)', snow: 100, snowCol: '190, 170, 160', line: 'Something in the deep has noticed you.',
     draw(y, rnd, FW, PH) { const ex = FW / 2 + 6, ey = PH * 0.36, R = 105; // the eye vast behind him: he stands against it
       const halo = y.createRadialGradient(ex, ey, 0, ex, ey, R * 3); halo.addColorStop(0, 'rgba(120, 30, 20, 0.35)'); halo.addColorStop(1, 'rgba(120, 30, 20, 0)'); y.fillStyle = halo; y.fillRect(0, 0, FW, PH); // the water red round it
       y.save(); y.beginPath(); y.moveTo(ex - R * 1.6, ey); y.quadraticCurveTo(ex, ey - R * 1.05, ex + R * 1.6, ey); y.quadraticCurveTo(ex, ey + R * 1.05, ex - R * 1.6, ey); y.clip(); // the lids
