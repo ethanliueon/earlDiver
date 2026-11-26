@@ -5,6 +5,13 @@ Decided (owner, 7.6.37): the helmet stays on in the sea (heads are seen in the c
 women get their own four faces (oval, heart, long, round), no extras (no aged or scarred set) in the first batch; a
 helmet item with its own options may come in a later update.
 
+**7.6.39 (owner): the look is the ChatGPT reference** (`tools/heads/ref/style_reference.png`, cropped from the owner's
+sheet `style_sheet.png`): a hand-painted animated film still, soft brush shading in simple clean planes, a natural calm adult face,
+muted natural skin. It sets the shape of the face and the painting (it replaces the earlier "old field guide" wording). Every
+prompt attaches two images: the template to edit, then the reference; once the first head passes, that head (`ref/anchor.png`)
+becomes the reference for the rest. The reference's suit (dark, close-fitting, a high collar, a harness and tank) is the look
+for a later redraw of the diver's suit and helmet, not part of the heads job.
+
 Written 7.5.0 at the owner's request, to be done later. A PDF version for the other Claude comes after.
 
 ## Why

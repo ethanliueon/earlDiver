@@ -40,19 +40,22 @@ so the head is never seen in the sea. Today the heads are drawn in code (below);
 
 <section>
 <h2>2. The look</h2>
-<p>The game is a quiet horror about being small in a dark sea. Its pictures are <b>painted by hand, matte and muted, worn</b>: olive,
-bronze, bone, deep water and rust. Nothing glossy, nothing cartoon, nothing that looks generated. Think of a plate in an old
-illustrated field guide.</p>
-<div class="row"><div><img src="ref/game_loading.jpg"><p class="cap">The loading screen.</p></div><div><img src="ref/game_slots.jpg"><p class="cap">Choosing a diver.</p></div></div>
+<p>The game is a quiet horror about being small in a dark sea, in muted colours: olive, bronze, bone, deep water and rust. <b>The
+owner has chosen the look of the heads</b> from a ChatGPT image (below): a hand-painted animated film still. Soft brush shading
+in simple clean planes, a natural adult face, calm, muted natural skin; no outlines, no gloss. <b>This is the benchmark for the
+shape of the face and the painting.</b></p>
+<div class="row"><div style="flex:0.62"><img src="ref/style_reference.png" style="max-height:48mm"><p class="cap"><code>ref/style_reference.png</code>: attached to every prompt as Image 2 (section 6).</p></div>
+<div><img src="ref/style_sheet.png"><p class="cap">The whole sheet it comes from (<code>ref/style_sheet.png</code>), for you to look at; never attach this one: its three views and full figure would be copied.</p></div></div>
 <h3>A head passes the look when</h3>
-<ul><li>It is <b>painted</b>: soft brush modelling, light from the upper left, a little texture; no outlines anywhere.</li>
+<ul><li>It is <b>painted like the reference</b>: soft brush shading in simple clean planes, light from the upper left; no outlines anywhere.</li>
 <li>It is <b>matte</b>: no shine on skin or hair, no 3D-render plastic, no airbrushed glamour.</li>
 <li>It is <b>a real adult face in profile</b>: a believable jaw that turns under the ear, a nose, lips and chin; calm, no expression.</li>
 <li>It is <b>exactly side-on, facing right</b>, the same size and place as the template.</li></ul>
 <h3>Reject on sight</h3>
 <table><tr><th>Failure</th><th>What it looks like</th></tr>
 <tr><td>Generated gloss</td><td>Shiny skin, rim lights, perfect smoothness, a CGI or stock-art finish.</td></tr>
-<tr><td>Cartoon</td><td>Outlines, flat cel shading, big eyes, anime or comic features.</td></tr>
+<tr><td>Cartoon</td><td>Outlines, hard flat cel shading, big eyes, anime or comic features (the reference is soft and natural, not a cartoon).</td></tr>
+<tr><td>Copied reference</td><td>The reference's hair, clothes, shoulders, dark background or a second view showing up in the piece.</td></tr>
 <tr><td>Moved</td><td>The head turned toward the viewer, tilted, larger, smaller or shifted; a neck or shoulders added.</td></tr>
 <tr><td>New background</td><td>Any shading, texture, vignette or scene instead of flat pure green.</td></tr>
 <tr><td>Extras</td><td>Text, signatures, frames, jewellery, glasses, earrings, clothing, props.</td></tr>
@@ -93,12 +96,14 @@ then removes the head. Do not reuse a beard across jaws.</div>
 <section>
 <h2>5. The prompts</h2>
 <p>Every prompt is in <code>pieces.json</code>, word for word. <b>Send them exactly; never reword them.</b> The only thing you ever add is a
-fix line from the list in section 9. Each prompt is the fixed preamble plus one change:</p>
-<pre>Edit this image. Keep the canvas size, the head's position, size and angle, the four black corner crosses and the flat pure
-green background exactly as they are. Change only what is described below. Paint it by hand, matte and muted, like a plate in
-an old illustrated field guide: soft light from the upper left, no outlines, no gloss or shine, no text, no extra objects,
-no new background. Change: give the head a square face: a strong, low, sharply turned jaw angle and a broad chin. Keep the
-skull, the ear, the back of the head and the eye exactly where they are; keep the neutral grey-beige skin and no hair at all.</pre>
+fix line from the list in section 9. Each prompt is the fixed preamble (two images: the template to edit, then the style reference) plus one change:</p>
+<pre>Two images are attached. Image 1 is the picture to edit. Image 2 is a style reference only: match how it is painted and how
+its face is shaped (soft painted shading, simple clean planes, a natural adult face, a calm expression), but do not copy its
+person, hair, clothes, layout or dark background. Edit Image 1: keep its canvas size, the head's position, size and angle, the
+four black corner crosses and the flat pure green background exactly as they are, and change only what is described below.
+Paint it like Image 2: a hand-painted animated film still, ... Change: give the head a square face: a strong, low, sharply
+turned jaw angle and a broad chin. Keep the skull, the ear, the back of the head and the eye exactly where they are; keep the
+neutral grey-beige skin and no hair at all.</pre>
 <p>Hair, beards and the cap end with: <i>"Then show only the hair, alone on the same flat pure green background, in the same place it
 would sit on this head: remove the head, the face and the neck entirely, and keep the four corner crosses."</i> They are asked for in
 <b>one neutral mid grey</b>; the game tints them to the seven hair colours.</p>
@@ -109,12 +114,15 @@ would sit on this head: remove the head, the face and the neck entirely, and kee
 <ol>
 <li>The owner logs in to ChatGPT in their browser before you start. <b>You never type a password or log in.</b></li>
 <li>Make the work folder: <code>~/hatchetfish-heads/raw/</code>, <code>passed/</code>, <code>log.json</code>, and a copy of <code>pieces.json</code>.</li>
-<li>For each piece: open a <b>new chat</b> (one piece per chat, so earlier images never pull the style), attach the piece's template file
-(the original, never a previous result), paste the prompt, send.</li>
+<li>For each piece: open a <b>new chat</b> (one piece per chat, so earlier images never pull the style) and attach <b>two images, in
+this order</b>: (1) the piece's template (the original, never a previous result), (2) the style reference. Paste the prompt, send.</li>
 <li>Wait for the image to finish. Download it at full size (the image's own download button, not a screenshot) and save it as
 <code>raw/&lt;file&gt;</code>, adding <code>_try2</code>, <code>_try3</code> for retries.</li>
 <li>Run the check (section 8), look at the image and its overlay, score it, and update the checklist and the log.</li>
 <li>Passed: copy to <code>passed/&lt;file&gt;</code>. Failed: retry in a <b>new chat</b> with the fix lines (section 9).</li></ol>
+<div class="note"><b>The reference changes once.</b> Until the first head (<code>head_m_oval</code>, first in the checklist) passes, Image 2 is
+<code>ref/style_reference.png</code>. When it passes, copy it to <code>ref/anchor.png</code> and use <b>that</b> as Image 2 for every later
+piece: it has our own head's proportions and the owner's chosen style, so all 28 pieces match each other.</div>
 <div class="note">If ChatGPT answers in words instead of an image, or asks a question, reply once: "Please make the edited image now,
 exactly as described." If it refuses, record the refusal and move on; do not argue with it.</div>
 </section>
@@ -153,8 +161,9 @@ python3 check_piece.py raw/hair_swept.png hair m</pre>
 <tr><td>Same angle and place?</td><td>identical on the overlay</td><td>slight drift</td><td>turned, tilted, resized</td></tr>
 <tr><td>Anatomy?</td><td>believable</td><td>one small oddity</td><td>wrong (two ears, melted jaw)</td></tr>
 <tr><td>The asked-for change, and only that?</td><td>clearly that</td><td>weak or with a small extra</td><td>not there, or something else changed</td></tr>
-<tr><td>Free of anything generated or extra?</td><td>clean</td><td>a faint artefact</td><td>text, objects, background</td></tr></table>
-<p><b>Pass</b> = automatic check passed, eye score ≥ 8 of 10, and no zero. Write the scores and one sentence of reasons in the log.</p>
+<tr><td>Free of anything generated or extra?</td><td>clean</td><td>a faint artefact</td><td>text, objects, background</td></tr>
+<tr><td>Painted like the reference (Image 2)?</td><td>same hand, same face shapes</td><td>close, a little off</td><td>another style</td></tr></table>
+<p><b>Pass</b> = automatic check passed, eye score ≥ 10 of 12, and no zero. Write the scores and one sentence of reasons in the log.</p>
 </section>
 
 <section>
@@ -166,6 +175,8 @@ fix line added at the end for each thing that failed. The fix lines are in <code
 <tr><td>skull_match</td><td>Keep the back of the head, the crown, the ear and the nape exactly where they were in the original; change only the face in front of the ear.</td></tr>
 <tr><td>key_border</td><td>Keep the background one flat pure green (#00FF00) everywhere: no shading, texture, vignette or scenery.</td></tr>
 <tr><td>gloss (eye)</td><td>Make it matte and painted by hand: no shine, no 3D-render look, no outlines.</td></tr>
+<tr><td>style (eye)</td><td>Paint it the way Image 2 is painted: soft painted shading and simple clean planes, as in an animated film still; keep Image 1's layout.</td></tr>
+<tr><td>copied reference</td><td>Do not copy anything from Image 2 except its painting style: no hair, clothes, shoulders, dark background or second view.</td></tr>
 <tr><td>angle (eye)</td><td>Keep the exact side-on profile, facing right, as in the original; do not turn the head.</td></tr>
 <tr><td>…</td><td>(the rest in <code>fix_lines</code>)</td></tr></table>
 <p><b>Three tries at most.</b> After the third failure mark the piece <code>needs_owner</code>, keep the best try in <code>raw/</code>, note why

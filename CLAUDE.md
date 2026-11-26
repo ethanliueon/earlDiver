@@ -311,6 +311,10 @@ last desktop build is kept on the branch `desktop-4.25.5`).
 - (7.6.37, owner) The painted heads' ChatGPT job is handed over: docs/HEADS_HANDOFF.pdf and tools/heads/ (templates made
   from face_draw.js's own bald head, hair 'none', on key green with corner crosses; pieces.json, 28 pieces with exact
   prompts and fix lines; check_piece.py). Helmet on in the sea; women their own four faces; no extras in batch one.
+- (7.6.39, owner) The painted heads' look is the owner's ChatGPT reference (tools/heads/ref/style_reference.png): a hand-painted
+  animated film still, soft shading in clean planes, a natural calm face; it sets the face's shape and the painting. Every
+  prompt sends the template, then the reference; the first passed head becomes the reference after. Its suit (dark, close,
+  high collar, harness) is the look for a later suit/helmet redraw.
 - **(7.6.28, 7.6.33, owner) Saves carry over**: a change must not wipe or break the owner's saves (economy.js `migrate` fills
   anything new from a fresh profile), and the game quietly keeps the last version's save beside each slot
   (`earl.save.slotN.prev`; economy.js `restorePrevSave`). No backup or restore buttons (7.6.34, owner: unnecessary). Superseded:
