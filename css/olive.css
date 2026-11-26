@@ -2396,10 +2396,11 @@ html body #inventory .eq-stage > .eq-scene:not(#_a) { position: absolute; z-inde
 html body #inventory .eq-stage > .eq-scene span { position: relative; z-index: 1; font: 600 13px var(--o-text); letter-spacing: 0.06em; text-transform: uppercase; color: rgba(230, 222, 196, 0.6); }
 html body #inventory .eq-stage > .eq-scene b { position: relative; z-index: 1; font: 700 15px var(--o-text); letter-spacing: 0.02em; text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8); }
 /* the scene's rarity as the slots show theirs: its light pooling up from the bottom, a fine lit edge along the foot */
-html body #inventory .eq-stage > .eq-scene::before { content: ''; position: absolute; inset: 0; pointer-events: none; background: radial-gradient(120% 70% at 50% 120%, color-mix(in srgb, var(--rc) 40%, transparent), transparent 75%); }
-html body #inventory .eq-stage > .eq-scene::after { content: ''; position: absolute; inset: 0; pointer-events: none; border-bottom: 1px solid color-mix(in srgb, var(--rc) 75%, transparent); }
+html body #inventory .eq-stage > .eq-scene::before { content: ''; position: absolute; inset: 0; pointer-events: none; background: radial-gradient(130% 100% at 50% 125%, color-mix(in srgb, var(--rc) 46%, transparent), color-mix(in srgb, var(--rc) 12%, transparent) 55%, transparent 85%); }
+html body #inventory .eq-stage > .eq-scene::after { content: ''; position: absolute; inset: 0; pointer-events: none; border: 1px solid color-mix(in srgb, var(--rc) 82%, transparent); border-top: 0;
+  -webkit-mask-image: linear-gradient(to top, #000 0, #000 12%, rgba(0, 0, 0, 0.4) 40%, transparent 78%); mask-image: linear-gradient(to top, #000 0, #000 12%, rgba(0, 0, 0, 0.4) 40%, transparent 78%); box-shadow: inset 0 -6px 10px -6px color-mix(in srgb, var(--rc) 70%, transparent); }
 html body #inventory .eq-stage > .eq-scene.r-common::before, html body #inventory .eq-stage > .eq-scene.r-common::after { opacity: 0.4; }
-html body #inventory .eq-stage > .eq-scene.r-mythical::before, html body #inventory .eq-stage > .eq-scene.r-legendary::before { animation: slot-breathe 4.5s ease-in-out infinite; }
+html body #inventory .eq-stage > .eq-scene.r-legendary::before, html body #inventory .eq-stage > .eq-scene.r-mythical::before { animation: slot-breathe 4.5s ease-in-out infinite; }
 /* (7.6.54, owner) the scenes panel: a grid of small pictures, each with its name and price */
 html body #inventory .scene-pick .ip-box:not(#_a):not(#_b) { max-width: 760px; }
 html body #inventory .scene-pick .sc-grid { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 10px; max-height: 420px; overflow-y: auto; scrollbar-width: none; }

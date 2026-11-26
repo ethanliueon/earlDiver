@@ -151,15 +151,35 @@ export const BAG_SCENES = {
       for (let i = 0; i < 14; i++) jelly(y, rnd, rnd() * FW, PH * (0.08 + rnd() * 0.5), 6 + rnd() * 8, '150, 170, 170', 0.25); // far, small, faint
       for (let i = 0; i < 7; i++) jelly(y, rnd, rnd() * FW, PH * (0.12 + rnd() * 0.55), 14 + rnd() * 14, rnd() < 0.3 ? '200, 160, 140' : '170, 196, 190', 0.55);
       jelly(y, rnd, c - 82, PH * 0.3, 32, '200, 170, 140', 0.7); jelly(y, rnd, c + 84, PH * 0.16, 26, '170, 196, 190', 0.6); jelly(y, rnd, c + 70, PH * 0.62, 16, '170, 196, 190', 0.5); } },
-  lanterns: { rarity: 'legendary', name: 'Lantern Choir', price: 160, water: ['#0b151a', '#05090c', '#010304'], light: 'rgba(30, 40, 46, 0.08)', snow: 80, line: "Anglerfish, waiting in the dark, each with its own light.",
-    draw(y, rnd, FW, PH) { const c = FW / 2;
-      const angler = (ax, ay, s, d) => { y.fillStyle = 'rgba(14, 16, 16, 0.92)'; y.beginPath(); y.ellipse(ax, ay, 16 * s, 13 * s, 0, 0, TAU); y.fill(); // body
-        y.beginPath(); y.moveTo(ax - d * 14 * s, ay); y.lineTo(ax - d * 26 * s, ay - 7 * s); y.lineTo(ax - d * 26 * s, ay + 7 * s); y.closePath(); y.fill(); // tail
-        y.fillStyle = 'rgba(200, 196, 180, 0.6)'; for (let k = 0; k < 5; k++) { y.beginPath(); y.moveTo(ax + d * 9 * s + d * k * 1.6 * s, ay + 3 * s); y.lineTo(ax + d * 9.8 * s + d * k * 1.6 * s, ay + 7 * s); y.lineTo(ax + d * 10.6 * s + d * k * 1.6 * s, ay + 3 * s); y.fill(); } // teeth
-        y.strokeStyle = 'rgba(40, 44, 44, 0.9)'; y.lineWidth = 1.2; y.beginPath(); y.moveTo(ax + d * 4 * s, ay - 11 * s); y.quadraticCurveTo(ax + d * 14 * s, ay - 30 * s, ax + d * 22 * s, ay - 20 * s); y.stroke();
-        glowDot(y, ax + d * 22 * s, ay - 20 * s, 2.2 * s, rnd() < 0.7 ? '190, 220, 200' : '220, 170, 120', 0.85); };
-      for (let i = 0; i < 9; i++) { const s = 0.35 + rnd() * 0.3; angler(c + (rnd() - 0.5) * 240, PH * (0.1 + rnd() * 0.7), s, rnd() < 0.5 ? 1 : -1); } // far off
-      angler(c - 80, PH * 0.6, 1.2, 1); angler(c + 82, PH * 0.42, 1.0, -1); angler(c + 60, PH * 0.82, 0.75, -1); angler(c - 60, PH * 0.2, 0.6, 1); } },
+  lanterns: { rarity: 'legendary', name: 'Lantern Choir', price: 160, water: ['#0a1317', '#05090c', '#020405'], light: 'rgba(30, 40, 46, 0.06)', snow: 60, line: 'Anglerfish, waiting in the dark, each with its own light.',
+    // (7.6.59, owner) the anglers lit by their own lures: each lure a small bacterial light on a rod, its glow catching the warty
+    // skin, the teeth and the eye in front of it and the sea snow drifting through it; far ones are only the lights; one
+    // rests on the bottom; a small fish comes in toward the nearest lure
+    draw(y, rnd, FW, PH) { const c = FW / 2, floor = PH * 0.92;
+      const lights = [];
+      const angler = (ax, ay, s, d, lit) => { // d: which way it faces (1 right)
+        const lx = ax + d * 30 * s, ly = ay - 24 * s, warm = rnd() < 0.3, rgb = warm ? '226, 176, 120' : '196, 226, 206';
+        // the body: round, dark, its front lit from the lure above it
+        const bg = y.createRadialGradient(ax + d * 10 * s, ay - 8 * s, 2 * s, ax, ay, 22 * s); bg.addColorStop(0, `rgba(${warm ? '70, 54, 40' : '48, 58, 54'}, ${lit})`); bg.addColorStop(0.55, `rgba(20, 22, 22, ${lit})`); bg.addColorStop(1, `rgba(8, 9, 9, ${lit})`);
+        y.fillStyle = bg; y.beginPath(); y.moveTo(ax + d * 17 * s, ay + 2 * s); y.bezierCurveTo(ax + d * 16 * s, ay - 16 * s, ax - d * 8 * s, ay - 17 * s, ax - d * 15 * s, ay - 4 * s); y.bezierCurveTo(ax - d * 18 * s, ay + 6 * s, ax - d * 6 * s, ay + 15 * s, ax + d * 6 * s, ay + 13 * s); y.quadraticCurveTo(ax + d * 16 * s, ay + 10 * s, ax + d * 17 * s, ay + 2 * s); y.fill();
+        y.fillStyle = `rgba(8, 9, 9, ${lit})`; y.beginPath(); y.moveTo(ax - d * 14 * s, ay); y.quadraticCurveTo(ax - d * 22 * s, ay - 9 * s, ax - d * 27 * s, ay - 8 * s); y.lineTo(ax - d * 24 * s, ay + 1 * s); y.lineTo(ax - d * 28 * s, ay + 9 * s); y.quadraticCurveTo(ax - d * 21 * s, ay + 8 * s, ax - d * 14 * s, ay + 4 * s); y.fill(); // the tail, ragged
+        y.fillStyle = `rgba(${rgb}, ${0.16 * lit})`; for (let k = 0; k < 9; k++) { const a = -0.4 + rnd() * 1.6; y.beginPath(); y.arc(ax + d * Math.cos(a) * 13 * s, ay - Math.sin(a) * 10 * s, (0.8 + rnd()) * s, 0, TAU); y.fill(); } // warts catching the light
+        y.fillStyle = `rgba(4, 4, 4, ${lit})`; y.beginPath(); y.moveTo(ax + d * 17 * s, ay + 1 * s); y.quadraticCurveTo(ax + d * 8 * s, ay + 4 * s, ax + d * 4 * s, ay + 9 * s); y.quadraticCurveTo(ax + d * 12 * s, ay + 9 * s, ax + d * 17 * s, ay + 5 * s); y.fill(); // the gape
+        y.fillStyle = `rgba(214, 206, 186, ${0.7 * lit})`; for (let k = 0; k < 6; k++) { const tx = ax + d * (15 - k * 2) * s, ty = ay + (1.5 + k * 1.2) * s, l = (2.4 + rnd() * 2) * s; y.beginPath(); y.moveTo(tx - 0.6 * s, ty); y.lineTo(tx + d * 0.4 * s, ty + l * 0.9); y.lineTo(tx + 0.6 * s, ty); y.fill(); } // needle teeth
+        y.fillStyle = `rgba(${rgb}, ${0.55 * lit})`; y.beginPath(); y.arc(ax + d * 8 * s, ay - 6 * s, 1.3 * s, 0, TAU); y.fill(); y.fillStyle = `rgba(0,0,0,${lit})`; y.beginPath(); y.arc(ax + d * 8.2 * s, ay - 6 * s, 0.6 * s, 0, TAU); y.fill(); // its small eye
+        y.strokeStyle = `rgba(60, 64, 60, ${0.8 * lit})`; y.lineWidth = 1 * s; y.beginPath(); y.moveTo(ax + d * 5 * s, ay - 14 * s); y.quadraticCurveTo(ax + d * 16 * s, ay - 34 * s, lx, ly); y.stroke(); // the rod
+        lights.push([lx, ly, s, rgb, lit]); };
+      for (let i = 0; i < 12; i++) { const px = c + (rnd() - 0.5) * 300, py = PH * (0.08 + rnd() * 0.6), s2 = 0.25 + rnd() * 0.2; lights.push([px, py, s2, rnd() < 0.3 ? '226, 176, 120' : '196, 226, 206', 0.6]); } // far off: only their lights
+      angler(c - 70, PH * 0.3, 0.55, 1, 0.75); angler(c + 92, PH * 0.22, 0.6, -1, 0.75);
+      seabed(y, rnd, FW, PH, floor, '#111614', '#050706');
+      angler(c + 70, floor - 6, 0.9, -1, 0.95); // resting on the bottom
+      angler(c - 84, PH * 0.6, 1.35, 1, 1); // the near one
+      { const fx = c - 84 + 30 * 1.35 + 22, fy = PH * 0.6 - 24 * 1.35 - 4; school(y, rnd, fx, fy, 1, 1, 'rgba(60, 70, 66, 0.8)', -1, 1.1); } // a small fish come to see the light
+      y.save(); y.globalCompositeOperation = 'lighter';
+      for (const [lx, ly, s2, rgb, lit] of lights) { const r = 34 * s2 + 6, g = y.createRadialGradient(lx, ly, 0, lx, ly, r * 2.2); g.addColorStop(0, `rgba(${rgb}, ${0.42 * lit})`); g.addColorStop(0.2, `rgba(${rgb}, ${0.14 * lit})`); g.addColorStop(1, `rgba(${rgb}, 0)`); y.fillStyle = g; y.fillRect(lx - r * 2.2, ly - r * 2.2, r * 4.4, r * 4.4);
+        for (let k = 0; k < 10 * s2 + 2; k++) { const a = rnd() * TAU, d2 = rnd() * r * 1.6; y.fillStyle = `rgba(${rgb}, ${0.3 + rnd() * 0.4})`; y.fillRect(lx + Math.cos(a) * d2, ly + Math.sin(a) * d2, 1, 1); } // snow lit as it drifts through
+        y.fillStyle = `rgba(${rgb}, 0.95)`; y.beginPath(); y.arc(lx, ly, Math.max(0.8, 2.2 * s2), 0, TAU); y.fill(); }
+      y.restore(); } },
   watcher: { rarity: 'mythical', name: 'It Watches', price: 300, water: ['#120c0c', '#080506', '#030202'], light: 'rgba(60, 20, 16, 0.12)', snow: 100, snowCol: '190, 170, 160', line: 'Something in the deep has noticed you.',
     draw(y, rnd, FW, PH) { const ex = FW / 2 + 6, ey = PH * 0.36, R = 105; // the eye vast behind him: he stands against it
       const halo = y.createRadialGradient(ex, ey, 0, ex, ey, R * 3); halo.addColorStop(0, 'rgba(120, 30, 20, 0.35)'); halo.addColorStop(1, 'rgba(120, 30, 20, 0)'); y.fillStyle = halo; y.fillRect(0, 0, FW, PH); // the water red round it
