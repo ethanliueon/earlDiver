@@ -253,7 +253,7 @@ export function kitOf(P) {
   }
   return P.kit;
 }
-function mk(id, rnd) { const def = ITEMS[id]; return { u: newUid(), id, sk: rollSkills(def, rnd), ...(def.legend ? { leg: def.legend } : {}), ...(def.kind === 'ability' ? { load: 1, loadAt: Date.now() } : {}) }; } // (7.6.62, owner) every new scroll, however it comes, with one charge loaded
+export function mk(id, rnd) { const def = ITEMS[id]; return { u: newUid(), id, sk: rollSkills(def, rnd), ...(def.legend ? { leg: def.legend } : {}), ...(def.kind === 'ability' ? { load: 1, loadAt: Date.now() } : {}) }; } // (7.6.62, owner) every new scroll, however it comes, with one charge loaded
 export const rollSkillsFor = (def, rnd) => rollSkills(def, rnd); // (3.0.0) the old one's wares are rolled when laid out
 export function giveRolled(P, q) { if (lockerFree(P) <= 0) return null; const n = { u: newUid(), id: q.id, sk: q.sk || [], isNew: true, ...(q.leg ? { leg: q.leg } : {}) }; kitOf(P).items.push(n); P.bagGot = (P.bagGot || 0) + 1; /* (5.9.6) for the bag's "!" */ bump(P); return n; }
 export const lockerCount = (P) => { const K = kitOf(P), on = new Set(Object.values(K.on)); return K.items.filter((q) => !on.has(q.u)).length; }; // (3.0.31) only what he hasn't on

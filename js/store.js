@@ -64,7 +64,7 @@ export function testHtml(P, items) {
   return `<div class="st-plate st-test st-shopplate"><button class="st-x" aria-label="Close">×</button>${shopTabs('test', true, P)}
     <div class="tt-rows"><div class="tt-row"><b>Pearls</b><button data-test="pearls|50">+50</button><button data-test="pearls|500">+500</button></div><div class="tt-row"><b>Cash</b><button data-test="cash|1000">+$1,000</button><button data-test="cash|10000">+$10,000</button><button data-test="cash|100000">+$100,000</button><button data-test="cash|1000000">+$1,000,000</button></div>
     <div class="tt-row"><b>Chests</b>${chest}</div>
-    <div class="tt-row"><b>Abilities</b><button data-test="abil|all">Every ability</button><button data-test="abil|ready">Cooldown ready</button></div>
+    <div class="tt-row"><b>Abilities</b><button data-test="abil|all">Every ability</button><button data-test="abil|ready">Cooldown ready</button><button data-test="abil|full">All skills, full charges</button></div>
     <div class="tt-row"><b>Items</b><select class="tt-item">${opts}</select><button data-test="item|tt-item">Give</button><button data-test="item3|tt-item">Give 3</button></div>
     <div class="tt-row"><b>Skills</b><select class="tt-skill">${skills}</select><button data-test="item|tt-skill">Give</button><button data-test="item3|tt-skill">Give 3</button></div>
     <div class="tt-row"><b>Reset</b><button data-test="reset|lessons">Lessons</button><button data-test="reset|tutorial">Tutorial</button><button data-test="reset|board">First board</button></div></div></div>`;

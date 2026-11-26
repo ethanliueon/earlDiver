@@ -39,7 +39,7 @@ import { abilityOf, abilityState, whyNot, ALL_ABILITIES, cooldownLeft, minLeft, 
 import { startLegendFx } from './legendfx.js';
 import { SKILLS, RARITY, skillCol } from './item_data.js';
 import { pictureOf, hourglassURL } from './catalog.js';
-import { kitOf } from './items.js';
+import { kitOf, mk as mkItem } from './items.js';
 import { ITEMS, ownsItem, giveItem, putOn, takeOff, instOf, isOn, removeItem, sellValue, lockerFree, skillLv, setOn, totals } from './items.js';
 import { LEGENDARY } from './specimens.js';
 import { readSlot, setSlot, getSlot, lastSlot, flushSave, SLOTS, SUB_AIR } from './economy.js';
@@ -323,6 +323,8 @@ const ui = new UI({
     if (act === 'pearls') { P.pearls = (P.pearls || 0) + (+arg); saveProfile(P); hud.toast(`+${arg} pearls (test)`); return; }
     if (act === 'cash') { const n = +arg; P.cash = Math.round((P.cash + n) * 100) / 100; P.lifetime = Math.round((P.lifetime + n) * 100) / 100; hud.toast(`+${money(n)} (test)`); }
     else if (act === 'chest') { const q = giveItem(P, 'chest_' + arg); if (q) ui.showGains([{ kind: 'item', id: 'chest_' + arg, how: 'Test' }]); else hud.toast('Locker full', 'warn'); }
+    else if (act === 'abil' && arg === 'full') { /* (7.6.83, owner) every skill, each with every charge it can hold, every cooldown ready */ let n = 0; for (const id of ALL_ABILITIES) if (ITEMS[id] && !ownsItem(P, id)) { kitOf(P).items.push(mkItem(id)); n++; } /* past the locker's 60 on purpose: the test wants every one */
+      for (const q of P.kit.items) { const A = abilityOf(q.id); if (A) { q.load = maxLoad(A); q.loadAt = Date.now(); } } P.abilReadyAt = P.abilReadyAt2 = P.abilReadyAt3 = 0; saveProfile(P); hud.toast(`Every skill, charges full (${n} new, test)`); }
     else if (act === 'abil') { if (arg === 'ready') { P.abilReadyAt = 0; hud.toast('Ability ready (test)'); } else { let n = 0; for (const id of ALL_ABILITIES) if (ITEMS[id] && !ownsItem(P, id) && giveItem(P, id)) n++; hud.toast(`${n} abilities into the locker (test)`); } }
     else if (act === 'item' && ITEMS[arg]) { const q = giveItem(P, arg); if (q) ui.showGains([{ kind: 'item', id: arg, how: 'Test' }]); else hud.toast('Locker full', 'warn'); }
     else if (act === 'reset') {
