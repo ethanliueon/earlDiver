@@ -605,7 +605,7 @@ function depthPearls() {
   if (P.tut === 'on') return;
   for (const [m] of depthMarks(d)) if (d >= m && (P.depthRec || 0) < m) { /* (7.6.38, owner) no pearls here any more: the Into the deep achievement pays them, when claimed */
     P.depthRec = m; saveProfile(P);
-    (g.obsLabels || (g.obsLabels = [])).push({ c: null, x: e.inSub ? g.sub.x : e.x, y: (e.inSub ? g.sub.y : e.y) - 0.8, text: `${m.toLocaleString('en-US')} m`, rar: null, nameCol: '#e4dcc6', t: 0 });
+    (g.obsLabels || (g.obsLabels = [])).push({ c: null, x: e.inSub ? g.sub.x : e.x, y: (e.inSub ? g.sub.y - 3.4 : e.y - 2.3), text: `${m.toLocaleString('en-US')} m` /* (7.6.78) written above him or the sub, never over them */, rar: null, nameCol: '#e4dcc6', t: 0 });
   }
 }
 // (7.4.14) a pet he owns out with him: its size and its glow come from petshop.js (pets.js updatePet)
@@ -1391,18 +1391,18 @@ function tutor() {
     // (4.3.4) one dive: down to the fish, observe it, catch it (the first swing misses, the next catches), back up.
     // The step is only done at the surface, so the claim is never made underwater.
     const part = firstFishPart(P);
-    if (part === 3) { text = 'Got it. Swim up to the surface'; to = { x: e.x + (e.facing || 1) * 2, y: 0.3 };  }
+    if (part === 3) { text = 'Got it. Swim up to sell it'; /* (7.6.78, owner) each line says the action and why, in a few words */ to = { x: e.x + (e.facing || 1) * 2, y: 0.3 };  }
     else {
       g.tutForce = P.tutMissed ? 'catch' : 'miss';
       fishStep(() => {
-        if (part <= 1) { text = 'Tap the fish to observe it'; offer('observe', 'Observe', 'obs'); spot = fishSpot(fish); } // (7.6.71, owner) no eye button: the glove points at the fish itself, and a tap on it observes
+        if (part <= 1) { text = 'Tap the fish to observe it: its name goes in your journal'; offer('observe', 'Observe', 'obs'); spot = fishSpot(fish); } // (7.6.71, owner) no eye button: the glove points at the fish itself, and a tap on it observes
         else if (g.tutOops && g.time - g.tutOops < 3.5) { text = 'It got away. Try again'; prompt = { text: 'It got away. Try again', col: '#f2c7a0' }; }
         else { text = g.toolSel !== 'net' ? 'Take out your net' : 'Swing your net to catch it'; prompt = netPrompt(); spot = spot || netSpot(true); if (spot) prompt = null; /* (5.5.3) the ringed button and its words say it already */ }
       });
       if (text === 'Swim to the orange fish') text = 'Swim down to the orange fish under the boat';
     }
   } else if (m.id === 'sell') {
-    if (!P.tutJournal) { const qOpen = shown('quests'); text = qOpen ? 'Turn to the Journal' : 'Open your journal'; spot = jOpen ? null : qOpen ? { sel: ['#booktabs [data-t="journal"]'], say: 'Journal' } : { act: 'journal', say: 'Open your journal' }; } // (7.1.0) from the Quests page, its tab
+    if (!P.tutJournal) { const qOpen = shown('quests'); text = qOpen ? 'Turn to the Journal' : 'Open your journal: every animal you observe is kept there'; spot = jOpen ? null : qOpen ? { sel: ['#booktabs [data-t="journal"]'], say: 'Journal' } : { act: 'journal', say: 'Open your journal' }; } // (7.1.0) from the Quests page, its tab
     else if (jOpen && (P.tutJTour || 0) < 4) { // (4.12.2) a short look round the journal before it is closed
       // (7.4.26, owner) the list, then the animal's page (the card on the left page, pointing across), then he opens All
       // himself, and only then is it said what All is
@@ -1425,7 +1425,7 @@ function tutor() {
     else if (!zone('boat', nearBoat)) { text = 'Bring your catch up beside the Margaret'; to = ladder; }
     else { const wx = BOAT.x + 4.5 * dir; // (7.1.0) the winch is used where it is: led there first, then offered
       sellDoor = true; /* (7.6.62, owner) its frame glows */ if (Math.abs(e.x - wx) >= 1.6) { text = 'Swim to the Sell door at the stern'; to = { x: wx, y: 0.4 }; } // (7.5.0, owner) at the door itself, not the ladder beside it
-      else { text = 'Tap the Sell door on the Margaret'; offer('sell', 'Sell your catch', 'U'); } }
+      else { text = 'Tap the Sell door: your catch becomes cash'; offer('sell', 'Sell your catch', 'U'); } }
   } else if (m.id === 'buy') {
     // the cheapest piece of gear he can afford at Bayside, to point at
     const pick = Object.values(ITEMS).filter((it) => it.shop === 'catalog' && it.price > 0 && it.price <= (P.cash || 0) && !ownsItem(P, it.id)).sort((a, b) => a.price - b.price)[0];
@@ -1441,7 +1441,7 @@ function tutor() {
       text = pick ? (`Buy the ${pick.name.toLowerCase()} for ${money(pick.price, false)}: it is lit below`) : 'Not enough cash yet: sell more catch first';
       spot = pick ? { sel, say: `Buy a piece of gear (the ${pick.name.toLowerCase()} is ${money(pick.price, false)})`, confirm: 'Confirm the purchase' } : null;
     }
-    else if (inCabin) { text = 'Walk to the computer to shop'; cabinTo('desk', 'shop', 'Open the shop'); }
+    else if (inCabin) { text = 'Walk to the computer: the shop sells better gear'; cabinTo('desk', 'shop', 'Open the shop'); }
     else if (g.aboard) { text = 'Go into the cabin: the door by the wheelhouse'; to = { x: BOAT.x + DOOR_M * dir, y: -1.2 }; door = true; if (zone('door', deckAtDoor())) { offer('cabin', 'Enter the cabin'); spot = null; g.tutVig = 1; text = 'Tap the cabin door to go in'; } /* (7.6.22, owner) no glove at the door: the door glows and the screen's edges darken */
       /* (7.6.62, owner) no glove: it turned with him and shifted awkwardly; the door's own frame glows (render.js, guide.door) */ } // (7.5.0, owner) up on deck: the glove points at the cabin door itself // (4.3.5) the door itself lit up
     else { text = 'Climb aboard the Margaret by the ladder'; to = ladder; g.tutLadder = true; if (ladderZone()) { offer('climb', 'Climb aboard'); text = 'Tap the ladder to climb aboard'; } }
@@ -1456,14 +1456,14 @@ function tutor() {
       g.tutLadder = !invOpen; if (!invOpen && ladderZone()) offer('climb', 'Climb aboard');
     }
     else if (invOpen) { text = `Put on ${name}`; spot = { sel: it ? [`#inventory [data-lk="on:${it.u}"]`, `#inventory .item-pop .ip-close`, `#inventory .lk-tile[data-u="${it.u}"]`, '#inventory [data-invtab="gear"]:not(.on)'] : [], say: `Tap ${name}, then Put it on` }; }
-    else { text = 'Open your inventory and put on what you bought'; spot = { act: 'inventory', say: 'Open your inventory' }; }
+    else { text = 'Open your bag and put on what you bought'; spot = { act: 'inventory', say: 'Open your bag' }; }
   } else if (m.id === 'subtrip') {
     // (7.4.0, owner) the sub trip keeps him on task: the interact button shows only what the step needs, and the water
     // past the trip's fish gently turns him back
     g.tutQuiet = true; g.tutFence = { x0: BOAT.x - 48, x1: BOAT.x + 28, y1: 42 };
     const sn = S.seen, part = sn.st || 0, sub = g.sub, ap = g.autopilot, set = (n) => { if ((sn.st || 0) < n) { sn.st = n; saveProfile(P); } };
     const inReach = () => { const T = findTarget(); return !!(T && T.kind === 'board'); };
-    const toSub = () => { to = { x: sub.x, y: sub.y }; text = 'Get in the sub'; g.tutVig = 1; /* (7.4.26, owner) the screen's edges darkened until he is in */ if (inReach()) spot = { key: 'f', say: 'Get in' }; };
+    const toSub = () => { to = { x: sub.x, y: sub.y }; text = 'Get in the sub: it goes deeper than you can swim'; g.tutVig = 1; /* (7.4.26, owner) the screen's edges darkened until he is in */ if (inReach()) spot = { key: 'f', say: 'Get in' }; };
     const offDeck = () => { const ax = g.aboard.x || 0, endX = ax < (DECK_MIN + DECK_MAX) / 2 ? DECK_MIN - 1.2 : DECK_MAX + 1.2; to = { x: BOAT.x + endX * dir, y: 0.6 }; text = 'Walk off the end of the deck to jump in'; };
     if (inCabin) { text = 'Out on deck'; cabinTo('door', 'outdoor', 'Out on deck'); }
     else if (part === 0) { if (e.inSub) set(1); else if (g.aboard) offDeck(); else toSub(); }
@@ -1480,13 +1480,13 @@ function tutor() {
       else { fish = F; to = { x: F.x, y: F.y }; text = part === 3 ? 'Net the fish' : 'Net the one below';
         // (7.5.0, owner) once, on the way down to the first fish: the sprint, lit on its own button
         const AB = currentAbility(); if (abilityState(g).activeT > 0 && AB && AB.speed && !P.tutSprint) { P.tutSprint = true; saveProfile(P); }
-        if (part === 3 && !P.tutSprint && AB && AB.speed && cooldownLeft(P) <= 0 && dist(e.x, e.y, F.x, F.y) > 5) { text = 'Sprint down to the fish'; spot = { key: 'ability', say: 'Sprint' }; }
+        if (part === 3 && !P.tutSprint && AB && AB.speed && cooldownLeft(P) <= 0 && dist(e.x, e.y, F.x, F.y) > 5) { text = 'Your skill: tap it to swim faster'; spot = { key: 'ability', say: 'Sprint' }; }
         else if (dist(e.x, e.y, F.x, F.y) < 2.6) { prompt = netPrompt(); spot = netSpot(); if (spot && g.catchTarget) prompt = null; } }
     }
     else if (part === 5) { // the sub is far above: call it to him, and get in
       if (e.inSub) set(6);
       else if ((ap && ap.state === 'coming') || dist(e.x, e.y, sub.x, sub.y) < 9) toSub();
-      else { text = 'Call the sub'; spot = { key: 'c', say: 'Call the sub' }; }
+      else { text = 'Call the sub: it comes to you'; spot = { key: 'c', say: 'Call the sub' }; }
     }
     else if (part === 6) { // (7.6.26, owner) the catch into the sub's tank: open it, drag a fish in (a ghost hand shows how, again
       // and again, until he does), tap it, read its card (what the tick means), close the room
@@ -1502,7 +1502,7 @@ function tutor() {
       if (sub.docked && e.inSub) { questEvent(P, 'subTrip'); saveProfile(P); }
       else if (!e.inSub) toSub();
       else if (g.homeRun) text = 'The autopilot takes you home';
-      else { text = 'Autopilot home'; spot = { key: 'c', say: 'Autopilot home' }; }
+      else { text = 'Autopilot home: the sub drives itself back'; spot = { key: 'c', say: 'Autopilot home' }; }
     }
   }
   g.tut = { text, to, fish, prompt, spot, door, sellDoor };

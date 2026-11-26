@@ -495,8 +495,17 @@ e.inSub ? [
         const dn = pressFx('slotempty' + a.slotN, x, y, r); ctx.save(); ctx.fillStyle = 'rgba(0,0,0,0.3)'; ctx.beginPath(); ctx.arc(x, y + r * 0.06, r * 1.02, 0, TAU); ctx.fill();
         const sg = ctx.createRadialGradient(x, y + r * 0.25, r * 0.2, x, y, r); sg.addColorStop(0, dn ? 'rgba(24,30,28,0.62)' : 'rgba(18,24,22,0.48)'); sg.addColorStop(1, 'rgba(6,9,9,0.66)'); ctx.fillStyle = sg; ctx.beginPath(); ctx.arc(x, y, r * 0.96, 0, TAU); ctx.fill();
         ctx.lineWidth = 1.6 * u; ctx.strokeStyle = 'rgba(0,0,0,0.85)'; ctx.beginPath(); ctx.arc(x, y, r * 0.96, 0, TAU); ctx.stroke();
-        ctx.strokeStyle = 'rgba(206,198,170,0.16)'; ctx.lineWidth = 1.2 * u; ctx.beginPath(); ctx.arc(x, y, r * 0.99, 0, TAU); ctx.stroke(); ctx.strokeStyle = 'rgba(214,206,178,0.24)'; ctx.beginPath(); ctx.arc(x, y, r * 0.99, Math.PI * 0.15, Math.PI * 0.85); ctx.stroke(); // its rim, the lip catching light below
+        ctx.strokeStyle = 'rgba(206,198,170,0.3)'; ctx.lineWidth = 1.4 * u; ctx.beginPath(); ctx.arc(x, y, r * 0.99, 0, TAU); ctx.stroke(); ctx.strokeStyle = 'rgba(214,206,178,0.42)'; /* (7.6.78, owner) the rim a little brighter: empty, not missing */ ctx.beginPath(); ctx.arc(x, y, r * 0.99, Math.PI * 0.15, Math.PI * 0.85); ctx.stroke(); // its rim, the lip catching light below
         ctx.strokeStyle = 'rgba(0,0,0,0.5)'; ctx.lineWidth = 3 * u; ctx.beginPath(); ctx.arc(x, y + 1.5 * u, r * 0.86, Math.PI * 1.1, Math.PI * 1.9); ctx.stroke(); // its inner shadow under the top rim
+        // (7.6.78, owner) what goes here, pressed into the metal: a rolled scroll engraved in the socket's floor, dim and flat (a shadow
+        // above, a lit lip below), so the slot reads "a scroll goes here" (empty, not missing); a tap still opens the bag
+        { const ang = -0.42, L = r * 0.44, hh = r * 0.23, er = r * 0.26; ctx.save(); ctx.translate(x, y + r * 0.04); ctx.rotate(ang);
+          const shape = () => { const p = new Path2D(); p.rect(-L, -hh, L * 2, hh * 2); p.ellipse(-L, 0, er * 0.5, er, 0, 0, TAU); p.ellipse(L, 0, er * 0.5, er, 0, 0, TAU); return p; };
+          const sh = shape(); ctx.translate(0, -1.1 * u); ctx.fillStyle = 'rgba(0,0,0,0.42)'; ctx.fill(sh); // the cut's shadow, up-left
+          ctx.translate(0, 2.2 * u); ctx.strokeStyle = 'rgba(214,206,178,0.2)'; ctx.lineWidth = 1 * u; ctx.stroke(sh); // the lit lower lip
+          ctx.translate(0, -1.1 * u); ctx.fillStyle = 'rgba(30,36,32,0.55)'; ctx.fill(sh);
+          ctx.strokeStyle = 'rgba(0,0,0,0.45)'; ctx.lineWidth = 0.9 * u; ctx.beginPath(); for (const k of [-0.45, 0, 0.45]) { ctx.moveTo(-L * 0.7, k * hh * 1.3); ctx.lineTo(L * 0.7, k * hh * 1.3); } ctx.stroke(); // its rolled lines
+          ctx.restore(); }
         ctx.restore(); hot(x - r, y - r, r * 2, r * 2, 'slotempty'); return; }
       if (a.dom) { this.journalAt = { x: (x + this.safeL) * kx, y: (y + this.safeT) * kx, r: r * kx }; this.journalR = r * kx; return; } // (5.6.9) the journal's HTML coin is placed here by main.js
       const down = pressFx(a.key, x, y, r);
