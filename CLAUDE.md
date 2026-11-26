@@ -25,6 +25,10 @@ last desktop build is kept on the branch `desktop-4.25.5`).
 2. **One mood, one palette.** Olive, bronze, bone, deep water, rust. No cyan, no bright gold, nothing cheerful. Colour
    means something: rarity colour only where rarity matters (the ability button, items), every plain button one worn
    grey-brown (the sub's controls a little olive, the glow stick a faint glow). Bright things are rare and earned.
+   (7.6.71, owner) Rarity colour goes on the thing itself (a coin's face, its sparks), never on a state or a label: a
+   skill's running ring is the same bone for every rarity, a scene's name is plain. Ask whether the colour says anything
+   the thing does not already say; if not, leave it out. Yellow and gold read the same on a phone: avoid both unless
+   truly earned.
    Panels, cards and menus are olive steel (the bag's and the pause's plate), never old paper; the journal is the one
    book. Every close cross sits in a panel's top right corner.
 3. **Detail is a reward.** Higher rarity = more intricate, then glow and particles at the top (legendaries give off
@@ -32,7 +36,10 @@ last desktop build is kept on the branch `desktop-4.25.5`).
    Never enlarge something so it can be read more easily: small details are meant to be found by whoever looks closely,
    and a player who doesn't look need not notice them.
 4. **A real game, not a web page.** Reference real mobile games: red "!" badges, joystick bottom left, an arc of
-   action buttons bottom right, settings top right, padlocks on what you lack, tutorial spotlights that dim the rest.
+   action buttons bottom right, settings top right, tutorial spotlights that dim the rest.
+   (7.6.71, owner) A symbol must mean what it says. A padlock means locked behind something (a level, a step); never put
+   one on what is only empty or not bought yet (the camera's slot, an empty skill slot, the trawl chip): those show
+   greyed or as a bare socket. Names too: a slot that may hold any skill is "Ability 1", not "Mythic".
    Ask "what would a real game do here?"
 5. **Nothing left to guessing.** New players on a phone must always know what to do next, guided gently and in the
    world (chevrons on the water, a glint on a ladder, a callout on a bar), not by walls of text.
@@ -48,6 +55,8 @@ last desktop build is kept on the branch `desktop-4.25.5`).
    Keep the HUD and icons as constant as makes sense: a dialogue or card fits round the HUD (money, menu column,
    depth, radar, stick and buttons stay), it never makes them vanish. Test every screen in its real place in the game
    (Dave at his door in a dive, not over the title).
+   (7.6.71, owner) Line things up with the screen's edges and with their neighbours: the gaps from an arc's ends to the
+   edges match, a small button is aligned to the one under it, not centred over a gap. Check the pixels before sending.
 9. **The game shows; it does not talk.** Labels, cards and tables are terse names and figures, never sentences
    written as if someone were speaking ("Gold coin" beside a coin picture, not "A gold coin as well"; "Rare 9 %", not
    "What it will be:"). A picture carries what it can, a word carries the rest; no chat-like phrasing, no explaining
@@ -58,7 +67,20 @@ last desktop build is kept on the branch `desktop-4.25.5`).
    lit, solid object like the suits and nets: round things seen from the side are ovals, faces are shaded, edges
    catch light. A redrawn item changes everywhere it appears (shop, locker, cards, HUD coins, the Old One's table).
 11. **Simple systems, one job each.** Prefer moving something to stacking options on it (the swap is net and camera;
-   traps are used from the bag; one ability slot, one carried-over cooldown).
+   traps and glow sticks are used from the bag; each skill slot its own button, its own cooldown).
+12. **Fewer buttons; the world is the interface (7.6.71, owner).** Before adding a button, a chip or a badge, ask
+   whether the job can live somewhere more natural. A fish is observed by tapping the fish, not an eye button; one
+   action button changes with where he is (the hand in the water, Leave in the sub); a tutorial lights the thing itself
+   (the door's outline, the glove on the fish), not a button for it.
+13. **Inside, not outside (7.6.71, owner).** When a mark is added to an element (a running ring, a timer, a highlight),
+   put it in space the element already owns (inside a button's rim), never pushing out round it: outside marks make
+   it look bigger than its neighbours and collide with them. If something is cut off or overlaps, fix it by using the
+   space it already has, not by moving everything else.
+14. **Controls stay quiet (7.6.71, owner).** Painting is for things in the world. A control (the joystick, a cooldown,
+   a ring) is plain, see-through and out of the way; a decorated control (a gold dial) breaks the mood more than a plain
+   one does.
+15. **Earned power is fine (7.6.71, owner).** Do not hold back strength a player has worked for (three skills at once,
+   a mythic and two legendaries). The grind already gates it. Worry about clarity, not about the player being strong.
 
 ## The game's direction (7.6, owner)
 
@@ -71,6 +93,16 @@ last desktop build is kept on the branch `desktop-4.25.5`).
 
 ## How to work
 
+- **Ask before building a design change; just do clear fixes (7.6.71, owner).** "Thoughts?" or "what do you think?"
+  asks for an opinion, not a go-ahead: answer with a recommendation and the trade-offs, then build once the owner agrees.
+  A design built unasked (the painted joystick) tends to be thrown away. Send screenshots before pushing a visual change.
+- **When the owner says something looks off, find the exact cause (7.6.71).** "The lines get cut off", "a gap above the
+  fourth button": name what is wrong in a sentence, then offer the small precise fix, not a bigger redesign.
+- **The 3-skill model (7.6.71).** Bag slot n is kit key `ability` / `ability2` / `ability3` for good (items.js
+  `SLOT_KEYS`); slot 1 alone takes a Heart. Each slot keeps its own timers (`P.abilReadyAt`, `…2`, `…3`) and running
+  state (`g.abil`, `g.abil2`, `g.abil3`); a button's action runs through abilities.js `withSlot(g, P, K, n, fn)`, which
+  swaps that slot's state onto slot 1's places, so every rule written for one skill holds for all three. Effects of one
+  kind take the strongest running (main.js `ACT`, `best`, `firstW`).
 - **Bake static art into fixed PNGs (7.6.62, owner).** Anything that does not move is painted once into a PNG in assets/
   (tools/bake_pngs.cjs, tools/slot_wells.py, tools/seabed_*.py) and only scaled in play; never regenerate a texture per
   zoom or size (the boat's rust reshuffled while the camera settled). Random numbers only in things that really move.
