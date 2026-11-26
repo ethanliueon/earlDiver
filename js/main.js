@@ -1527,7 +1527,9 @@ function startRun() {
   hud.toasts = [];
   ui.showGame();
   canvas.focus();
-  if (fresh && !profile.tut) setTimeout(tutorWelcome, 900); // (4.2.0) a new game: the welcome, and the choice to skip
+  if (fresh && !profile.tut) { // (4.2.0) a new game: the welcome, and the choice to skip. (7.6.67, owner) one second after the game is actually on the screen (the title and loading gone)
+    const shown = () => { const ids = ['title', 'loading', 'slots', 'creator']; return g && g.mode === 'play' && ids.every((id) => { const el = document.getElementById(id); if (!el || el.hidden) return true; const cs = getComputedStyle(el); return cs.display === 'none' || cs.visibility === 'hidden' || +cs.opacity < 0.05; }); };
+    const wait = () => (shown() ? setTimeout(tutorWelcome, 1000) : setTimeout(wait, 100)); setTimeout(wait, 100); }
 }
 
 // ---------------- input ----------------
