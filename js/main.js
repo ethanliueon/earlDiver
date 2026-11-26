@@ -1184,6 +1184,9 @@ function lessonHold(on) { // the dive held: air, the animals aboard, the sea's c
 }
 function lessons() {
   const P = profile, e = g.earl, sub = g.sub; g.frozen = false; g.lesson = null; g.questHint = null; g.airCallout = false; g.trawlOnly = null; if (P && P.tut !== 'on') g.tutVig = 0;
+  // (7.6.70, owner) the trawl lesson, once begun, owns the net and the screen's edges until it is done, whatever else this
+  // frame's lessons do (a notice that returned early used to drop it: the net took anything and closed after 8 s)
+  if (P && P.lessonTrawl && P.lessonTrawl !== 'done' && e.inSub && !sub.imploded) { g.tutVig = 1; const J0 = g.lessonJelly; if (J0 && (P.lessonTrawl === 'drop' || P.lessonTrawl === 'tow') && !J0.netted) g.trawlOnly = J0; }
   if (!P || g.mode !== 'play' || P.tut === 'on' || g.kill || sub.imploded) { lessonHold(false); return; }
   const tankO = !!(ui.tankOpen && ui.tankOpen()), invO = shown('inventory'), TR = ui.tankRoom;
   // (7.6.23, owner) a short tour of the tank room, once: the tank, the hatch to the pressure chambers, the floor where a
@@ -1218,10 +1221,10 @@ function lessons() {
         else if (atTop) { lessonSet(g.aboard ? 'A better sub is for sale: dive in and swim to the shipyard' : 'A better sub is for sale: leave the sub, the shipyard is beside the Margaret'); return; }
       } } }
   // ---- the first trawl ----
-  if (P.lessonTrawl !== 'done' && e.inSub && !sub.docked && sub.y >= 20 && sub.y < (sub.rated || 300) * 0.9 && !g.entity?.marked) { // (6.9.3) never at crush depth, nor with the thing on him // (6.8.0) the first sub dive below 20 m after the tutorial (the Log's trawl step is gone)
+  if (P.lessonTrawl !== 'done' && e.inSub && !sub.docked && ((P.lessonTrawl && P.lessonTrawl !== 'drop') || (sub.y >= 20 && sub.y < (sub.rated || 300) * 0.9)) && !g.entity?.marked) { /* (7.6.70) once the net is out the lesson holds wherever she goes */ // (6.9.3) never at crush depth, nor with the thing on him // (6.8.0) the first sub dive below 20 m after the tutorial (the Log's trawl step is gone)
     if (!netTotal(g.items) && !P.lessonTrawl) { netsOf(g.items).basic = 1; syncProfile(); }
     const st = P.lessonTrawl || 'drop', setSt = (v) => { P.lessonTrawl = v; saveProfile(P); };
-    let J = g.lessonJelly; const jSp = SPECIES_BY_ID[171];
+    let J = g.lessonJelly; const jSp = SPECIES_BY_ID[172] || SPECIES_BY_ID[171]; /* (7.6.70, owner) a lion's mane, big enough to see, not the little moon jelly */
     if (st === 'drop' || st === 'tow') {
       if (!J || (J.dead && !J.netted) || (!J.dead && !g.fauna.list.includes(J))) { const d = sub.facing || 1; J = g.fauna.makeFish(jSp, sub.x + d * 12, sub.y + 4, /* (7.4.26, owner) in front of her, where she is facing (sub.dir was never set: it was always to the east) */ -d, /* (6.6.2) at the depth the net tows, 4 m under the sub */ g.fauna.groupId++, true); J.devKeep = true; J.vx = J.vy = 0; g.fauna.list.push(J); g.lessonJelly = J; }
       if (Math.hypot((J.homeX ?? J.x) - sub.x, (J.homeY ?? J.y) - sub.y) > 20) { const d = sub.facing || 1; J.homeX = sub.x + d * 12; J.homeY = sub.y + 4; } // (7.6.0, owner) left far behind (she turned away): it hangs again 12 m in front of her, never 40 m off
@@ -1232,13 +1235,13 @@ function lessons() {
     const n = g.subNet;
     if (st === 'drop') { if (n) setSt('tow'); else lessonSet('Let out the trawl net', { key: 'n', say: 'Let out the trawl net' }, J && { x: J.x, y: J.y }, J); return; }
     if (st === 'tow') { if (J && J.netted) setSt('close'); else { lessonSet('Tow the net through the jellyfish', null, J && { x: J.x, y: J.y }, J); if (n && n.mx != null) g.tut.from = { x: n.mx, y: n.my }; /* the trail from the net's mouth */ } if (!(J && J.netted)) return; }
-    if ((P.lessonTrawl || st) === 'close') { if (!n) setSt('tank'); else { lessonSet('Close the net', { key: 'n', say: 'Close the net' }); return; } }
+    if ((P.lessonTrawl || st) === 'close') { if (!n) setSt('tank'); else { lessonSet('Close the net', { key: 'n', say: 'Close the net' }, n && n.mx != null ? { x: n.mx, y: n.my } : null); return; } }
     const pile = g.subTank.find((s) => s.pile), inTank = g.subTank.find((s) => s.id === 171 && !s.pile && !s.pressed);
     if (P.lessonTrawl === 'tank') {
       if (!tankO) { if (pile || !inTank) { lessonSet('The catch is on the floor of the sub', { key: 't', say: 'Open the tank room' }); return; } }
       if (tankTour()) return; /* (7.6.23, owner) the room shown first */
       lessonHold(true);
-      if (pile) { lessonSet('Drag it from the floor up into the tank', { sel: ['#tankroom .tr-zone[data-z="pile"]'], light: true }); return; }
+      if (pile) { g.tutDrag = 'pile'; lessonSet('Drag it from the floor up into the tank'); return; } /* (7.6.70, owner) the ghost hand carries it from the floor to the tank, as in the tutorial */
       if (inTank && !(TR && TR.openKey)) { lessonSet('Tap it for its card'); return; }
       if (inTank) { setSt('shut'); }
     }
@@ -1256,15 +1259,17 @@ function lessons() {
     }
   }
   // ---- the first backup air tank ----
-  if (!P.lessonAir && e.inSub && !sub.docked && sub.y > 2.2 && sub.o2 <= 10) { P.lessonAir = 'bag'; g.items.airTank = Math.min(2, (g.items.airTank || 0) + 1); ui.showGains([{ kind: 'supply', id: 'airTank' }], true); syncProfile(); saveProfile(P); }
+  // (7.6.70, owner) the first time the sub's air is about to run out more than 50 m down: a tank is given, time stops, he is
+  // led to the bag and its Use; once it is plumbed in and the air is full, a second one is given and the shop named
+  if (!P.lessonAir && e.inSub && !sub.docked && sub.y > 50 && sub.o2Max && sub.o2 <= Math.max(10, sub.o2Max * 0.12)) { P.lessonAir = 'bag'; g.items.airTank = Math.min(2, (g.items.airTank || 0) + 1); ui.showGains([{ kind: 'supply', id: 'airTank' }], true); syncProfile(); saveProfile(P); }
   if (P.lessonAir === 'bag' && e.inSub) {
     if (g.tankFit) { lessonHold(false); lessonSet('Connecting the tank'); return; }
-    if (sub.o2 >= sub.o2Max - 1) { P.lessonAir = 'done'; saveProfile(P); }
-    else if (!(g.items.airTank > 0)) { P.lessonAir = 'done'; saveProfile(P); }
-    else if (shown('gainfx')) return; // the tank's card first
-    else if (!invO) { lessonSet('A backup air tank', { key: 'b', say: 'Open your bag' }); return; }
+    if (sub.o2 >= sub.o2Max - 1 || !(g.items.airTank > 0)) { P.lessonAir = 'spare'; saveProfile(P); }
+    else if (shown('gainfx')) { lessonHold(true); lessonSet('A backup air tank'); return; } // the tank's card first, time held
+    else if (!invO) { lessonHold(true); lessonSet('A backup air tank', { key: 'b', say: 'Open your bag' }); return; }
     else { lessonHold(true); lessonSet('Use the air tank', { sel: ui.airSel ? ['#inventory [data-airuse]'] : ['#inventory [data-air]'] }); return; }
   }
+  if (P.lessonAir === 'spare') { P.lessonAir = 'done'; g.items.airTank = Math.min(2, (g.items.airTank || 0) + 1); syncProfile(); saveProfile(P); ui.showGains([{ kind: 'supply', id: 'airTank' }], true); hud.toast('A spare for next time. More backup air tanks are in the shop', 'note'); }
   lessonHold(false);
   if (!e.inSub || sub.docked || ui.anyOpen()) return;
   const n = g.subNet;
@@ -1545,14 +1550,14 @@ const deckAtDoor = () => !!g.aboard && g.aboard.x > (DECK_MIN + DECK_MAX) / 2 - 
 // to the tank and lets go, over and over, until he does it himself
 function tutDragGhost() {
   let el = document.getElementById('tut-drag'); const room = document.getElementById('tankroom');
-  const on = !!(g.tutDrag && room && !room.hidden), A = on && room.querySelector('.tr-zone[data-z="bag"]'), B = on && room.querySelector('.tr-zone[data-z="tank"]');
+  const on = !!(g.tutDrag && room && !room.hidden), A = on && room.querySelector(`.tr-zone[data-z="${g.tutDrag === 'pile' ? 'pile' : 'bag'}"]`), B = on && room.querySelector('.tr-zone[data-z="tank"]');
   if (!on || !A || !B) { if (el) el.hidden = true; return; }
   if (!el) { el = document.createElement('div'); el.id = 'tut-drag'; el.innerHTML = '<i class="td-fish"></i><img class="td-hand" src="assets/ui/icons/tut-point.png" alt="">'; room.appendChild(el); }
   else if (el.parentNode !== room) room.appendChild(el);
   const ra = A.getBoundingClientRect(), rb = B.getBoundingClientRect(), rr = room.getBoundingClientRect();
   const ax = ra.left + ra.width / 2 - rr.left, ay = ra.top + ra.height * 0.55 - rr.top, bx = rb.left + rb.width * 0.55 - rr.left, by = rb.top + rb.height * 0.45 - rr.top;
   el.hidden = false; el.style.setProperty('--ax', ax + 'px'); el.style.setProperty('--ay', ay + 'px'); el.style.setProperty('--bx', bx + 'px'); el.style.setProperty('--by', by + 'px');
-  const f = g.bag.find((q) => SPECIES_BY_ID[q.id]); if (f && el.dataset.fish !== String(f.id)) { el.dataset.fish = String(f.id); const c = speciesIcon(SPECIES_BY_ID[f.id], 120, 70); if (c) el.querySelector('.td-fish').style.backgroundImage = `url(${c.toDataURL()})`; }
+  const f = g.tutDrag === 'pile' ? g.subTank.find((q) => q.pile && SPECIES_BY_ID[q.id]) : g.bag.find((q) => SPECIES_BY_ID[q.id]); if (f && el.dataset.fish !== String(f.id)) { el.dataset.fish = String(f.id); const c = speciesIcon(SPECIES_BY_ID[f.id], 120, 70); if (c) el.querySelector('.td-fish').style.backgroundImage = `url(${c.toDataURL()})`; }
 }
 function runTutAction(id) {
   const a = g && g.tutAction; if (!a || a.id !== id || a.cabinOnly) return false;
@@ -2522,6 +2527,14 @@ function tickAbility(dt) {
   g.netRange = gear(profile, 'net').range || 1.2; g.wardOn = !!((on && A.ward && !A.tide) || (on2 && A2.ward && !A2.tide)); // (7.3.0) these two had slipped into the comment above: the Lighthouse never kept hunters off
   { g.chargeTick = (g.chargeTick || 0) - (g.realDt || dt); if (g.chargeTick <= 0 && profile) { g.chargeTick = 1; if (growCharges(kitOf(profile).items, Date.now(), new Set([kitOf(profile).on.ability, kitOf(profile).on.ability2].filter(Boolean)))) { saveProfile(profile); ui.inventoryOpen && ui.inventoryOpen() && ui.renderInventory(); } } } // (7.6.30, owner) charges grow by themselves
   if (g.echoT > 0) g.echoT = Math.max(0, g.echoT - dt);
+  // (7.6.70, owner) the echo keeps listening as he moves: every couple of seconds, once he has gone a quarter of its reach
+  // from where it last listened, it finds what is round him now and lets go of what is far behind (it found them once)
+  if (g.echoT > 0 && g.echoC && g.echoLv && !g.bloodT) { g.echoScanT = (g.echoScanT || 0) + dt; const m0 = g.earl.inSub ? g.sub : g.earl, sh = [0.4, 0.6, 0.8, 1][Math.min(4, g.echoLv) - 1], R = 1000 * sh;
+    if (!g.echoFrom) g.echoFrom = { x: m0.x, y: m0.y };
+    if (g.echoScanT > 2 && Math.hypot(m0.x - g.echoFrom.x, m0.y - g.echoFrom.y) > R * 0.25) { g.echoScanT = 0; g.echoFrom = { x: m0.x, y: m0.y };
+      g.echoC = g.echoC.filter((C) => C.fish || Math.hypot(C.x - m0.x, C.y - m0.y) < R * 1.1).concat(g.fauna.echoContacts(m0.x, m0.y, R, Math.round(2 + 5 * sh), [0.01, 0.015, 0.025, 0.035][Math.min(4, g.echoLv) - 1]));
+      if (g.echoC.length > 40) g.echoC = g.echoC.slice(-40); } }
+  if (!(g.echoT > 0)) { g.echoFrom = null; g.echoScanT = 0; }
   // (7.6.30) a far contact becomes the real animal once he comes near it (just past the view), swimming where it was found
   if (g.echoC && g.echoC.length) { const cm = renderer.cam; for (const C of g.echoC) { if (C.fish || !cm) continue; if (Math.abs(C.x - cm.x) < cm.w * 0.9 && Math.abs(C.y - cm.y) < cm.h * 1.2) { const f = g.fauna.makeFish(C.sp, C.x, C.y, Math.random() < 0.5 ? -1 : 1, g.fauna.groupId++, true); if (f) { f.devKeep = false; g.fauna.list.push(f); C.fish = f; } } }
     for (const C of g.echoC) if (C.fish && !C.fish.dead && !g.fauna.list.includes(C.fish)) { C.x = C.fish.x; C.y = C.fish.y; C.fish = null; } // left behind: a contact again
@@ -2939,7 +2952,7 @@ function update(dt) {
     if (g.firstDive && g.earl && !g.earl.inSub && g.earl.o2Max) g.earl.o2 = Math.max(g.earl.o2, g.earl.o2Max * 0.25);
     afterTips(dt); // (4.6.0)
     g.autosaveT = (g.autosaveT || 0) + dt; if (g.autosaveT > 10 && profile && !g.kill) { g.autosaveT = 0; syncProfile(); saveProfile(profile); } // (4.12.6) the dive saved every 10 s
-    lessons(); // (4.7.0)
+    lessons(); tutDragGhost(); // (4.7.0). (7.6.70) the ghost hand again after the lessons, which may want it
     // (6.5.1) at the surface or aboard, the camera loads from the spare film
     if (profile && owns(profile, 'camera') && (g.aboard || g.earl.y < 1.2) && !g.earl.inSub) { const sh = gear(profile, 'cam').shots, sp = (profile.spare && profile.spare.film) || 0, need = sh - (g.items.film || 0); if (need > 0 && sp > 0) { const n = Math.min(need, sp); g.items.film = (g.items.film || 0) + n; profile.spare.film = sp - n; } }
     const dl = g.frozen ? Object.assign([], { events: [] }) : updateSpecimens(g, dt); // (4.7.0) frozen: nothing suffers

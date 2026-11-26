@@ -545,6 +545,10 @@ e.inSub ? [
       this.chipCut = null; if (a.abil && !this.inKill) { const A2 = this.abilDef2, rc2 = 16 * u, an = -28 * Math.PI / 180, cx2 = x + Math.cos(an) * (r * 0.9), cy2 = y + Math.sin(an) * (r * 0.9); this.chipCut = { x: cx2, y: cy2, r: rc2 + 1.5 * u };
         if (A2) { drawCoin(ctx, cx2, cy2, rc2, 'ab_' + A2.fam, pressFx('abswap', cx2, cy2, rc2) ? 'press' : this.abil2Running ? 'lit' : 'on', { tier: A2.tier }, A2.tier);
           ctx.save(); ctx.translate(cx2 - rc2 * 0.72, cy2 + rc2 * 0.62); ctx.fillStyle = 'rgba(8,8,6,0.88)'; ctx.beginPath(); ctx.arc(0, 0, rc2 * 0.42, 0, TAU); ctx.fill(); drawGlyph(ctx, 'swap', 0, 0, rc2 * 0.8); ctx.restore();
+          { // (7.6.70, owner) the second scroll's own wait shown on its chip too (its cooldown, or the 15 s floor): only the button's was shown
+            const now = Date.now(), cd2 = Math.max(0, ((P.abilReadyAt2 || 0) - now) / 1000), mn2 = Math.max(0, ((P.abilMinAt2 || 0) - now) / 1000), w2 = Math.max(cd2, mn2), tot2 = cd2 >= mn2 ? (A2.dur || 0) + (A2.cd || 0) : MIN_CD;
+            if (w2 > 0 && tot2 > 0 && !this.abil2Running) { ctx.fillStyle = 'rgba(4,6,6,0.62)'; ctx.beginPath(); ctx.moveTo(cx2, cy2); ctx.arc(cx2, cy2, rc2 * 0.92, -Math.PI / 2, -Math.PI / 2 + TAU * Math.min(1, w2 / tot2)); ctx.closePath(); ctx.fill();
+              ctx.font = `700 ${Math.max(8 * u, rc2 * 0.62)}px ${HUDT}`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillStyle = '#efe8d2'; ctx.shadowColor = '#000'; ctx.shadowBlur = 3 * u; ctx.fillText(fmtLeft(w2), cx2, cy2 + 0.5 * u); ctx.shadowBlur = 0; } }
           hot(cx2 - rc2, cy2 - rc2, rc2 * 2, rc2 * 2, 'abswap'); }
         else { drawCoin(ctx, cx2, cy2, rc2, 'ab_sprint', 'off', null); padlock(cx2 + rc2 * 0.4, cy2 + rc2 * 0.4, rc2 * 0.42); hot(cx2 - rc2, cy2 - rc2, rc2 * 2, rc2 * 2, 'msg:No second scroll: put one in its slot in the bag'); } }
       // (7.6.3, owner) charges loaded on the scroll: their count in bone at the button's foot, left (the glow stick's count
@@ -656,7 +660,7 @@ e.inSub ? [
         chev('rgba(0,0,0,0.6)', 2.6 * u, -0.8 * u); chev('rgba(222,212,184,0.85)', 1.8 * u, 0); // engraved: a dark cut above, the bone line in it
         if (!open && wants) { const bx = colX + sw / 2 - 2 * u, by = top + 2 * u, br = 4.5 * u; ctx.fillStyle = '#c8402e'; ctx.strokeStyle = '#181a14'; ctx.lineWidth = 1.4 * u; ctx.beginPath(); ctx.arc(bx, by, br, 0, TAU); ctx.fill(); ctx.stroke(); }
         if (!tutIn) hot(colX - sw / 2, stripBot - chevH - 4 * u, sw + (cols - 1) * colGap, chevH + 8 * u, 'menu'); }
-      this.journalAt = null; this.menuShown = open;
+      this.journalAt = null; this.menuShown = open; window.__hudMenuRect = [(colX - sw / 2 + this.safeL) * kx, (top + this.safeT) * kx, (sw + (cols - 1) * colGap) * kx, (stripBot - top) * kx]; /* (7.6.70) the strip of buttons, in page px: the joystick never grows there */
       if (open) ROW.forEach((a, i) => btn({ ...a, tile: true }, colX + (i < rowsN ? 0 : colGap), y0 + (i % rowsN) * step, rb));
       this.underRadarH = 0;
       this.topLeftBottom = (my + ch * 0.55 + PEARL_ROW * u + 8 * u + this.safeT) * kx; this.topLeftX = (12 * u + rb * 2 + 14 * u + (cols - 1) * colGap + this.safeL) * kx; /* (7.1.3) the words clear of both columns */

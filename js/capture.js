@@ -433,7 +433,7 @@ export const NETS_SUB = {
   basic: { name: 'Beginner trawl net', rarity: 'uncommon', /* (6.5.8) */ short: 'NET', price: 50, /* (claude-polish) was 120: a net used up in one haul cost more than a first sub's haul was worth, and one empty net left a new diver broke */ tow: 8, max: 6, maxLen: 2.0, mouth: 1.6, tear: 0.5, slip: 0.15, cap: 2, legendOut: 0.9,
     desc: 'A light trawl for the hatch under the sub. It takes whatever its mouth touches, and dragged along the bottom it scoops up corals, sponges and anemones whole: room for six animals, open for 8 seconds, and it holds fish up to 2 m. Anything bigger, small sharks too, may still be caught, but the bigger it is the likelier it breaks out, and a break can tear the net and lose the whole haul. Nine legends in ten escape it. Used up in one haul; carry up to two.' },
   adv: { name: 'Advanced trawl net', rarity: 'rare', short: 'BIG NET', price: 1200, tow: 11, max: 10, maxLen: 4.0, mouth: 2.6, tear: 0.2, slip: 0.03, cap: 1, legendOut: 0,
-    desc: 'The net for big game, and it takes whatever its mouth touches, the bottom too. Its mouth is over half again as wide and it stays open 11 seconds, so it sweeps up far more of a school; it holds ten animals and fish up to 4 m, big ones seldom break out, and no legend escapes it. Almost nothing slips out before it closes. Used up in one haul; carry one.' },
+    desc: 'The net for big game, and it takes whatever its mouth touches, the bottom too. Its mouth is over half again as wide and it stays open 11 seconds, so it sweeps up far more of a school; it holds ten animals and fish up to 4 m, big ones seldom break out, and no legend escapes it. Used up in one haul; carry one.' },
   // (7.3.0, owner) the deep trawl: the deepest subs carry twenty and more in their tanks, and the abyss pays by the
   // animal, so a net that holds what the tank can (a haul limited by the tank, as every haul is)
   deep: { name: 'Deep trawl net', rarity: 'exotic', short: 'DEEP NET', price: 25000, tow: 14, max: 24, maxLen: 4.0, mouth: 3.2, tear: 0.1, slip: 0.02, cap: 1, legendOut: 0,
@@ -533,9 +533,8 @@ export function updateSubNet(g, dt, canTake) {
     n.open = Math.max(0, n.open - dt / NET_PURSE);
     n.mx += (tgt.x - n.mx) * Math.min(1, dt); n.my += (tgt.y - n.my) * Math.min(1, dt);
     if (n.pt >= NET_PURSE) {
-      // a few slip out before the drawstring is tight
       n.lost = 0;
-      n.got = n.got.filter(() => { const out = Math.random() < T.slip; if (out) n.lost++; return !out; });
+      /* (7.6.70, owner) nothing slips out of a closing net: what is in it stays in it (too-big animals may still break out as they are caught) */
       n.phase = 'haul'; n.pt = 0; n.hx = n.mx; n.hy = n.my;
     }
   } else if (n.phase === 'haul') {

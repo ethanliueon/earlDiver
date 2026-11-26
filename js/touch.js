@@ -39,6 +39,7 @@ export class Touch {
       // (7.4.26, owner) two hands: the right half of the screen never grows the stick; a finger there turns the diver's lamp
       // toward it (kept in front of him), and a quick tap there is still a tap on the world
       if (t.clientX > window.innerWidth * 0.5) { if (!this.lamp) { this.lamp = { id: t.identifier, x: t.clientX, y: t.clientY, x0: t.clientX, y0: t.clientY, t0: performance.now(), far: 0 }; this.fingers.set(t.identifier, { lamp: true }); } else this.fingers.set(t.identifier, {}); continue; }
+      { const M = window.__hudMenuRect, pad = 18; if (M && t.clientX < M[0] + M[2] + pad && t.clientY < M[1] + M[3] + pad && t.clientY > M[1] - pad) { this.fingers.set(t.identifier, {}); continue; } } // (7.6.70, owner) not over the button strip on the left: those are its buttons
       if (!this.stick) {
         this.stick = { id: t.identifier, x: t.clientX, y: t.clientY, x0: t.clientX, y0: t.clientY, t0: performance.now(), far: 0 };
         this.fingers.set(t.identifier, { stick: true });
