@@ -49,7 +49,7 @@ import { TankRoom, sizeK, seaAt } from './tankroom.js'; // (sizeK: an animal's d
 import { lockerTexture } from './textures.js';
 import { gaugeFace, gaugeNeedle, gaugeGlass } from './gauge_art.js';
 import { daveTalkPlate } from './dave_art.js';
-import { ChestReveal, chestsOf, oddsText, chestPicture, chestOddsHtml } from './chests.js';
+import { ChestReveal, chestsOf, oddsText, chestPicture, chestOddsHtml, CHESTS } from './chests.js';
 import { petsHtml, petStars, storeHtml, eventsHtml, calWeek, untilTomorrow, testHtml, giftWait, hms, shopTabs } from './store.js';
 import { scrollsHtml, coinsHtml, packsHtml, shelfOf, restock, shelfPrice, COIN_OFFERS, COIN_DEAL, takeDeal, dealTaken, RESTOCK_PEARLS, scrollSellPearls } from './shelf.js'; // (7.6.2)
 import { isTestStore } from './purchases.js';
@@ -594,7 +594,12 @@ export class UI {
       this.confirm('Cash, ' + money(o.cash, false) + '?', o.pearls + ' pearls', 'Buy', 'Not now', () => { if (!pay(o.pearls)) return; if (deal) takeDeal(P); P.cash = Math.round((P.cash + o.cash) * 100) / 100; save(); redraw(); this.showGains([{ kind: 'cash', n: o.cash, how: 'Bought' }]); }); return; }
     if (b.dataset.pack) { const key = b.dataset.pack; b.disabled = true; import('./purchases.js').then(async (M) => { const r = await M.buy(key); b.disabled = false; if (r && r.ok) { P.pearls = (P.pearls || 0) + M.PRODUCTS[key].pearls; save(); redraw(); this.showGains([{ kind: 'pearl', n: M.PRODUCTS[key].pearls }], true); } }); }
   }
-  storeWire(el) { if (el.__w) return; el.__w = true; el.addEventListener('click', (ev) => {
+  // (7.6.74, owner) the shop's tab pictures, painted once from the game's own art and handed to the CSS as variables
+  tabIcons() { if (this.tabIconsSet) return; this.tabIconsSet = true; const root = document.documentElement.style, set = (k, url) => { if (url) root.setProperty('--ti-' + k, `url("${url}")`); };
+    try { set('shop', chestPicture(CHESTS.crate.look, 96, 72)); } catch (e) { /* no chest art yet */ }
+    try { const sc = ITEMS.ab_sprint_rare || Object.values(ITEMS).find((it) => it.kind === 'ability'); if (sc) set('scrolls', pictureOf(sc.kind, sc, 96, 72, true)); } catch (e) { /* none */ }
+    set('pets', 'assets/ui/icons/act-pet.png'); set('coins', this.cashPicture()); set('pearls', 'assets/ui/icons/pearl.png'); }
+  storeWire(el) { this.tabIcons(); if (el.__w) return; el.__w = true; el.addEventListener('click', (ev) => {
     if (ev.target.closest('.st-x') || ev.target === el) { el.hidden = true; return; }
     const b = ev.target.closest('[data-store]'); if (b) { if (this.h.onBuy('chest:' + b.dataset.store)) el.innerHTML = storeHtml(this.h.getProfile(), isTestStore()); return; }
     const pc = ev.target.closest('[data-petcat]'); if (pc) { this.petCat = pc.dataset.petcat; el.innerHTML = this.petsPage(); return; } // (7.4.16) Pets / Exclusive

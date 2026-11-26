@@ -2413,3 +2413,19 @@ html body #inventory .scene-pick .ip-box:not(#_a):not(#_b) { padding: 20px 24px 
 html body #inventory .scene-pick .ip-box h4:not(#_a):not(#_b) { font: 600 22px/1.1 'Barlow Semi Condensed', sans-serif !important; color: #efe8d2 !important; margin: 2px 44px 6px 0 !important; }
 html body #inventory .scene-pick .pp-note:not(#_a):not(#_b) { display: flex; align-items: center; gap: 4px; font: 500 15px 'Barlow Semi Condensed', sans-serif !important; opacity: 0.72; margin: 0 0 14px !important; }
 html body #inventory .scene-pick .pp-note .st-pearl { width: 16px; height: 16px; }
+
+/* (7.6.74, owner) the shop's tabs as folder tabs of the panel's own olive steel: each a tongue rising from a dark steel rail,
+   rounded at the top with a rivet in each corner, its painted picture beside its name. The open one stands forward and
+   joins the rail; the others sit back, darker, their pictures dimmed */
+html body #store .st-tabs:not(#_a):not(#_b) { gap: 3px; align-items: flex-end; margin: 0 0 12px; padding: 0 6px; border-bottom: 3px solid #1f241a; box-shadow: 0 1px 0 rgba(214,206,182,0.12); }
+html body #store .st-tabs button:not(#_a):not(#_b) { position: relative; display: flex; align-items: center; gap: 6px; padding: 5px 13px 5px 9px; margin-bottom: -3px; border: 1px solid #14170f; border-bottom: 0; border-radius: 10px 10px 0 0;
+  background: url("../assets/ui/olive/tile.png") 0 0 / 256px 256px, #3d4532; background-blend-mode: multiply; color: #b9b29a; font: 600 15px "Barlow Semi Condensed", "Arial Narrow", sans-serif;
+  box-shadow: inset 0 1px 0 rgba(232,222,190,0.16), inset 0 -6px 8px rgba(0,0,0,0.35); filter: brightness(0.68); transform: translateY(3px); transition: transform 0.12s, filter 0.12s; }
+html body #store .st-tabs button:not(#_a):not(#_b)::before, html body #store .st-tabs button:not(#_a):not(#_b)::after { content: ''; position: absolute; top: 4px; width: 4px; height: 4px; border-radius: 50%;
+  background: radial-gradient(circle at 35% 35%, #c9c0a2, #4a4634 70%); box-shadow: 0 1px 0 rgba(0,0,0,0.6); }
+html body #store .st-tabs button:not(#_a):not(#_b)::before { left: 5px; } html body #store .st-tabs button:not(#_a):not(#_b)::after { right: 5px; }
+html body #store .st-tabs button.on:not(#_a):not(#_b) { color: #f6efd8; filter: brightness(1.28); transform: none; z-index: 2; padding-bottom: 8px; border-color: #1f241a; background-color: #56614a;
+  box-shadow: inset 0 1px 0 rgba(240,230,200,0.3), 0 -2px 6px rgba(0,0,0,0.35); }
+html body #store .st-tabs button:not(#_a):not(#_b) .st-ti { width: 30px; height: 22px; flex: 0 0 auto; background: center / contain no-repeat; filter: drop-shadow(0 1px 1px rgba(0,0,0,0.7)) saturate(0.8) brightness(0.8); }
+html body #store .st-tabs button.on:not(#_a):not(#_b) .st-ti { filter: drop-shadow(0 1px 1px rgba(0,0,0,0.7)); }
+html body #store .st-tabs button[data-tab="test"]:not(#_a):not(#_b) { font-size: 12px; letter-spacing: 0.12em; text-transform: uppercase; padding: 5px 10px; }
