@@ -108,6 +108,7 @@ last desktop build is kept on the branch `desktop-4.25.5`).
   zoom or size (the boat's rust reshuffled while the camera settled). Random numbers only in things that really move.
 - **Every part sits on something (7.6.62, owner).** On the boat and anywhere else: legs on foot brackets, rams on clevises,
   cables over sheaves; no round caps floating above a deck, no plain rectangles or rounded boxes standing in for objects.
+- **The first fish's two moments (7.6.82, owner):** the one exception to "no frozen lessons". In reach of the tutorial's fish, time stops and the dark closes round the fish (`g.tutFocus`, render.js vignette at the fish). To observe: soft pulses of light from the fish, the glove only after 3 s, only the tap on the fish works; tapped, its name shows and the focus lifts. To catch: the focus again with the net button lit; the swing runs in moving time.
 - **Tutorial highlights glow on the thing itself (7.6.62, owner):** a door's frame glows; never a hand that follows the player.
 - **Never say "Earl" to the player (7.6.49, owner).** Text the player reads uses the diver's own name (the profile's name) or no name at all; "Earl" stays only in code and comments.
 

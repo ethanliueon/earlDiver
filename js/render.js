@@ -712,9 +712,12 @@ export class Renderer {
     // (7.4.26, owner) a step that must be done before anything else (getting into the sub): the screen's edges darkened
     // a little, breathing, so the eye goes to the middle and the chevrons
     { const want = g.mode === 'play' && g.tutVig ? 1 : 0; this.tutVigK = (this.tutVigK || 0) + (want - (this.tutVigK || 0)) * Math.min(1, (g.dt || 0.016) * 3);
-      if (this.tutVigK > 0.01) { const W0 = this.c.width, H0 = this.c.height, k = this.tutVigK * (0.85 + 0.15 * Math.sin(g.time * 2)), R = Math.hypot(W0, H0) / 2;
-        const vg = ctx.createRadialGradient(W0 / 2, H0 / 2, R * 0.3, W0 / 2, H0 / 2, R);
-        vg.addColorStop(0, 'rgba(6,9,6,0)'); vg.addColorStop(0.5, `rgba(6,9,6,${(0.42 * k).toFixed(3)})`); vg.addColorStop(1, `rgba(4,6,4,${(0.78 * k).toFixed(3)})`);
+      if (this.tutVigK > 0.01) { const W0 = this.c.width, H0 = this.c.height, TF = g.tutFocus && g.tutFocus.fish, k = this.tutVigK * (TF ? 1 : 0.85 + 0.15 * Math.sin(g.time * 2)), R = Math.hypot(W0, H0) / 2;
+        // (7.6.82, owner) the first fish's moment: the dark closes round the fish itself, only it and the water round it lit
+        if (TF) { this.vigAt = this.vigAt || [S(TF.x), Sy(TF.y)]; this.vigAt[0] += (S(TF.x) - this.vigAt[0]) * 0.2; this.vigAt[1] += (Sy(TF.y) - this.vigAt[1]) * 0.2; } else this.vigAt = null;
+        const vx = this.vigAt ? this.vigAt[0] : W0 / 2, vy = this.vigAt ? this.vigAt[1] : H0 / 2, r0 = this.vigAt ? Math.max(36, ppm * 1.8) : R * 0.3, r1 = this.vigAt ? Math.max(140, ppm * 5.5) : R;
+        const vg = ctx.createRadialGradient(vx, vy, r0, vx, vy, r1), a1 = this.vigAt ? 0.66 : 0.42, a2 = this.vigAt ? 0.84 : 0.78;
+        vg.addColorStop(0, 'rgba(6,9,6,0)'); vg.addColorStop(0.5, `rgba(6,9,6,${(a1 * k).toFixed(3)})`); vg.addColorStop(1, `rgba(4,6,4,${(a2 * k).toFixed(3)})`);
         ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.globalAlpha = 1; ctx.globalCompositeOperation = 'source-over'; ctx.fillStyle = vg; ctx.fillRect(0, 0, W0, H0); ctx.restore(); } }
     const guide = g.tut && g.tut.to ? g.tut : g.devGuide ? { to: g.devGuide.c, fish: g.devGuide.c } : g.markGuide ? { to: g.markGuide } : null; // (4.9.0) or the developer's trail to a legend (X)
     // (5.6.8) on a phone, once the thing to tap is in reach its brackets say it all: no trail or ring on top of them
@@ -740,6 +743,11 @@ export class Renderer {
       // (7.6.81, owner) no outlined circle: a soft patch of lighter water round it, brightest in the middle and fading out, breathing slowly
       { const rr = r * 1.15, lg = ctx.createRadialGradient(cx, cy, 0, cx, cy, rr); lg.addColorStop(0, 'rgba(230,222,196,0.2)'); lg.addColorStop(0.6, 'rgba(230,222,196,0.12)'); lg.addColorStop(1, 'rgba(230,222,196,0)');
         ctx.fillStyle = lg; ctx.beginPath(); ctx.arc(cx, cy, rr, 0, TAU); ctx.fill(); }
+      // (7.6.82, owner) waiting to be tapped: soft pulses of light grow out of the fish one after another, small, middle, large
+      if (g.tutFocus && g.tutFocus.kind === 'observe' && f === g.tutFocus.fish) { const base = Math.max(14, ppm * (f.len * 0.8 + 0.45));
+        for (let i = 0; i < 3; i++) { const q = ((g.time - g.tutFocus.t0) * 0.8 + i / 3) % 1, rr = base * (0.5 + 1.6 * q), a = 0.32 * (1 - q) * Math.min(1, q * 6);
+          const pg = ctx.createRadialGradient(cx, cy, rr * 0.55, cx, cy, rr); pg.addColorStop(0, 'rgba(236,228,204,0)'); pg.addColorStop(0.8, `rgba(236,228,204,${a.toFixed(3)})`); pg.addColorStop(1, 'rgba(236,228,204,0)');
+          ctx.fillStyle = pg; ctx.beginPath(); ctx.arc(cx, cy, rr, 0, TAU); ctx.fill(); } }
       ctx.restore();
       // (4.3.2) a prompt beside the fish, only where the game's own prompts don't already say it (swinging the net,
       // "it got away"): a brass key-cap, or a mouse with its left button lit, and the words

@@ -1189,7 +1189,7 @@ function lessonHold(on) { // the dive held: air, the animals aboard, the sea's c
   else { g.lessonHold = null; }
 }
 function lessons() {
-  const P = profile, e = g.earl, sub = g.sub; g.frozen = false; g.lesson = null; g.questHint = null; g.airCallout = false; g.trawlOnly = null; if (P && P.tut !== 'on') g.tutVig = 0;
+  const P = profile, e = g.earl, sub = g.sub; g.frozen = !!g.tutFocus; if (g.tutFocus) { lessonHold(true); g.lessonHold.tut = 1; } else if (g.lessonHold && g.lessonHold.tut) g.lessonHold = null; /* (7.6.82) the first fish's moments hold the sea and his air */ g.lesson = null; g.questHint = null; g.airCallout = false; g.trawlOnly = null; if (P && P.tut !== 'on') g.tutVig = 0;
   // (7.6.70, owner) the trawl lesson, once begun, owns the net and the screen's edges until it is done, whatever else this
   // frame's lessons do (a notice that returned early used to drop it: the net took anything and closed after 8 s)
   if (P && P.lessonTrawl && P.lessonTrawl !== 'done' && e.inSub && !sub.imploded) { g.tutVig = 1; const J0 = g.lessonJelly; if (J0 && (P.lessonTrawl === 'drop' || P.lessonTrawl === 'tow') && !J0.netted) g.trawlOnly = J0; }
@@ -1340,7 +1340,7 @@ function tripFish(n) {
 }
 const tripCaught = (tf) => !!(tf && tf.dead && g.bag.some((s) => s.id === tf.sp.id));
 function tutor() {
-  const P = profile, e = g.earl; g.tut = null; g.tutForce = null; g.tutQuiet = false; g.tutFence = null; g.tutVig = 0; /* (7.4.0) set again by the step that wants them */
+  const P = profile, e = g.earl; g.tut = null; g.tutForce = null; g.tutQuiet = false; g.tutFence = null; g.tutVig = 0; const focus0 = g.tutFocus; g.tutFocus = null; /* (7.6.82) set again by the first fish's moments */ /* (7.4.0) set again by the step that wants them */
   { const m0 = P && QUEST_MAIN[questsOf(P).main]; g.questMainId = m0 ? m0.id : null; } /* (6.5.0) the Log's step, for the way-aboard chevrons */ if (ui.cabin) ui.cabin.tutMark = null; // (6.5.6) this had slipped into the comment, so the cabin's chevrons to the computer stayed after the tutorial
   // (4.4.0) during the tutorial the game's own prompts and the things they do are off (hud.js, cabin.js, the key
   // gate below): only the action the step asks for works, on the tutorial's own, larger button
@@ -1394,10 +1394,19 @@ function tutor() {
     if (part === 3) { text = 'Got it. Swim up to sell it'; /* (7.6.78, owner) each line says the action and why, in a few words */ to = { x: e.x + (e.facing || 1) * 2, y: 0.3 };  }
     else {
       g.tutForce = P.tutMissed ? 'catch' : 'miss';
+      // (7.6.82, owner) the first fish in moments: the chevrons lead him to it; in reach, time stops, the screen dims round the fish
+      // (only it and the water round it lit) and he holds still. To observe: soft pulses of light grow from the fish, and only
+      // if he has not tapped it after 3 s does the glove come; tapped, its name shows, the focus lifts for a moment and the fish
+      // swims on. To catch: the chevrons again, the focus again, the net button lit; a miss lifts it while the fish flees
+      if (part >= 2 && g.tutObsAt == null) g.tutObsAt = g.time;
+      const gap = (g.tutObsAt != null && g.time - g.tutObsAt < 2.2) || (g.tutOops && g.time - g.tutOops < 3.5);
       fishStep(() => {
-        if (part <= 1) { text = 'Tap the fish to observe it: its name goes in your journal'; offer('observe', 'Observe', 'obs'); spot = fishSpot(fish); } // (7.6.71, owner) no eye button: the glove points at the fish itself, and a tap on it observes
+        const kind = part <= 1 ? 'observe' : 'net', t0 = focus0 && focus0.kind === kind && focus0.fish === fish ? focus0.t0 : g.time;
+        if (!gap && !(kind === 'net' && (g.capture || g.bag.length))) { g.tutFocus = { kind, fish, t0 }; g.tutVig = 1; } // (7.6.82) the swing itself runs in moving time, so the catch can play out
+        if (part <= 1) { text = 'Tap the fish'; offer('observe', 'Observe', 'obs'); spot = g.time - t0 > 3 ? fishSpot(fish) : null; } // (7.6.71, owner) no eye button: a tap on the fish observes it
         else if (g.tutOops && g.time - g.tutOops < 3.5) { text = 'It got away. Try again'; prompt = { text: 'It got away. Try again', col: '#f2c7a0' }; }
-        else { text = g.toolSel !== 'net' ? 'Take out your net' : 'Swing your net to catch it'; prompt = netPrompt(); spot = spot || netSpot(true); if (spot) prompt = null; /* (5.5.3) the ringed button and its words say it already */ }
+        else if (gap) { text = 'Now catch it'; }
+        else { text = g.toolSel !== 'net' ? 'Take out your net' : 'Swing your net'; prompt = netPrompt(); spot = spot || netSpot(true); if (spot) prompt = null; /* (5.5.3) the ringed button and its words say it already */ }
       });
       if (text === 'Swim to the orange fish') text = 'Swim down to the orange fish under the boat';
     }
@@ -1625,6 +1634,7 @@ hudCanvas.addEventListener('contextmenu', (ev) => ev.preventDefault());
 function holdingWork() { return !!(g && (g.pry || g.repair || (g.plant || 0) > 0 || (g.tankFit || 0) > 0)); }
 function readMove() {
   if (g.kill) return { x: 0, y: 0, sprint: false }; // in its grip, nothing he does moves him
+  if (g.tutFocus) return { x: 0, y: 0, sprint: false }; // (7.6.82) the first fish's moment: time stopped, he holds still
   if (ui.tankOpen && ui.tankOpen()) return { x: 0, y: 0, sprint: false }; // in the back of the sub, the helm is left alone
   if (ui.trapSetOpen && ui.trapSetOpen()) return { x: 0, y: 0, sprint: false }; // treading water while he chooses the depth
   if (holdingWork()) return { x: 0, y: 0, sprint: false }; // (4.12.3) a long hold (welding, cutting a net free, prying, planting, fitting a tank): he stays put
@@ -3565,7 +3575,7 @@ function frame(now) {
   menuFold(now); // (6.5.7)
   { const off = !!((g.kill && (g.kill.inSub || g.kill.esc)) || g.mode === 'dying'), dim = !!(g.kill && !off); if (document.body.classList.contains('hud-off') !== off) document.body.classList.toggle('hud-off', off); if (document.body.classList.contains('hud-dim') !== dim) document.body.classList.toggle('hud-dim', dim); } // (5.10.10) in its jaws the journal stays, dimmed
   { const tk = window.__hudTutKey || null; if (tk !== g.lastTutKey) { g.lastTutKey = tk; g.tutPressedKey = null; } // (5.8.1) each step's spotlight once, until its button is pressed; not for sprint (pressed while swimming)
-    hud.spotWanted = !!(profile && (profile.tut === 'on' || !!g.lesson) /* (6.6.2) and the lessons */ && tk && tk !== 'sprint' && tk !== g.tutPressedKey); g.tutFreeze = !!(hud.spotOn && hud.spotWanted && !hud.panel); }
+    hud.spotWanted = !g.tutFocus /* (7.6.82) the first fish's moment keeps its own dark round the fish: the button only glows */ && !!(profile && (profile.tut === 'on' || !!g.lesson) /* (6.6.2) and the lessons */ && tk && tk !== 'sprint' && tk !== g.tutPressedKey); g.tutFreeze = !!(hud.spotOn && hud.spotWanted && !hud.panel); }
   hud.panel = !!(ui.anyOpen && ui.anyOpen('cabin davetalk')); /* (7.0.13) Dave's words sit at the foot of the scene: the HUD stays round them */ // (5.6.8) the cabin keeps the controls: it is the same game
   { const cab = !!(ui.cabinOpen && ui.cabinOpen()); if (cab !== hud.inCabin) { hud.inCabin = cab; document.documentElement.classList.toggle('in-cabin', cab); } }
   if (hud.inCabin && pressed.has(' ') && ui.cabin.near && ui.cabin.near() === 'door') { pressed.delete(' '); ui.cabin.use(); }
