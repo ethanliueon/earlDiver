@@ -732,24 +732,26 @@ export class UI {
   // triplewart seadevil in it. Drawn once, kept as an image
   achArt(a) {
     this.achPics = this.achPics || {}; if (this.achPics[a.id]) return this.achPics[a.id];
-    const W = 640, H = 220, c = document.createElement('canvas'); c.width = W; c.height = H; const x = c.getContext('2d');
+    const W = 640, H = 230, c = document.createElement('canvas'); c.width = W; c.height = H; const x = c.getContext('2d');
     let sd = 11; const rnd = () => ((sd = (sd * 16807) % 2147483647) / 2147483647);
-    const cx = W * 0.53, cy = H / 2, rx = W * 0.42, ry = H * 0.4, ph = [rnd() * 6, rnd() * 6, rnd() * 6], blob = new Path2D();
-    for (let k = 0; k <= 96; k++) { const t = (k / 96) * Math.PI * 2, r = 1 + 0.08 * Math.sin(t * 3 + ph[0]) + 0.05 * Math.sin(t * 5 + ph[1]) + 0.03 * Math.sin(t * 8 + ph[2]);
-      const px = cx + Math.cos(t) * rx * r, py = cy + Math.sin(t) * ry * r; k ? blob.lineTo(px, py) : blob.moveTo(px, py); }
-    blob.closePath();
+    // (7.6.45, owner) the owner's outline: blunt and round at the left, the top rising and running down to a rounded
+    // point at the lower right, the bottom fuller under the fish; smoothed through the midpoints
+    const m = 12, cx = W * 0.45, cy = H / 2, ry = H * 0.4, U = (u) => m + u * (W - 2 * m), V = (v) => m + v * (H - 2 * m), blob = new Path2D();
+    const pts = [[0.16, 0], [0.38, 0], [0.52, 0.08], [0.66, 0.17], [0.79, 0.32], [0.9, 0.55], [0.97, 0.74], [0.87, 0.82], [0.71, 0.86], [0.6, 0.97], [0.38, 1], [0.16, 0.9], [0.05, 0.8], [0, 0.57], [0, 0.3], [0.04, 0.11]].map(([u, v]) => [U(u), V(v)]);
+    { const n = pts.length, mid = (a, b) => [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2], s0 = mid(pts[n - 1], pts[0]); blob.moveTo(s0[0], s0[1]);
+      for (let k = 0; k < n; k++) { const p = pts[k], q = mid(p, pts[(k + 1) % n]); blob.quadraticCurveTo(p[0], p[1], q[0], q[1]); } }
     // the water: an uneven shape blurred so its edge melts into the paper, darker below
     const w = document.createElement('canvas'); w.width = W; w.height = H; const y = w.getContext('2d');
     const gr = y.createLinearGradient(0, cy - ry, 0, cy + ry); gr.addColorStop(0, '#24434e'); gr.addColorStop(1, '#0d1e26');
-    y.filter = 'blur(13px)'; y.fillStyle = gr; y.fill(blob); y.filter = 'none';
+    y.filter = 'blur(4px)'; y.fillStyle = gr; y.fill(blob); y.filter = 'none';
     x.drawImage(w, 0, 0);
-    const sp = SPECIES_BY_ID[323] || SPECIES_BY_ID[100], fw = 270, fh = 175, fx = W * 0.38 - fw / 2, fy = cy - fh / 2 + 4;
+    const sp = SPECIES_BY_ID[323] || SPECIES_BY_ID[100], fw = 250, fh = 165, fx = U(0.25) - fw / 2, fy = V(0.52) - fh / 2;
     let f = null, lx = fx + 60, ly = fy + 20;
     if (sp) { f = fittedIcon(sp, fw, fh, 0.05); const d = f.getContext('2d').getImageData(0, 0, fw, fh).data; let best = -1;
       for (let k = 0; k < fw * fh; k++) { if (d[k * 4 + 3] < 200) continue; const v = d[k * 4] + d[k * 4 + 1] * 1.2 + d[k * 4 + 2]; if (v > best) { best = v; lx = fx + (k % fw); ly = fy + Math.floor(k / fw); } } }
     // sea snow and the lure's light, kept inside the water
     x.save(); x.globalCompositeOperation = 'source-atop';
-    for (let k = 0; k < 30; k++) { x.fillStyle = `rgba(216,212,192,${0.25 + rnd() * 0.4})`; x.beginPath(); x.arc(cx + (rnd() - 0.5) * rx * 1.6, cy + (rnd() - 0.5) * ry * 1.5, 0.8 + rnd() * 1.4, 0, Math.PI * 2); x.fill(); }
+    for (let k = 0; k < 30; k++) { x.fillStyle = `rgba(216,212,192,${0.25 + rnd() * 0.4})`; x.beginPath(); x.arc(U(0.05 + rnd() * 0.8), V(0.1 + rnd() * 0.75), 0.8 + rnd() * 1.4, 0, Math.PI * 2); x.fill(); }
     const gl = x.createRadialGradient(lx, ly, 0, lx, ly, 50); gl.addColorStop(0, 'rgba(170,220,200,0.55)'); gl.addColorStop(0.3, 'rgba(110,170,150,0.2)'); gl.addColorStop(1, 'rgba(110,170,150,0)'); x.fillStyle = gl; x.fillRect(0, 0, W, H);
     x.restore();
     if (f) x.drawImage(f, fx, fy);
