@@ -4,7 +4,7 @@ import { drawBagIcon, drawTankIcon, drawChamberIcon } from './coin_art.js';
 import { parsePrompt, dymo, brassBezel, oliveNine, HUDF } from './fittings.js';
 import { lockerTexture } from './textures.js';
 import { drawCoin, drawCash, drawTile, drawBang } from './coins.js';
-import { abilityState, whyNot, cooldownLeft, fmtLeft } from './abilities.js';
+import { abilityState, whyNot, cooldownLeft, minLeft, MIN_CD, fmtLeft } from './abilities.js';
 import { drawNet3, drawCam3 } from './gear_art.js';
 import { drawHourglass, drawPowerBadge, POWER_EMBLEMS } from './coin_art.js';
 import { LEGEND } from './item_data.js';
@@ -562,7 +562,7 @@ e.inSub ? [
           else { ctx.strokeStyle = 'rgba(120,112,92,0.35)'; ctx.lineWidth = 1.4 * u; ctx.beginPath(); ctx.arc(x, y, rb, a2, a1); ctx.stroke(); } }
         ctx.restore(); }
       const cut = a.abil && this.chipCut; if (cut) { ctx.save(); ctx.beginPath(); ctx.rect(x - r * 3, y - r * 3, r * 6, r * 6); ctx.arc(cut.x, cut.y, cut.r, 0, TAU); ctx.clip('evenodd'); } // (7.6.15) the ring stops at the chip
-      if (a.abil) { const cdl = cooldownLeft(P), tot = (AB.dur || 0) + (AB.cd || 0);
+      if (a.abil) { const cd0 = cooldownLeft(P), mn0 = minLeft(P), cdl = Math.max(cd0, mn0), tot = cd0 >= mn0 ? (AB.dur || 0) + (AB.cd || 0) : MIN_CD; // (7.6.47) the 15 s floor shows as a cooldown too
         if (ABS.activeT > 0) { ctx.strokeStyle = AB.tier === 'mythical' ? 'rgba(236,120,84,0.8)' : AB.tier === 'legendary' ? 'rgba(220,180,110,0.75)' : 'rgba(226,220,196,0.7)'; ctx.lineWidth = 2.2 * u; ctx.beginPath(); ctx.arc(x, y, r * 1.08, -Math.PI / 2, -Math.PI / 2 + TAU * (ABS.activeT / Math.max(0.01, ABS.maxT))); ctx.stroke(); }
         else if (cdl > 0 && tot > 0 && !(AB.charges && ABS.charges > 0)) { ctx.fillStyle = 'rgba(4,6,6,0.6)'; ctx.beginPath(); ctx.moveTo(x, y); ctx.arc(x, y, r * 0.92, -Math.PI / 2, -Math.PI / 2 + TAU * Math.min(1, cdl / tot)); ctx.closePath(); ctx.fill();
           // (5.16.0) a small painted hourglass and the time left in the middle of the greyed coin ("7h 42m", "38s")

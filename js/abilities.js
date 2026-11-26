@@ -163,6 +163,10 @@ export function growCharges(items, now = Date.now()) { let grew = 0;
   return grew; }
 export function nextCharge(q, now = Date.now()) { const A = abilityOf(q.id); if (!A) return 0; const n = q.load || 0; if (n >= maxLoad(A)) return 0; return Math.max(0, (q.loadAt || now) + chargeWait(A, n) - now); }
 export const maxLoad = (A) => (A && A.maxLoad) || (A && (A.tier === 'legendary' || A.tier === 'mythical') ? 10 : 5);
+// (7.6.47, owner) every skill waits at least 15 s between uses, a loaded charge too (the scroll's own cooldown, when longer,
+// still runs as before; a run's own taps, as a dash's charges, are one use)
+export const MIN_CD = 15;
+export function minLeft(P) { return Math.max(0, ((P.abilMinAt || 0) - Date.now()) / 1000); }
 export function cooldownLeft(P) { return Math.max(0, ((P.abilReadyAt || 0) - Date.now()) / 1000); }
 // can it be used now? returns null if so, else why not
 export function whyNot(g, P, A) {
@@ -175,6 +179,7 @@ export function whyNot(g, P, A) {
   if (A.tide && g.kill) return 'Too late'; // (6.0.0) never in its jaws
   if (A.calm && g.entity && (g.entity.state === 'hunt' || g.entity.state === 'stalk' || g.kill || (g.entity.marked && g.entity.dist < 200))) return 'Not while it hunts you'; // (7.6.6, owner)
   if (A.tide && !A.any && !((g.fx && (g.fx.redTint || 0) > 0.03) || (g.entity && g.entity.dist < 160 && (g.entity.marked || g.entity.state === 'hunt' || g.entity.state === 'stalk')))) return 'Only when the water turns red'; // (6.0.0) once its red reaches him
+  { const mn = minLeft(P); if (mn > 0 && !(A.charges && S.charges > 0)) return `Ready in ${fmtLeft(mn)}`; }
   const cd = cooldownLeft(P); if (cd > 0 && !(A.charges && S.charges > 0) && !(A.loaded > 0)) return `Ready in ${fmtLeft(cd)}`;
   return null;
 }

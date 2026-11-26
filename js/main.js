@@ -33,7 +33,7 @@ import { STATION_COLLAR } from './station_draw.js';
 import { oldStock, overTable, leftOf, nearLure } from './oldone.js';
 import { CHESTS } from './chests.js';
 import { giveRolled, wornInst, putOn2 } from './items.js';
-import { abilityOf, abilityState, whyNot, ALL_ABILITIES, cooldownLeft, skipCost, fmtLeft, MYTH, NEXT_TIER, maxLoad, chargePrice, growCharges } from './abilities.js';
+import { abilityOf, abilityState, whyNot, ALL_ABILITIES, cooldownLeft, minLeft, MIN_CD, skipCost, fmtLeft, MYTH, NEXT_TIER, maxLoad, chargePrice, growCharges } from './abilities.js';
 import { startLegendFx } from './legendfx.js';
 import { SKILLS, RARITY, skillCol } from './item_data.js';
 import { pictureOf, hourglassURL } from './catalog.js';
@@ -2259,18 +2259,18 @@ function atSurface() { const e = g && g.earl; if (!e) return false; return !!(g.
 // (7.6.4, owner) the swap chip: the second scroll comes onto the button, with its own cooldown and run; the other keeps
 // running beside it
 function abilSwap() { const P = profile, K = kitOf(P); if (!K.on.ability2) { hud.toast('No second scroll: put one in its slot in the bag'); return; }
-  [K.on.ability, K.on.ability2] = [K.on.ability2, K.on.ability || null]; [P.abilReadyAt, P.abilReadyAt2] = [P.abilReadyAt2 || 0, P.abilReadyAt || 0];
+  [K.on.ability, K.on.ability2] = [K.on.ability2, K.on.ability || null]; [P.abilReadyAt, P.abilReadyAt2] = [P.abilReadyAt2 || 0, P.abilReadyAt || 0]; [P.abilMinAt, P.abilMinAt2] = [P.abilMinAt2 || 0, P.abilMinAt || 0];
   const S1 = abilityState(g); g.abil = g.abil2 || { activeT: 0, maxT: 0, def: null, charges: null, fx: 0 }; g.abil2 = S1; g.dashAim = null; renderer.aimZoom = 1;
   saveProfile(P); audio.ready && audio.click && audio.click(); }
 function secondAbility() { const q = profile && wornInst(profile, 'ability2'); const A = q ? abilityOf(q.id) : null; if (A) A.loaded = q.load || 0; return A; }
 function currentAbility() { const q = profile && wornInst(profile, 'ability'); const A = q ? abilityOf(q.id) : null; if (A) { A.loaded = q.load || 0; A.inst = q; } return A; } // (7.6.3) with its loaded charges
 // (7.6.26, owner) a use's cooldown: with a charge loaded on the worn scroll, the charge is spent and there is no cooldown
 // at all (none shown); only with none left does the cooldown run
-function coolAfter(P, secs) { const q = wornInst(P, 'ability'); if (q && q.load > 0) { q.load--; P.abilReadyAt = 0; } else P.abilReadyAt = Date.now() + secs * 1000; }
+function coolAfter(P, secs) { P.abilMinAt = Date.now() + MIN_CD * 1000; /* (7.6.47, owner) 15 s at least, charges or not */ const q = wornInst(P, 'ability'); if (q && q.load > 0) { q.load--; P.abilReadyAt = 0; } else P.abilReadyAt = Date.now() + secs * 1000; }
 function useAbility() {
   const A = currentAbility(), why = whyNot(g, profile, A);
   // (7.4.9, owner) cooling down: the wait can be skipped with pearls (abilities.js skipCost)
-  if (A && profile && cooldownLeft(profile) > 0 && !(A.loaded > 0) && !(abilityState(g).activeT > 0) && !(A.charges && abilityState(g).charges > 0)) { const left = cooldownLeft(profile), n = skipCost(left), P = profile; // aboard too: the skip is offered wherever he taps it
+  if (A && profile && cooldownLeft(profile) > 0 && minLeft(profile) <= 0 && !(A.loaded > 0) && !(abilityState(g).activeT > 0) && !(A.charges && abilityState(g).charges > 0)) { const left = cooldownLeft(profile), n = skipCost(left), P = profile; // aboard too: the skip is offered wherever he taps it
     ui.confirm(`${A.name}: ready in ${fmtLeft(left)}`, `Skip the wait: ${n} pearl${n > 1 ? 's' : ''} (you have ${Math.floor(P.pearls || 0)})`, `Skip, ${n} pearl${n > 1 ? 's' : ''}`, 'Wait', () => {
       if ((P.pearls || 0) < n) { hud.toast('Not enough pearls', 'warn'); return; }
       P.pearls -= n; P.abilReadyAt = Date.now(); saveProfile(P); audio.ready && audio.uiSoft && audio.uiSoft(); hud.toast(`${A.name} ready`); });
