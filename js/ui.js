@@ -37,6 +37,7 @@ import { Cabin } from './cabin.js';
 import { Catalog, pictureOf, drawGoldCoins, MEASURES, measureHtml, crossBoosts, boostOf } from './catalog.js';
 import { BAG_SCENES, BAG_SCENE_IDS } from './bag_scenes.js';
 import { ITEMS, kitOf, RARITY, LEGEND, SETS, LOCKER, totals, sellValue, FREE as FREE_IDS, slotKey, bagSlotOf } from './items.js';
+const SLOT_NAME = { 1: 'Mythic slot', 2: 'Skill 2', 3: 'Skill 3' }; // (7.6.71, owner) the three skill slots, as the bag names them
 const SIDE_TOOLS = new Set(['cam']);
 import { kit as ensureKit } from './economy.js';
 import { drawEarl } from './earl_draw.js';
@@ -1387,16 +1388,16 @@ export class UI {
   // it, new things marked NEW. Click anything for a pop-up: what it is, and side by side with what he has on.
   equipHtml(P, g, extra = '') {
     ensureKit(P); const K = kitOf(P), free = !!this.h.canChangeGear(), onSet = new Set(Object.values(K.on));
-    const SLOTS = [['suit', 'Suit'], ['fins', 'Fins'], ['tank', 'Tank'], ['bag', 'Bag'], ['ability', 'Ability'], ['net', '1  Net'], ['cam', '2  Camera'], ['ability2', 'Ability 2']]; // (5.9.0) the Ability slot: the scroll he carries. (7.6.4, owner) and the second, its swap on the skill button
+    const SLOTS = [['suit', 'Suit'], ['fins', 'Fins'], ['tank', 'Tank'], ['bag', 'Bag'], ['ability', 'Mythic'], ['net', '1  Net'], ['cam', '2  Camera'], ['ability2', 'Skill 2'], ['ability3', 'Skill 3']]; // (7.6.71, owner) three skill slots: the mythic slot (left) and two on the right // (5.9.0) the Ability slot: the scroll he carries. (7.6.4, owner) and the second, its swap on the skill button
     // (7.6.26, owner) a scroll's tile shows its charges: its emblem from half its colour (none) to twice it (full)
     const satOf = (q, it) => { const A = abilityOf(q.id), mx = A ? maxLoad(A) : 0; return Math.round((0.5 + 1.5 * (mx ? Math.min(1, (q.load || 0) / mx) : 0)) * 10) / 10; };
     const pic = (q) => { const it = ITEMS[q.id]; return pictureOf(it.kind, it.kind === 'ability' ? { ...it, sat: satOf(q, it) } : it, 120, 72, true); };
-    const slot = ([kind0, label]) => { const bs = kind0 === 'ability' ? 1 : kind0 === 'ability2' ? 2 : 0, kind = bs ? slotKey(K, bs) : kind0; // (7.6.48) the bag's two scroll slots stay put; slot 1 takes a Heart
+    const slot = ([kind0, label]) => { const bs = kind0 === 'ability' ? 1 : kind0 === 'ability2' ? 2 : kind0 === 'ability3' ? 3 : 0, kind = bs ? slotKey(K, bs) : kind0; // (7.6.48) the bag's two scroll slots stay put; slot 1 takes a Heart
       const q = K.on[kind] && K.items.find((x) => x.u === K.on[kind]); const it = q && ITEMS[q.id], nm = label.replace(/^\d\s+/, '');
       // (5.11.7) the name inside the box, under the picture (it no longer hangs below and gets cut off); no key numbers (touch
       // only); an empty slot is just its name; a slot for something he does not own yet (the camera) carries a padlock
-      const lockedSlot = !q && kind === 'cam' && !K.items.some((x2) => ITEMS[x2.id] && ITEMS[x2.id].kind === 'cam');
-      return `<div class="eq-slot sq${q ? ' r-' + it.rarity : ' empty'}${lockedSlot ? ' locked' : ''}${bs === 1 ? ' myth-slot' : ''}" data-slot="${bs ? 'ability' : kind}"${bs ? ` data-bs="${bs}"` : ''} title="${q ? it.name : nm + (lockedSlot ? ': not bought yet' : bs === 1 ? ': any skill, mythical too' : bs === 2 ? ': any skill but a mythical one' : ': nothing on')}">${q ? `<img src="${pic(q)}" alt="" draggable="${free}" data-kind="${kind}" data-u="${q.u}">` : lockedSlot ? '<i class="lock"></i>' : ''}<small class="slot-nm">${nm}</small></div>`; };
+      const lockedSlot = false; // (7.6.71, owner) no padlock on the camera's slot: nothing is locked, it is only empty until one is bought
+      return `<div class="eq-slot sq${q ? ' r-' + it.rarity : ' empty'}${lockedSlot ? ' locked' : ''}${bs === 1 ? ' myth-slot' : ''}" data-slot="${bs ? 'ability' : kind}"${bs ? ` data-bs="${bs}"` : ''} title="${q ? it.name : nm + (lockedSlot ? ': not bought yet' : bs === 1 ? ': any skill, mythical too' : bs >= 2 ? ': any skill but a mythical one' : ': nothing on')}">${q ? `<img src="${pic(q)}" alt="" draggable="${free}" data-kind="${kind}" data-u="${q.u}">` : lockedSlot ? '<i class="lock"></i>' : ''}<small class="slot-nm">${nm}</small></div>`; };
     const order = ['net', 'cam', 'suit', 'fins', 'tank', 'bag'], rk = (q) => RARITY[ITEMS[q.id].rarity].k;
     const list = K.items.filter((q) => !onSet.has(q.u)).sort((a2, b2) => rk(a2) - rk(b2) || order.indexOf(ITEMS[a2.id].kind) - order.indexOf(ITEMS[b2.id].kind) || ITEMS[a2.id].name.localeCompare(ITEMS[b2.id].name));
     const tiles = list.map((q) => { const it = ITEMS[q.id];
@@ -1455,7 +1456,7 @@ export class UI {
     const nSpare = ['necklace', 'glowAdv'].filter((k) => (SP[k] || 0) > 0).length + trapKinds.length + Math.ceil(nGold / 10);
     const pop = this.lkSel ? this.itemPop(P, g, free) : '';
     return `<div class="inv-sec wide eq inv-split${free ? '' : ' locked'}"><div class="inv-left"><div class="cash-plate"><span>CASH</span><b>${moneyExact(P.cash)}</b></div>`
-      + `<div class="eq-stage"><div class="eq-deep"></div>${(() => { const S = BAG_SCENES[P.bagScene] || BAG_SCENES.reef; return `<button class="eq-scene${S.red ? ' red' : ''}" data-scene title="Change the scene behind your diver"><span>Scene:</span> <b>${S.name}</b></button>`; })()}<div class="eq-col">${SLOTS.slice(0, 5).map(slot).join('')}</div><canvas class="eq-earl" width="360" height="520"></canvas><div class="eq-pouch">${beltSlot()}</div><div class="eq-col">${helmetSlot}${SLOTS.slice(5, 7).map(slot).join('')}${petGear}${SLOTS.slice(7).map(slot).join('')}</div>`
+      + `<div class="eq-stage"><div class="eq-deep"></div>${(() => { const S = BAG_SCENES[P.bagScene] || BAG_SCENES.reef; return `<button class="eq-scene${S.red ? ' red' : ''}" data-scene title="Change the scene behind your diver"><span>Scene:</span> <b>${S.name}</b></button>`; })()}<div class="eq-col">${SLOTS.slice(0, 5).map(slot).join('')}</div><canvas class="eq-earl" width="360" height="520"></canvas><div class="eq-pouch">${beltSlot()}${petGear}</div><div class="eq-col">${helmetSlot}${SLOTS.slice(5, 7).map(slot).join('')}${SLOTS.slice(7).map(slot).join('')}</div>`
       /* (7.6.49, owner) a helmet slot at the top right, ready for helmets to come; the glow sticks (used up, not worn) moved to a pouch at his feet */
       /* (7.6.26, owner) Ability 2 at the foot of its column, level with Ability: the two scrolls on one row; the pet moved up */ + `</div>`
       /* (6.0.0) no lock note: gear changes anywhere */
@@ -1575,8 +1576,8 @@ export class UI {
     if (on) {
       body = `<div class="ip-cols one">${this.chargeCol(P, q, 'You have it on')}</div>`;
       const starter = it.kind === 'net' ? null : FREE_IDS[it.kind]; // (6.9.1) a net unequipped leaves the hands empty, the hand net too
-      if (free && scr && !(myth && !on2)) acts += `<button data-lk="moveslot:${q.u}">${on2 ? 'Equip' : 'Secondary'}</button>`; // (7.6.36, owner) a worn scroll moves to the other slot. (7.6.48, owner) a Heart only to slot 1
-      if (free && !(starter && q.id === starter)) acts += `<button data-lk="off:${scr ? (K.on.ability === q.u ? 'ability' : 'ability2') : it.kind}">Unequip${starter ? ` <small>(${ITEMS[starter].name} back on)</small>` : ''}</button>`;
+      if (free && scr && !myth) for (const n of [1, 2, 3]) if (n !== bsl) acts += `<button data-lk="slot:${n}:${q.u}">${SLOT_NAME[n]}</button>`; // (7.6.71, owner) a worn scroll moves to another of the three slots (a Heart stays in the mythic slot)
+      if (free && !(starter && q.id === starter)) acts += `<button data-lk="off:${scr ? slotKey(K, bsl || 1) : it.kind}">Unequip${starter ? ` <small>(${ITEMS[starter].name} back on)</small>` : ''}</button>`;
     } else {
       // the numbers, a row each: his now, this one, which is better
       let rows = '';
@@ -1591,8 +1592,8 @@ export class UI {
         rows += Math.round(a0) === Math.round(a1) ? `<tr class="same"><th>Your air</th><td>${f(a0)}</td><td>${f(a1)}</td></tr>` : `<tr><th>Your air</th><td>${f(a0)}</td><td class="${a1 > a0 ? 'up' : 'down'}">${f(a1)} ${a1 > a0 ? '▲' : '▼'}</td></tr>`; }
       body = `<div class="ip-cols">${cur ? this.chargeCol(P, curQ, 'Equipped') : `<div class="ip-col empty"><h5>Equipped</h5><p>Nothing in that slot.</p></div>`}<div class="ip-arrow">→</div>${this.chargeCol(P, q, 'Selected')}</div>`
         + (rows ? `<table class="ip-vs"><thead><tr><th></th><td>${cur ? cur.name : '—'}</td><td>${it.name}</td></tr></thead><tbody>${rows}</tbody></table>` : '');
-      if (free) acts += `<button data-lk="on:${q.u}">${scr ? 'Equip' : 'Put it on'}</button>`;
-      if (free && scr && !myth) acts += `<button data-lk="on2:${q.u}">Secondary</button>`; // (7.6.4, owner). (7.6.48, owner) slot 2 never takes a Heart
+      if (free && !scr) acts += `<button data-lk="on:${q.u}">Put it on</button>`;
+      if (free && scr) for (const n of myth ? [1] : [1, 2, 3]) acts += `<button data-lk="slot:${n}:${q.u}">${myth ? 'Equip' : SLOT_NAME[n]}</button>`; // (7.6.71, owner) a scroll into one of the three slots; a Heart only into the mythic slot
       // (7.4.11, owner) three of the same scroll at the same rarity, none of them on: they combine into one of the next rarity
       if (seller) acts += it.kind === 'ability' ? `<button class="sell" data-lk="sellscroll:${q.u}">Sell, <img class="st-pearl" src="assets/ui/icons/pearl.png" alt="">${scrollSellPearls(q.id).toLocaleString('en-US')}</button>` /* (7.6.2, owner) scrolls sell for pearls */ : `<button class="sell" data-lk="sellgear:${q.u}">Sell, ${money(sellValue(q), false)}</button>`;
       else acts += '<small>Sell it on the Margaret, at the station, or to Dave.</small>';
@@ -1691,7 +1692,7 @@ export class UI {
     root.querySelectorAll('.eq-slot img').forEach((el) => el.addEventListener('dragstart', (ev) => { this.dragKind = 'off:' + el.dataset.kind; ev.dataTransfer.setData('text/plain', 'off:' + el.dataset.kind); }));
     root.querySelectorAll('.eq-slot').forEach((s2) => {
       s2.addEventListener('dragover', (ev) => { if (this.dragKind === s2.dataset.slot) ev.preventDefault(); });
-      s2.addEventListener('drop', (ev) => { ev.preventDefault(); const [k, u] = ev.dataTransfer.getData('text/plain').split(':'); if (k === s2.dataset.slot) { if (s2.dataset.bs === '2') { this.h.onEquip('on2:' + u); this.renderInventory(); } else put(u); } });
+      s2.addEventListener('drop', (ev) => { ev.preventDefault(); const [k, u] = ev.dataTransfer.getData('text/plain').split(':'); if (k === s2.dataset.slot) { if (s2.dataset.bs) { this.h.onEquip('slot:' + s2.dataset.bs + ':' + u); this.renderInventory(); } else put(u); } });
     });
     // (7.6.48, owner) on a phone: press and hold a locker tile to lift it, drag it onto a slot (or onto him) and let go
     root.querySelectorAll('.lk-tile[data-u]').forEach((el) => {
@@ -1703,7 +1704,7 @@ export class UI {
       el.addEventListener('touchmove', (ev) => { const t = ev.touches[0]; if (!ghost) { if (Math.hypot(t.clientX - x0, t.clientY - y0) > 8) clearTimeout(tm); return; } ev.preventDefault(); ghost.style.left = t.clientX + 'px'; ghost.style.top = t.clientY + 'px'; }, { passive: false });
       el.addEventListener('touchend', (ev) => { if (!ghost) { clearTimeout(tm); return; } const t = ev.changedTouches[0], moved = Math.hypot(t.clientX - x0, t.clientY - y0) > 10; clear(); if (!moved) return; ev.preventDefault(); this.dragEnded = performance.now();
         const hit = document.elementFromPoint(t.clientX, t.clientY), sl = hit && hit.closest('.eq-slot[data-slot]');
-        if (sl && sl.dataset.slot === el.dataset.kind) { if (sl.dataset.bs === '2') { this.h.onEquip('on2:' + el.dataset.u); this.renderInventory(); } else put(el.dataset.u); }
+        if (sl && sl.dataset.slot === el.dataset.kind) { if (sl.dataset.bs) { this.h.onEquip('slot:' + sl.dataset.bs + ':' + el.dataset.u); this.renderInventory(); } else put(el.dataset.u); }
         else if (hit && hit.closest('.eq-earl')) put(el.dataset.u);
         else if (sl && sl.dataset.slot) this.h.onMessage && this.h.onMessage("Can't put that there"); });
       el.addEventListener('touchcancel', clear);

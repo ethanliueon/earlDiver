@@ -190,3 +190,18 @@ export function whyNot(g, P, A) {
 
 // (5.16.0) a time left, as the buttons and cards show it: "7h 42m", "12m", "38s"
 export function fmtLeft(sec) { sec = Math.ceil(sec); if (sec >= 3600) return `${Math.floor(sec / 3600)}h ${Math.floor((sec % 3600) / 60)}m`; if (sec >= 60) return `${Math.ceil(sec / 60)}m`; return `${sec}s`; }
+
+// (7.6.71, owner) three skill slots, a button each: slot 1 (the mythic slot) keeps its state in the first places (P.abilReadyAt,
+// P.abilMinAt, g.abil, the kit's 'ability'); slots 2 and 3 in their own (…2, …3). What a button does is done with its slot's
+// state swapped onto the first's places and swapped back after, so every rule written for one button holds for all three.
+// An aim waiting for a tap remembers which button set it (slotNow)
+let SLOT = 1;
+export const slotNow = () => SLOT;
+const blank = () => ({ activeT: 0, maxT: 0, def: null, charges: null, fx: 0 });
+function swapSlot(g, P, K, n) { const r = 'abilReadyAt' + n, m = 'abilMinAt' + n, gk = 'abil' + n, kk = 'ability' + n;
+  [P.abilReadyAt, P[r]] = [P[r] || 0, P.abilReadyAt || 0]; [P.abilMinAt, P[m]] = [P[m] || 0, P.abilMinAt || 0];
+  if (g) { const S1 = abilityState(g); g.abil = g[gk] || blank(); g[gk] = S1; }
+  if (K && K.on) [K.on.ability, K.on[kk]] = [K.on[kk] || null, K.on.ability || null];
+}
+export function withSlot(g, P, K, n, fn) { if (n === 1 || SLOT === n) return fn(); if (SLOT !== 1) throw new Error('nested slot'); swapSlot(g, P, K, n); SLOT = n; try { return fn(); } finally { SLOT = 1; swapSlot(g, P, K, n); } }
+export const withSlot2 = (g, P, K, fn) => withSlot(g, P, K, 2, fn);

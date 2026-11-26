@@ -4,7 +4,7 @@ import { drawBagIcon, drawTankIcon, drawChamberIcon } from './coin_art.js';
 import { parsePrompt, dymo, brassBezel, oliveNine, HUDF } from './fittings.js';
 import { lockerTexture } from './textures.js';
 import { drawCoin, drawCash, drawTile, drawBang } from './coins.js';
-import { abilityState, whyNot, cooldownLeft, minLeft, MIN_CD, fmtLeft } from './abilities.js';
+import { abilityState, whyNot, cooldownLeft, minLeft, MIN_CD, fmtLeft, withSlot } from './abilities.js';
 import { drawNet3, drawCam3 } from './gear_art.js';
 import { drawHourglass, drawPowerBadge, POWER_EMBLEMS } from './coin_art.js';
 import { LEGEND } from './item_data.js';
@@ -351,39 +351,22 @@ export class Hud {
     // Leaving always works (it used to wait on the prompt, which hides itself after a few seconds)
     // (5.9.0) the ability in the arc's last place: the carried scroll's emblem on a coin of its rarity; a sweep while it
     // recovers, a bright ring running down while it is on
-    const AB = this.abilDef || null, ABS = abilityState(g);
-    const abil = () => { if (!AB) return { key: 'ability', icon: 'ab_sprint', on: false, why: "You don't have a skill equipped: put a scroll on in the bag", lock: true };
+    let AB = this.abilDef || null, ABS = abilityState(g);
+    const SOCKET = (n) => ({ key: 'slotempty', icon: 'none', on: true, empty: true, slotN: n }); // (7.6.71, owner) an empty skill slot: a bare socket, no padlock (nothing is locked); a tap opens the bag
+    const abil = () => { if (!AB) return SOCKET(1);
       const why = whyNot(g, P, AB); return { key: 'ability', icon: 'ab_' + AB.fam, look: { tier: AB.tier }, tint: AB.tier, on: !why || why === 'Already running', lit: ABS.activeT > 0, why, abil: true, tapKey: cooldownLeft(P) > 0 && !(ABS.activeT > 0) ? 'ability' : null /* (7.4.9) cooling: a tap offers to skip it for pearls */ }; };
-    const handSub = e.inSub ? (g.subHandF ? 'f' : sub.docked ? 'u' : null) : null;
+    // (7.6.71, owner) skill slots 2 and 3, a button each: built and drawn with that slot's state swapped onto the first's
+    // places (abilities.js withSlot)
+    const skillN = (n) => { if (n === 1) return abil(); const An = this['abilDef' + n] || null; if (!An) return SOCKET(n);
+      return withSlot(g, P, null, n, () => { const Sn = abilityState(g), why = whyNot(g, P, An); return { key: 'ability' + n, icon: 'ab_' + An.fam, look: { tier: An.tier }, tint: An.tier, on: !why || why === 'Already running', lit: Sn.activeT > 0, why, abil: true, slotN: n, tapKey: cooldownLeft(P) > 0 && !(Sn.activeT > 0) ? 'ability' + n : null }; }); };
+    const handSub = e.inSub ? (g.subHandF ? 'f' : null) : null; // (7.6.69, owner) docked, nothing but leaving: the hand no longer sells there
     // (5.17.0) the light, in the arc's fourth place in the water and the sub: his lamp while he swims, her lights while he
     // is in her (it moved here from the bottom left corner, which is the stick's alone now)
     const light = () => { const on = e.inSub ? !!sub.lightsOn : !!e.lampOn; return { key: 'l', icon: 'lamp', on: true, lit: on }; };
     // (6.5.6) at the Margaret's wheel: the anchor and the way back from the wheel in the arc (on a phone there was no
     // way to do either, so taking the wheel left him stuck there); the stick steers
     const atHelm = !!g.helm && !e.inSub;
-    const A = atHelm ? [
-      null,
-      { key: 'g', icon: 'anchor', on: true, lit: !!(g.anchored && !g.anchorDir) },
-      { key: 'v', icon: 'door', on: true, lit: true, inter: true },
-      abil(),
-      light(),
-    ] : e.inSub ? [
-      { key: 'leavesub', icon: 'leave', on: true, tutAlt: g.tutAction && g.tutAction.id === 'leavesub' ? 'f' : null },
-      // (5.17.0) no glow stick in the sub's arc: she has her own lights (the bag still snaps one)
-      !handSub && g.obsTarget && !g.tutQuiet ? { key: 'obs', icon: 'eye', on: true, lit: true, inter: true } /* (6.5.7) an animal at the glass: the eye */ : { key: handSub || 'f', icon: 'hand', on: !!handSub, lit: !!handSub, why: 'Nothing in reach', inter: true },
-      abil(),
-      light(),
-    ] : [
-      // (5.6.5) the lamp in the same place outside and in the sub (the last of the arc)
-      // (5.6.8) the same four in the same places on deck and in the cabin: the sprint button runs there; the rest wait
-      null, // (5.16.7) calling the sub moved to the menu's sub tile (call sub out of the sub, autopilot home in it)
-      // (5.6.9) the glow sticks on his belt; with none on it, a padlock (and where to get one)
-      (() => { const gk = P.glowKind === 'glowAdv' ? 'glowAdv' : 'necklace', n = g.items[gk] || 0, sp = (P.spare && (P.spare.necklace || P.spare.glowAdv)) || 0; // (6.0.1) the kind on the belt, on its rarity's coin
-        return { key: 'e', icon: 'glow', tint: gk === 'glowAdv' ? 'exotic' : 'rare', /* (6.5.8) */ on: !aboard && n > 0, n, lit: false, lock: !(n > 0), why: n > 0 ? 'For the water' : sp ? 'Put glow sticks on your belt: open the bag' : 'No glow sticks: the computer in the cabin sells them' }; })(),
-      // (5.7.0) the hand: one button for whatever is in reach (the ladder, a door, the hatch, a thing to take, a trap;
-      // the winch to sell). Sprint moved beside the stick
-      // (5.7.5) aboard, the big button is the hand; this slot gets its own job: Dive in on deck, Out on deck in the cabin
-      (() => { // (6.5.0) aboard, this slot is the hand (the big button is only ever the net or the camera): what is in reach
+    const handBtn = () => { // (6.5.0) aboard, this slot is the hand (the big button is only ever the net or the camera): what is in reach
         // (the computer, the bunk, the cabin door); in the cabin with nothing in reach, the way out on deck
         if (aboard) { const hOn = !!this.handOn; /* (7.1.0) the way out only at the cabin door, and shown as the door there; elsewhere in the cabin the hand, greyed until something is in reach */ return hOn ? { key: 'f', icon: this.inCabin ? (this.cabinNear === 'door' ? 'door' : 'hand') : 'cabin', on: true, lit: true, inter: true } : { key: 'f', icon: 'hand', on: false, why: 'Nothing in reach', inter: true }; }
         const tm = g.tapMarks || [], hf = tm.some((m) => m.key === 'f'), hu = !hf && tm.some((m) => m.key === 'u'), hon = hf || hu;
@@ -392,12 +375,22 @@ export class Hud {
         // (6.3.0) an animal not yet observed, in reach (and nothing else to do here): the slot becomes the eye. Nothing is
         // drawn round the animal: the eye on this button is the only sign
         if (g.repairNear && !e.inSub) return { key: 'r', icon: 'repair', on: true, lit: true, inter: true }; // (7.5.6, owner) at a hole in the sub's hull the hand is the spanner: held, he mends it
-        if (!hon && g.obsTarget && !e.inSub && !g.tutQuiet) return { key: 'obs', icon: 'eye', on: true, lit: true, inter: true }; // (7.4.0) not in the sub trip: it would pull him off the step
+        // (7.6.71, owner) no eye: an animal is observed by tapping it in the water
         // (7.3.9, owner) close to his pet, the hand becomes the pet: a press tells it to stay or to follow again
         if (!hon && !g.anyTarget && !(g.prompt && /(^|·\s*)(Hold )?[FR]  /.test(g.prompt)) && g.petC && P.pet && !e.inSub && Math.hypot(g.petC.x - e.x, g.petC.y - e.y) < 2.5 + (g.petC.len || 0)) return { key: 'petstay', icon: 'pet', on: true, lit: true, inter: true };
-        return { key: hu ? 'u' : 'f', icon: ctxIcon || 'hand', on: hon, lit: hon, why: 'Nothing in reach', inter: true }; })(),
+        return { key: hu ? 'u' : 'f', icon: ctxIcon || 'hand', on: hon, lit: hon, why: 'Nothing in reach', inter: true }; };
+    // (7.6.71, owner) the arc, top to bottom: the action button, skill 3, skill 2, the mythic slot (skill 1). The lamp (the
+    // sub's lights in her) is a small coin above it; the glow sticks are used from the bag. At the wheel, as before
+    const A = atHelm ? [
+      { key: 'g', icon: 'anchor', on: true, lit: !!(g.anchored && !g.anchorDir) },
+      { key: 'v', icon: 'door', on: true, lit: true, inter: true },
       abil(),
-      light(), // (6.0.5) aboard too: there it switches the sub's lights
+      light(),
+    ] : e.inSub ? [
+      handSub ? { key: handSub, icon: 'hand', on: true, lit: true, inter: true } : { key: 'leavesub', icon: 'leave', on: true, inter: true, tutAlt: g.tutAction && g.tutAction.id === 'leavesub' ? 'f' : null },
+      skillN(3), skillN(2), skillN(1),
+    ] : aboard ? [handBtn(), abil(), light()] /* on deck and in the cabin: the hand, the first skill, the lamp */ : [
+      handBtn(), skillN(3), skillN(2), skillN(1),
     ];
     // (5.6.1) under the radar, small and quiet: the journal and the bag, then what else is carried
     const ROW = [{ key: 'journal', dom: true }, { key: 'b', icon: 'bag', on: true }].concat( // (5.6.9) the journal's coin (HTML) above the bag
@@ -497,6 +490,14 @@ e.inSub ? [
       ctx.restore();
     };
     const btn = (a, x, y, r) => {
+      if (a.slotN > 1 && a.abil && !a.inN) return withSlot(g, P, null, a.slotN, () => { const s1 = AB, s2 = ABS; AB = this['abilDef' + a.slotN]; ABS = abilityState(g); try { return btn({ ...a, inN: true }, x, y, r); } finally { AB = s1; ABS = s2; } });
+      if (a.empty) { // (7.6.71, owner) an empty skill slot: a bare socket sunk into the panel (dark, its lip lit from above), nothing on it
+        const dn = pressFx('slotempty' + a.slotN, x, y, r); ctx.save(); ctx.fillStyle = 'rgba(0,0,0,0.3)'; ctx.beginPath(); ctx.arc(x, y + r * 0.06, r * 1.02, 0, TAU); ctx.fill();
+        const sg = ctx.createRadialGradient(x, y + r * 0.25, r * 0.2, x, y, r); sg.addColorStop(0, dn ? 'rgba(24,30,28,0.62)' : 'rgba(18,24,22,0.48)'); sg.addColorStop(1, 'rgba(6,9,9,0.66)'); ctx.fillStyle = sg; ctx.beginPath(); ctx.arc(x, y, r * 0.96, 0, TAU); ctx.fill();
+        ctx.lineWidth = 1.6 * u; ctx.strokeStyle = 'rgba(0,0,0,0.85)'; ctx.beginPath(); ctx.arc(x, y, r * 0.96, 0, TAU); ctx.stroke();
+        ctx.strokeStyle = 'rgba(206,198,170,0.16)'; ctx.lineWidth = 1.2 * u; ctx.beginPath(); ctx.arc(x, y, r * 0.99, 0, TAU); ctx.stroke(); ctx.strokeStyle = 'rgba(214,206,178,0.24)'; ctx.beginPath(); ctx.arc(x, y, r * 0.99, Math.PI * 0.15, Math.PI * 0.85); ctx.stroke(); // its rim, the lip catching light below
+        ctx.strokeStyle = 'rgba(0,0,0,0.5)'; ctx.lineWidth = 3 * u; ctx.beginPath(); ctx.arc(x, y + 1.5 * u, r * 0.86, Math.PI * 1.1, Math.PI * 1.9); ctx.stroke(); // its inner shadow under the top rim
+        ctx.restore(); hot(x - r, y - r, r * 2, r * 2, 'slotempty'); return; }
       if (a.dom) { this.journalAt = { x: (x + this.safeL) * kx, y: (y + this.safeT) * kx, r: r * kx }; this.journalR = r * kx; return; } // (5.6.9) the journal's HTML coin is placed here by main.js
       const down = pressFx(a.key, x, y, r);
       // one that comes and goes rises in (and sinks away) over a fifth of a second rather than blinking
@@ -542,22 +543,14 @@ e.inSub ? [
       // light rising inside it while it still runs); with no second scroll, a greyed scroll behind a padlock
       // (7.6.7, owner) on its upper right rim, as the camera chip sits on the net's: sized and placed to clear the hand above
       // (7.6.15, owner) the camera chip's size (16): it may overlap the hand's rim a little; the skill's ring is cut away behind it
-      this.chipCut = null; if (a.abil && !this.inKill) { const A2 = this.abilDef2, rc2 = 16 * u, an = -28 * Math.PI / 180, cx2 = x + Math.cos(an) * (r * 0.9), cy2 = y + Math.sin(an) * (r * 0.9); this.chipCut = { x: cx2, y: cy2, r: rc2 + 1.5 * u };
-        if (A2) { drawCoin(ctx, cx2, cy2, rc2, 'ab_' + A2.fam, pressFx('abswap', cx2, cy2, rc2) ? 'press' : this.abil2Running ? 'lit' : 'on', { tier: A2.tier }, A2.tier);
-          ctx.save(); ctx.translate(cx2 - rc2 * 0.72, cy2 + rc2 * 0.62); ctx.fillStyle = 'rgba(8,8,6,0.88)'; ctx.beginPath(); ctx.arc(0, 0, rc2 * 0.42, 0, TAU); ctx.fill(); drawGlyph(ctx, 'swap', 0, 0, rc2 * 0.8); ctx.restore();
-          { // (7.6.70, owner) the second scroll's own wait shown on its chip too (its cooldown, or the 15 s floor): only the button's was shown
-            const now = Date.now(), cd2 = Math.max(0, ((P.abilReadyAt2 || 0) - now) / 1000), mn2 = Math.max(0, ((P.abilMinAt2 || 0) - now) / 1000), w2 = Math.max(cd2, mn2), tot2 = cd2 >= mn2 ? (A2.dur || 0) + (A2.cd || 0) : MIN_CD;
-            if (w2 > 0 && tot2 > 0 && !this.abil2Running) { ctx.fillStyle = 'rgba(4,6,6,0.62)'; ctx.beginPath(); ctx.moveTo(cx2, cy2); ctx.arc(cx2, cy2, rc2 * 0.92, -Math.PI / 2, -Math.PI / 2 + TAU * Math.min(1, w2 / tot2)); ctx.closePath(); ctx.fill();
-              ctx.font = `700 ${Math.max(8 * u, rc2 * 0.62)}px ${HUDT}`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillStyle = '#efe8d2'; ctx.shadowColor = '#000'; ctx.shadowBlur = 3 * u; ctx.fillText(fmtLeft(w2), cx2, cy2 + 0.5 * u); ctx.shadowBlur = 0; } }
-          hot(cx2 - rc2, cy2 - rc2, rc2 * 2, rc2 * 2, 'abswap'); }
-        else { drawCoin(ctx, cx2, cy2, rc2, 'ab_sprint', 'off', null); padlock(cx2 + rc2 * 0.4, cy2 + rc2 * 0.4, rc2 * 0.42); hot(cx2 - rc2, cy2 - rc2, rc2 * 2, rc2 * 2, 'msg:No second scroll: put one in its slot in the bag'); } }
+      this.chipCut = null; // (7.6.71, owner) no swap chip: the second skill has its own button
       // (7.6.3, owner) charges loaded on the scroll: their count in bone at the button's foot, left (the glow stick's count
       // sits at the top right); a small notch a charge under it, up to ten
       // (7.6.15, owner) no "×N": a lit bead for each loaded charge, set along the outside of the button's left rim (clear of
       // the chip at its upper right and the lamp below), as rivets on its edge; one goes dark as a charge is spent
       // (7.6.16, owner) not beads: an arc cut into segments along the outside of the left rim, one segment a slot the scroll
       // can hold; the loaded ones lit in bone, the spent ones a dark groove
-      if (a.abil && AB && AB.loaded > 0) { ctx.save(); const cap = Math.max(1, Math.min(10, AB.maxLoad || ((AB.tier === 'legendary' || AB.tier === 'mythical') ? 10 : 5))), n = Math.min(cap, AB.loaded), rb = r * 1.17, from = 266 * Math.PI / 180, span = 228 * Math.PI / 180 /* (7.6.17, owner) longer, from the top of the rim down its left side */, gap = Math.min(5 * Math.PI / 180, span / cap * 0.3), seg = (span - gap * (cap - 1)) / cap;
+      if (a.abil && AB && AB.loaded > 0) { ctx.save(); const cap = Math.max(1, Math.min(10, AB.maxLoad || ((AB.tier === 'legendary' || AB.tier === 'mythical') ? 10 : 5))), n = Math.min(cap, AB.loaded), rb = r * 1.17, span = 122 * Math.PI / 180, from = Math.atan2(y - cy, x - cx) + span / 2 /* (7.6.71, owner) shorter, and on the coin's outer side (away from the big one), where no other coin sits: it was cut off by the coin below */ /* (7.6.17, owner) longer, from the top of the rim down its left side */, gap = Math.min(5 * Math.PI / 180, span / cap * 0.3), seg = (span - gap * (cap - 1)) / cap;
         ctx.lineCap = 'butt';
         for (let i = 0; i < cap; i++) { const a1 = from - i * (seg + gap), a2 = a1 - seg, lit = i < n;
           ctx.strokeStyle = 'rgba(6,8,8,0.78)'; ctx.lineWidth = 4.6 * u; ctx.beginPath(); ctx.arc(x, y, rb, a2, a1); ctx.stroke();
@@ -567,7 +560,7 @@ e.inSub ? [
         ctx.restore(); }
       const cut = a.abil && this.chipCut; if (cut) { ctx.save(); ctx.beginPath(); ctx.rect(x - r * 3, y - r * 3, r * 6, r * 6); ctx.arc(cut.x, cut.y, cut.r, 0, TAU); ctx.clip('evenodd'); } // (7.6.15) the ring stops at the chip
       if (a.abil) { const cd0 = cooldownLeft(P), mn0 = minLeft(P), cdl = Math.max(cd0, mn0), tot = cd0 >= mn0 ? (AB.dur || 0) + (AB.cd || 0) : MIN_CD; // (7.6.47) the 15 s floor shows as a cooldown too
-        if (ABS.activeT > 0) { ctx.strokeStyle = AB.tier === 'mythical' ? 'rgba(236,120,84,0.8)' : AB.tier === 'legendary' ? 'rgba(220,180,110,0.75)' : 'rgba(226,220,196,0.7)'; ctx.lineWidth = 2.2 * u; ctx.beginPath(); ctx.arc(x, y, r * 1.08, -Math.PI / 2, -Math.PI / 2 + TAU * (ABS.activeT / Math.max(0.01, ABS.maxT))); ctx.stroke(); }
+        if (ABS.activeT > 0) { ctx.strokeStyle = 'rgba(232,226,204,0.78)'; /* (7.6.71, owner) one bone ring for every rarity: it says running, the coin says what */ ctx.lineWidth = 2.2 * u; ctx.beginPath(); ctx.arc(x, y, r * 1.08, -Math.PI / 2, -Math.PI / 2 + TAU * (ABS.activeT / Math.max(0.01, ABS.maxT))); ctx.stroke(); }
         else if (cdl > 0 && tot > 0 && !(AB.charges && ABS.charges > 0)) { ctx.fillStyle = 'rgba(4,6,6,0.6)'; ctx.beginPath(); ctx.moveTo(x, y); ctx.arc(x, y, r * 0.92, -Math.PI / 2, -Math.PI / 2 + TAU * Math.min(1, cdl / tot)); ctx.closePath(); ctx.fill();
           // (5.16.0) a small painted hourglass and the time left in the middle of the greyed coin ("7h 42m", "38s")
           drawHourglass(ctx, x, y - r * 0.2, r * 0.3); ctx.font = `700 ${Math.max(10 * u, r * 0.38)}px ${HUDT}`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillStyle = '#efe8d2'; ctx.shadowColor = '#000'; ctx.shadowBlur = 3 * u; ctx.fillText(fmtLeft(cdl), x, y + r * 0.34); ctx.shadowBlur = 0; } }
@@ -578,10 +571,14 @@ e.inSub ? [
       if (a.away && !a.on) return; // going: no longer pressable
       hot(x - r, y - r, r * 2, r * 2, a.on ? a.key : a.tapKey || 'msg:' + (a.why || 'Not now'));
     };
-    const r = 26.5 * u, gap = 31.5 * u, rho0 = R + r + gap; // (5.17.0) four coins of one size, a little larger (25 to 26.5), 35 degrees apart with even gaps
+    const r = 26 * u, rho0 = R + r + 9 * u, stepA = 2 * Math.asin((r + 1.5 * u) / rho0), mid = -135 * Math.PI / 180; // (7.6.71, owner) one tight arc hugging the big coin, nearly rim to rim, and centred on the corner's diagonal so the top coin stands as far from the right edge as the lamp does from the bottom
     this.arcTop = cy - rho0 - r; // (5.15.6) where the corner of buttons begins: the radar stops above it
     { const kept = A.filter(Boolean); A.length = 0; A.push(...kept); } // (5.15.7) an empty place (the deck's old Dive in) leaves no gap
-    A.forEach((a, i) => { const ang = [-88, -123, -158, -193][i] * Math.PI / 180; btn(a, cx + Math.cos(ang) * rho0, cy + Math.sin(ang) * rho0, r); });
+    A.forEach((a, i) => { const ang = mid + (A.length - 1) / 2 * stepA - i * stepA; btn(a, cx + Math.cos(ang) * rho0, cy + Math.sin(ang) * rho0, r); });
+    // (7.6.71, owner) in the water the lamp is a smaller coin above the arc's top one (its old place is the second skill's)
+    if (!aboard && !atHelm && A.length) { const a0 = mid + (A.length - 1) / 2 * stepA, tx = cx + Math.cos(a0) * rho0, ty = cy + Math.sin(a0) * rho0, rl = r * 0.72, ly = ty - r - 7 * u - rl;
+      btn(light(), tx + r - rl, ly, rl); /* right-aligned with the coin under it */ this.arcTop = ly - rl; }
+    else if (A.length) this.arcTop = cy + Math.sin(mid + (A.length - 1) / 2 * stepA) * rho0 - r;
     // (5.6.8) the top left is what is his: a painted stack of banknotes and the sum (no coin round it, as it is not a
     // button), the journal's coin beside it (HTML, placed by main.js at this.journalAt). The settings coin goes to the
     // top right corner, where a phone game keeps it; the depth moves left to make room (this.gearSpace)
@@ -625,7 +622,13 @@ e.inSub ? [
               const bx2 = (1 - e2) * (1 - e2) * ox + 2 * (1 - e2) * e2 * mx2 + e2 * e2 * pcx, by2 = (1 - e2) * (1 - e2) * oy + 2 * (1 - e2) * e2 * my2 + e2 * e2 * py, rr = pr * (1.1 - 0.3 * e2);
               ctx.save(); ctx.globalAlpha = out; ctx.drawImage(im, bx2 - rr, by2 - rr, rr * 2, rr * 2); ctx.restore(); } } }
         ctx.textAlign = 'left'; ctx.textBaseline = 'middle'; ctx.shadowColor = 'rgba(0,0,0,0.85)'; ctx.shadowBlur = 3 * u; ctx.fillStyle = '#e6e0d0';
-        ctx.fillText(ptxt, ptx, py + 1 * u); ctx.restore(); }
+        ctx.fillText(ptxt, ptx, py + 1 * u);
+        // (7.6.71, owner) a small + after the count, kept quiet: a worn olive stud with a bone cross; a tap opens the pearls' page
+        { const qx = ptx + pw + 12 * u, qr = 7.5 * u; ctx.shadowBlur = 0; const sg = ctx.createRadialGradient(qx - qr * 0.3, py - qr * 0.4, qr * 0.1, qx, py, qr); sg.addColorStop(0, '#5e6648'); sg.addColorStop(1, '#2c3224');
+          const pd = pressFx('pearlshop', qx, py, qr); ctx.fillStyle = sg; ctx.beginPath(); ctx.arc(qx, py + (pd ? 0.6 * u : 0), qr, 0, TAU); ctx.fill(); ctx.strokeStyle = 'rgba(10,12,8,0.85)'; ctx.lineWidth = 1.1 * u; ctx.stroke();
+          ctx.strokeStyle = 'rgba(222,212,184,0.9)'; ctx.lineWidth = 1.7 * u; ctx.lineCap = 'round'; const k = qr * 0.48, oy = pd ? 0.6 * u : 0; ctx.beginPath(); ctx.moveTo(qx - k, py + oy); ctx.lineTo(qx + k, py + oy); ctx.moveTo(qx, py - k + oy); ctx.lineTo(qx, py + k + oy); ctx.stroke(); ctx.lineCap = 'butt';
+          hot(qx - qr - 5 * u, py - qr - 5 * u, qr * 2 + 10 * u, qr * 2 + 10 * u, 'pearlshop'); }
+        ctx.restore(); }
       this.moneyRowBottom += PEARL_ROW * u;
       this.topLeftBottom = (my + ch * 0.55 + PEARL_ROW * u + 8 * u + this.safeT) * kx; this.topLeftX = (12 * u + this.safeL) * kx;
       const rg = 19 * u, gx = W - 12 * u - rg, gy = 12 * u + rg; /* (5.9.4) the same size as the journal and the bag under it */
@@ -714,7 +717,7 @@ e.inSub ? [
     const filmCount = (fx, fy, fr) => { const n = (g.items && g.items.film) || 0; ctx.save(); ctx.fillStyle = 'rgba(10,12,10,0.88)'; ctx.beginPath(); ctx.arc(fx, fy, fr, 0, TAU); ctx.fill(); ctx.strokeStyle = 'rgba(230,222,196,0.4)'; ctx.lineWidth = 1; ctx.stroke();
       ctx.fillStyle = n > 0 ? '#ece6d2' : '#e06a58'; ctx.font = `700 ${Math.round(fr * 1.2)}px ${HUDT}`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(String(n), fx, fy + fr * 0.06); ctx.restore(); };
     if (!aboard && !e.inSub && sel === 'cam' && owns(P, 'camera')) filmCount(cx + R * 0.68, cy + R * 0.68, R * 0.24);
-    if (e.inSub && !armT) padlock(cx + R * 0.42, cy + R * 0.42, R * 0.36); // (5.7.1) no arm fitted: locked, as a camera not owned is
+    // (7.6.71, owner) no padlock for gear not yet bought (the arm, the trawl net, the camera): nothing is locked, it is greyed
     // in reach: the porthole's glass glows, breathing (a warm ring inside the bolts)
     /* (5.15.7) the ring that was drawn across the picture here is gone: the light behind the coin says it */
     // (5.3.3) the main action's symbol: the net, the camera, a trap; in the sub, the claw. The ring pulses when it can reach
@@ -731,7 +734,7 @@ e.inSub ? [
       const rc = 19 * u, a2 = -36 * Math.PI / 180, sx2 = cx + Math.cos(a2) * (R + rc * 0.1), sy2 = cy + Math.sin(a2) * (R + rc * 0.1), hasN = !!g.subNet || (P && P.trawlPick && NETS_SUB_HUD(g, P.trawlPick) != null ? NETS_SUB_HUD(g, P.trawlPick) > 0 : netKinds(g.items).length > 0); // (6.5.1) the chosen net, or padlocked when none of it is left
       if (hasN && tutKey === 'n') ring(sx2, sy2, rc); // (6.5.1) the Log's step, or a net that can be closed
       if (hasN) { drawCoin(ctx, sx2, sy2, rc, 'trawl', pressFx('n', sx2, sy2, rc) ? 'press' : g.subNet ? 'lit' : 'on'); hot(sx2 - rc, sy2 - rc, rc * 2, rc * 2, 'n'); }
-      else { drawCoin(ctx, sx2, sy2, rc, 'trawl', 'off'); padlock(sx2 + rc * 0.4, sy2 + rc * 0.4, rc * 0.42); hot(sx2 - rc, sy2 - rc, rc * 2, rc * 2, 'msg:No trawl net: the yard sells them'); }
+      else { drawCoin(ctx, sx2, sy2, rc, 'trawl', 'off'); hot(sx2 - rc, sy2 - rc, rc * 2, rc * 2, 'msg:No trawl net: the yard sells them'); }
     }
     // (5.6) the swap chip on the big button's rim: the next tool owned, a tap takes it in hand
     if (!e.inSub && !aboard) { ctx.save(); if (this.inKill) ctx.globalAlpha *= 0.32; // (5.10.10) dim in its jaws
@@ -745,7 +748,7 @@ e.inSub ? [
         ctx.save(); ctx.translate(sx2 - rc * 0.68, sy2 + rc * 0.68); ctx.fillStyle = 'rgba(8,8,6,0.88)'; ctx.beginPath(); ctx.arc(0, 0, rc * 0.42, 0, TAU); ctx.fill(); drawGlyph(ctx, 'swap', 0, 0, rc * 0.8); ctx.restore();
         hot(sx2 - rc, sy2 - rc, rc * 2, rc * 2, 'swap');
       } else {
-        drawCoin(ctx, sx2, sy2, rc, 'cam', 'off', null); padlock(sx2 + rc * 0.4, sy2 + rc * 0.4, rc * 0.42);
+        drawCoin(ctx, sx2, sy2, rc, 'cam', 'off', null);
         hot(sx2 - rc, sy2 - rc, rc * 2, rc * 2, "msg:You don't have a camera equipped");
       }
       ctx.restore(); }

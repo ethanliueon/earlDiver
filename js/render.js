@@ -1535,7 +1535,7 @@ export class Renderer {
     // each tier; Riptide's gold, with a warm aura and the edges of sight pulsing) and the faintest judder. Vigor: a pale
     // arc in the water where the net now reaches. Flare: light round him. Echo: a ring going out. Bulwark: a shimmer
     // round the sub. Tidewarden: the red washed out to blue.
-    for (const AS of [g.abil, g.abil2]) if (g.mode === 'play' && AS && AS.activeT > 0 && AS.def) { // (7.6.4) both scrolls' effects, the one on the button and the other still running
+    for (const AS of [g.abil, g.abil2, g.abil3]) if (g.mode === 'play' && AS && AS.activeT > 0 && AS.def) { // (7.6.4) both scrolls' effects, the one on the button and the other still running
       const A = AS.def, e = g.earl, mover = e.inSub ? g.sub : e, ex = S(mover.x), ey = Sy(mover.y), spd = Math.hypot(mover.vx || 0, mover.vy || 0);
       ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0);
       if (A.speed && spd > 0.6) {

@@ -32,8 +32,10 @@ import { DAVE_FINDS, DAVE_RATE } from './dave.js';
 import { STATION_COLLAR } from './station_draw.js';
 import { oldStock, overTable, leftOf, nearLure } from './oldone.js';
 import { CHESTS } from './chests.js';
-import { giveRolled, wornInst, putOn2, equipScroll, slotKey, bagSlotOf, fixMythSlot } from './items.js';
-import { abilityOf, abilityState, whyNot, ALL_ABILITIES, cooldownLeft, minLeft, MIN_CD, skipCost, fmtLeft, MYTH, NEXT_TIER, maxLoad, chargePrice, growCharges } from './abilities.js';
+import { giveRolled, wornInst, putOn2, equipScroll, slotKey, bagSlotOf, fixMythSlot, SLOT_HOOK } from './items.js';
+// (7.6.71) when two skill slots trade scrolls, their running states trade too
+SLOT_HOOK.trade = (m, n) => { if (!g) return; const a = m === 1 ? 'abil' : 'abil' + m, b = 'abil' + n; [g[a], g[b]] = [g[b] || null, g[a] || null]; if (!g.abil) g.abil = { activeT: 0, maxT: 0, def: null, charges: null, fx: 0 }; };
+import { abilityOf, abilityState, whyNot, ALL_ABILITIES, cooldownLeft, minLeft, MIN_CD, skipCost, fmtLeft, MYTH, NEXT_TIER, maxLoad, chargePrice, growCharges, withSlot, slotNow } from './abilities.js';
 import { startLegendFx } from './legendfx.js';
 import { SKILLS, RARITY, skillCol } from './item_data.js';
 import { pictureOf, hourglassURL } from './catalog.js';
@@ -1016,6 +1018,10 @@ function buy(kind) {
       ui.showGains([{ kind: 'item', id: it.id, how: 'Bought' }]); tipEquip();
       if (P.wish === it.id) P.wish = null;
     }
+  } else if (kind.startsWith('slot:')) { // (7.6.71, owner) a scroll into skill slot n (1 the mythic slot, 2, 3); worn elsewhere, it moves
+    const [, n, u] = kind.split(':'), r = equipScroll(P, u, +n);
+    if (r === 'mythic') { hud.toast("Can't put it there: a mythical skill only goes in the mythic slot", 'warn'); return false; }
+    if (r !== 'ok') return false; ok = true; normAbil(); saveProfile(P);
   } else if (kind.startsWith('moveslot:')) { // (7.6.36, owner) a worn scroll to the bag's other slot. (7.6.48, owner) slot 1 alone takes a Heart
     const u = kind.slice(9), K = kitOf(P), n = bagSlotOf(K, u); if (!n) return false;
     const r = equipScroll(P, u, n === 1 ? 2 : 1);
@@ -1359,6 +1365,9 @@ function tutor() {
   const cabinTo = (id, act, say) => { ui.cabin.tutMark = id; if (zone('cabin-' + id, ui.cabin.near && ui.cabin.near() === id)) offer(act, say); else action = { id: act, say, key: 'F', cabinOnly: true }; };
   const ladderZone = () => zone('ladder', !e.inSub && !g.aboard && e.y < 2.6 && e.y > -0.6 && Math.abs(e.x - BOAT.x - LADDER_M) < 1.6);
   // the steps that need a fish: the fish to go to, and what to do at it
+  // (7.6.71) where a fish is on the page, for the glove to point at it
+  const fishSpot = (f) => { const cm = renderer.cam; if (!f || !cm) return null; const kk = innerWidth / renderer.c.width, px = ((f.x - cm.x) * cm.ppm + renderer.c.width / 2) * kk, py = ((f.y - cm.y) * cm.ppm + renderer.c.height / 2) * kk, w = Math.max(40, (f.len || f.sp && f.sp.len || 0.4) * cm.ppm * kk);
+    return { pt: [px, py, w, w * 0.6], inPanel: true, say: 'Observe' }; };
   const fishStep = (doWhat) => {
     const tf = tutorFish(dir), bd = dist(e.x, e.y, tf.x, tf.y); to = { x: tf.x, y: tf.y }; fish = tf;
     if (inCabin) { text = 'Leave the cabin: walk to the door'; cabinTo('door', 'outdoor', 'Out on deck'); return; } // (4.3.3) arrows to the door
@@ -1386,7 +1395,7 @@ function tutor() {
     else {
       g.tutForce = P.tutMissed ? 'catch' : 'miss';
       fishStep(() => {
-        if (part <= 1) { text = 'Observe the fish'; offer('observe', 'Observe', 'obs'); } // (5.5) on a phone, its own eye button
+        if (part <= 1) { text = 'Tap the fish to observe it'; offer('observe', 'Observe', 'obs'); spot = fishSpot(fish); } // (7.6.71, owner) no eye button: the glove points at the fish itself, and a tap on it observes
         else if (g.tutOops && g.time - g.tutOops < 3.5) { text = 'It got away. Try again'; prompt = { text: 'It got away. Try again', col: '#f2c7a0' }; }
         else { text = g.toolSel !== 'net' ? 'Take out your net' : 'Swing your net to catch it'; prompt = netPrompt(); spot = spot || netSpot(true); if (spot) prompt = null; /* (5.5.3) the ringed button and its words say it already */ }
       });
@@ -1541,7 +1550,7 @@ function startRun() {
 // (4.4.0) the tutorial's key gate: while it guides, the game's own actions (U, F at the ladder or door, C, T, N, P,
 // V, G, Q, E, the tools ...) are off; moving, sprinting, the net, the journal, quests, inventory, pause and mute
 // always work. The step's own action (g.tutAction, set by tutor()) runs from its key or its button: runTutAction()
-const TUT_ALWAYS = new Set(['sprint', 'sprinton', 'leavesub', 'divein', 'outdeck', 'ability', 'swap', ' ', '1', 'b', 'menu', 'settings']);
+const TUT_ALWAYS = new Set(['sprint', 'sprinton', 'leavesub', 'divein', 'outdeck', 'ability', 'ability2', 'ability3', 'slotempty', 'swap', ' ', '1', 'b', 'menu', 'settings']);
 function tutGated(k) { if (g && g.lesson && g.frozen) return !(g.lesson.allow || new Set()).has(k) && k !== 'settings'; return !!(g && g.mode === 'play' && g.tutHidePrompts && !TUT_ALWAYS.has(k)); } // (4.7.0) a lesson lets through only what it teaches
 const deckAtDoor = () => !!g.aboard && g.aboard.x > (DECK_MIN + DECK_MAX) / 2 - (DECK_MAX - DECK_MIN) / 6 && g.aboard.x < DOOR_M + 0.7; // as deckInput's door zone
 // (4.4.1) the tutorial's actions, done directly (not through whatever the game is aiming at, which can change frame
@@ -1601,7 +1610,7 @@ function tapRectAt(x, y) { const sl = 10 * (window.__fingerK || 1); let best = n
 function wireCabinTouch() { if (cabinTouch || !ui.cabin || !ui.cabin.c) return; cabinTouch = new Touch(ui.cabin.c, { buttonAt: () => null, active: () => !!(!document.getElementById('cabin').hidden), onTap: (x) => { ui.cabin.tapAt(x); return true; } }); ui.cabin.stick = () => (touch.vec.on ? { ...touch.vec, sprint: touch.vec.sprint || !!(g && g.sprintLock) } : cabinTouch.vec); } // (5.6.8) the HUD (and its stick) is over the cabin now
 setTimeout(wireCabinTouch, 0);
 watchPage(); // (6.0.3) the page's text in the chosen units
-const touch = new Touch(hudCanvas, { onTap: (x, y) => { const pm = g.patchMarks; if (pm && renderer.cam) { const cm = renderer.cam, kk = innerWidth / renderer.c.width; for (const [wi, w] of pm.entries()) { const px = ((w.x - cm.x) * cm.ppm + renderer.c.width / 2) * kk, py = ((w.y - cm.y) * cm.ppm + renderer.c.height / 2) * kk; if (Math.hypot(x - px, y - py) < Math.max(36 * (window.__fingerK || 1), cm.ppm * 0.9 * kk)) { g.repairTap = wi; g.repairTapCount = (g.sub.patches || []).length; return true; } } } const o = hud.obsScreen, k = innerWidth / hud.c.width; if (o && Math.hypot(x - o.x * k, y - o.y * k) < o.r * k * 1.6) { touch.key('obs', true); setTimeout(() => touch.key('obs', false), 60); return true; } if (ui.cabinOpen && ui.cabinOpen()) { ui.cabin.tapAt(x); return true; } const tr = tapRectAt(x, y); if (tr) { touch.key(tr.key, true); setTimeout(() => touch.key(tr.key, false), 60); return true; } return false; }, buttonAt: (x, y) => hudButtonAt(x, y), aim: (x, y) => { if (g && renderer.cam && (g.castAim || (g.snatch && g.snatch.left > 0))) { const cm = renderer.cam, kk = innerWidth / renderer.c.width, wx = cm.x + (x / kk - renderer.c.width / 2) / cm.ppm, wy = cm.y + (y / kk - renderer.c.height / 2) / cm.ppm; if (g.castAim) return castTo(wx, wy); if (snatchAt(wx, wy)) return true; } /* (7.6.6) */ if (g && g.siphonAim && renderer.cam) { const cm = renderer.cam, kk = innerWidth / renderer.c.width; return siphonTo(cm.x + (x / kk - renderer.c.width / 2) / cm.ppm, cm.y + (y / kk - renderer.c.height / 2) / cm.ppm); } /* (7.6.8) */ if (!g || !g.dashAim || !renderer.cam) return false; const cm = renderer.cam, kk = innerWidth / renderer.c.width; return dashTo(cm.x + (x / kk - renderer.c.width / 2) / cm.ppm, cm.y + (y / kk - renderer.c.height / 2) / cm.ppm); }, active: () => !!(g && g.mode === 'play' && !hud.panel), onMessage: (m) => { audio.ready && audio.uiSoft(); hud.toast(m); }, onPress: (k) => { if (PLAIN_CLICK.has(k) && audio.ready) audio.click(); } });
+const touch = new Touch(hudCanvas, { onTap: (x, y) => { const pm = g.patchMarks; if (pm && renderer.cam) { const cm = renderer.cam, kk = innerWidth / renderer.c.width; for (const [wi, w] of pm.entries()) { const px = ((w.x - cm.x) * cm.ppm + renderer.c.width / 2) * kk, py = ((w.y - cm.y) * cm.ppm + renderer.c.height / 2) * kk; if (Math.hypot(x - px, y - py) < Math.max(36 * (window.__fingerK || 1), cm.ppm * 0.9 * kk)) { g.repairTap = wi; g.repairTapCount = (g.sub.patches || []).length; return true; } } } if (tapFish(x, y)) return true; /* (7.6.71, owner) a fish is observed by tapping it */ if (ui.cabinOpen && ui.cabinOpen()) { ui.cabin.tapAt(x); return true; } const tr = tapRectAt(x, y); if (tr) { touch.key(tr.key, true); setTimeout(() => touch.key(tr.key, false), 60); return true; } return false; }, buttonAt: (x, y) => hudButtonAt(x, y), aim: (x, y) => { if (g && renderer.cam && (g.castAim || (g.snatch && g.snatch.left > 0))) { const cm = renderer.cam, kk = innerWidth / renderer.c.width, wx = cm.x + (x / kk - renderer.c.width / 2) / cm.ppm, wy = cm.y + (y / kk - renderer.c.height / 2) / cm.ppm; if (g.castAim) return castTo(wx, wy); if (snatchAt(wx, wy)) return true; } /* (7.6.6) */ if (g && g.siphonAim && renderer.cam) { const cm = renderer.cam, kk = innerWidth / renderer.c.width; return siphonTo(cm.x + (x / kk - renderer.c.width / 2) / cm.ppm, cm.y + (y / kk - renderer.c.height / 2) / cm.ppm); } /* (7.6.8) */ if (!g || !g.dashAim || !renderer.cam) return false; const cm = renderer.cam, kk = innerWidth / renderer.c.width; return dashTo(cm.x + (x / kk - renderer.c.width / 2) / cm.ppm, cm.y + (y / kk - renderer.c.height / 2) / cm.ppm); }, active: () => !!(g && g.mode === 'play' && !hud.panel), onMessage: (m) => { audio.ready && audio.uiSoft(); hud.toast(m); }, onPress: (k) => { if (PLAIN_CLICK.has(k) && audio.ready) audio.click(); } });
 hud.touchRef = touch; // (5.7.0) the HUD draws the sprint button beside the stick
 // (7.2.4) no full screen asked of the browser: entering it drops the page's pinned scale (the panels and words came out
 // 1.8x too large). Full screen is the home-screen app's (manifest), as on an iPhone
@@ -1767,6 +1776,24 @@ function placeOnDeck(dt) {
 
 // (5.5) what the observe button looks at: the nearest animal in reach he has not observed yet (swimming, or still on
 // the seabed), never one already in the journal, a pet, or anything from the sub or the deck
+// (7.6.71, owner) observing is a tap on the animal itself, no button and no glow: one within reach (3.5 m in the water, 7 m
+// from the sub's glass) and in light. The first time it goes in the journal (as the eye did); after that its name shows
+// beside it again. The nearest under the finger wins, with a generous reach for small ones
+function tapFish(x, y) {
+  if (!g || g.mode !== 'play' || g.aboard || !g.fauna || !renderer.cam || g.kill) return false;
+  const e = g.earl, cm = renderer.cam, kk = innerWidth / renderer.c.width, M = e.inSub ? g.sub : e, reach = e.inSub ? 7 : 3.5;
+  const sx = (wx) => ((wx - cm.x) * cm.ppm + renderer.c.width / 2) * kk, sy = (wy) => ((wy - cm.y) * cm.ppm + renderer.c.height / 2) * kk, fing = 34 * (window.__fingerK || 1);
+  const lit = (wx, wy) => Math.max(1 - wy / 300, renderer.litAt ? renderer.litAt(wx, wy) : 1) > 0.3;
+  let best = null, bd = Infinity;
+  const tryOne = (sp, wx, wy, c) => { if (!sp || Math.hypot(wx - M.x, wy - M.y) > reach + (sp.len || 0) * 0.5 || !lit(wx, wy)) return;
+    const d = Math.hypot(x - sx(wx), y - sy(wy)), lim = Math.max(fing, (sp.len || 0.3) * cm.ppm * kk * 0.6); if (d < lim && d < bd) { bd = d; best = { kind: 'creature', sp, c, x: wx, y: wy }; } };
+  for (const c of g.fauna.list) if (!c.dead && !c.pet && !c.companion && c.sp) tryOne(c.sp, c.x, c.y, c);
+  for (const st of g.world.statics || []) if (st.sp) tryOne(st.sp, st.x, st.y - Math.min(1, st.sp.len * 0.4), null);
+  if (!best) return false;
+  if (!g.journal.has(best.sp.id) || ((QUEST_MAIN[questsOf(profile).main] || {}).id === 'firstfish' && firstFishPart(profile) <= 1)) interact(best, false);
+  else { const R = rarityOf(best.sp); (g.obsLabels || (g.obsLabels = [])).push({ c: best.c || null, x: best.x, y: best.y, text: best.sp.name, rar: null, nameCol: R ? R.col : null, t: 0 }); audio.ready && audio.uiSoft && audio.uiSoft(); }
+  return true;
+}
 function observeTarget() {
   const e = g.earl; if (!g.fauna || g.aboard) return null;
   // (6.5.7) from the sub too: an animal close to its glass (within about 7 m of its middle) can be observed
@@ -1999,16 +2026,16 @@ function killUpdate(dt) {
     // it veers off the way it came
     ent.x += K.dx * dt * 20; ent.y += K.dy * dt * 20; K.open = Math.max(0, K.open - dt * 3);
     if (K.escT > 0.6) { g.kill = null; ent.faceLock = null; }
-    for (const k of ['l', 'q', 'e', 'ability']) pressed.delete(k);
+    for (const k of ['l', 'q', 'e', 'ability', 'ability2', 'ability3']) pressed.delete(k);
     return;
   }
   // the moment to get free (swimming only)
   if ((K.window && K.t > K.window[0] && K.t < K.window[1]) ) { // (5.6.4) the moment before the jaws shut
     let how = null;
     /* (6.0.0) no Tidewarden in the jaws: once it strikes, nothing stops it (Rebirth, after, is the only way back) */
-    if (how) { escapeKill(how); for (const k of ['l', 'q', 'e', 'ability']) pressed.delete(k); return; }
+    if (how) { escapeKill(how); for (const k of ['l', 'q', 'e', 'ability', 'ability2', 'ability3']) pressed.delete(k); return; }
   }
-  for (const k of ['l', 'q', 'e', 'ability']) pressed.delete(k);
+  for (const k of ['l', 'q', 'e', 'ability', 'ability2', 'ability3']) pressed.delete(k);
   // the lunge: it comes across the screen, the jaw dropping as it comes, until he is well inside the
   // gape (about 10 m behind its snout); then the jaws shut
   const k = clamp(K.t / KILL_LUNGE, 0, 1), ease = 1 - Math.pow(1 - k, 2.2);
@@ -2283,19 +2310,11 @@ function causeText(kind) {
 // ---------------- (5.9.0) abilities ----------------
 // (7.6.3, owner) the surface: aboard, in the cabin, or anywhere at 0 m in the water (or the sub there)
 function atSurface() { const e = g && g.earl; if (!e) return false; return !!(g.aboard || (ui.cabinOpen && ui.cabinOpen()) || (e.inSub ? (g.sub.docked || g.sub.y <= 3.6) : e.y <= 0.8)); } // (7.6.26, owner) the sub at the top counts too (it floats a little under)
-// (7.6.4, owner) the swap chip: the second scroll comes onto the button, with its own cooldown and run; the other keeps
-// running beside it
-function abilSwap() { const P = profile, K = kitOf(P); if (!K.on.ability2) { hud.toast('No second scroll: put one in its slot in the bag'); return; }
-  [K.on.ability, K.on.ability2] = [K.on.ability2, K.on.ability || null]; K.bag1 = slotKey(K, 2); /* (7.6.48) the bag's slots stay put */ [P.abilReadyAt, P.abilReadyAt2] = [P.abilReadyAt2 || 0, P.abilReadyAt || 0]; [P.abilMinAt, P.abilMinAt2] = [P.abilMinAt2 || 0, P.abilMinAt || 0];
-  const S1 = abilityState(g); g.abil = g.abil2 || { activeT: 0, maxT: 0, def: null, charges: null, fx: 0 }; g.abil2 = S1; g.dashAim = null; renderer.aimZoom = 1;
-  saveProfile(P); audio.ready && audio.click && audio.click(); }
 // (7.6.48, owner) after any change in the bag: a Heart sits in the bag's first slot, and a lone scroll is always the one on the
 // button (in the kit's own 'ability' key), wherever the bag shows it
 function normAbil() { const P = profile; if (!P) return; fixMythSlot(P); const K = kitOf(P);
-  if (!K.on.ability && K.on.ability2) { K.on.ability = K.on.ability2; K.on.ability2 = null; K.bag1 = slotKey(K, 2); P.abilReadyAt = P.abilReadyAt2 || 0; P.abilReadyAt2 = 0; P.abilMinAt = P.abilMinAt2 || 0; P.abilMinAt2 = 0;
-    if (g) { g.abil = g.abil2 || { activeT: 0, maxT: 0, def: null, charges: null, fx: 0 }; g.abil2 = null; } K.rev = (K.rev || 0) + 1; }
   if (g && g.earl) applyKit(g.earl, P); }
-function secondAbility() { const q = profile && wornInst(profile, 'ability2'); const A = q ? abilityOf(q.id) : null; if (A) A.loaded = q.load || 0; return A; }
+function slotAbility(n) { const q = profile && wornInst(profile, 'ability' + n); const A = q ? abilityOf(q.id) : null; if (A) { A.loaded = q.load || 0; A.inst = q; } return A; }
 function currentAbility() { const q = profile && wornInst(profile, 'ability'); const A = q ? abilityOf(q.id) : null; if (A) { A.loaded = q.load || 0; A.inst = q; } return A; } // (7.6.3) with its loaded charges
 // (7.6.26, owner) a use's cooldown: with a charge loaded on the worn scroll, the charge is spent and there is no cooldown
 // at all (none shown); only with none left does the cooldown run
@@ -2303,10 +2322,10 @@ function coolAfter(P, secs) { P.abilMinAt = Date.now() + MIN_CD * 1000; /* (7.6.
 function useAbility() {
   const A = currentAbility(), why = whyNot(g, profile, A);
   // (7.4.9, owner) cooling down: the wait can be skipped with pearls (abilities.js skipCost)
-  if (A && profile && cooldownLeft(profile) > 0 && minLeft(profile) <= 0 && !(A.loaded > 0) && !(abilityState(g).activeT > 0) && !(A.charges && abilityState(g).charges > 0)) { const left = cooldownLeft(profile), n = skipCost(left), P = profile; // aboard too: the skip is offered wherever he taps it
+  if (A && profile && cooldownLeft(profile) > 0 && minLeft(profile) <= 0 && !(A.loaded > 0) && !(abilityState(g).activeT > 0) && !(A.charges && abilityState(g).charges > 0)) { const left = cooldownLeft(profile), n = skipCost(left), P = profile, sl = slotNow(); // aboard too: the skip is offered wherever he taps it
     ui.confirm(`${A.name}: ready in ${fmtLeft(left)}`, `Skip the wait: ${n} pearl${n > 1 ? 's' : ''} (you have ${Math.floor(P.pearls || 0)})`, `Skip, ${n} pearl${n > 1 ? 's' : ''}`, 'Wait', () => {
       if ((P.pearls || 0) < n) { hud.toast('Not enough pearls', 'warn'); return; }
-      P.pearls -= n; P.abilReadyAt = Date.now(); saveProfile(P); audio.ready && audio.uiSoft && audio.uiSoft(); hud.toast(`${A.name} ready`); });
+      P.pearls -= n; if (sl > 1) P['abilReadyAt' + sl] = Date.now(); else P.abilReadyAt = Date.now(); saveProfile(P); /* (7.6.71) the button it was asked from */ audio.ready && audio.uiSoft && audio.uiSoft(); hud.toast(`${A.name} ready`); });
     return; }
   if (why) { hud.toast(why, 'note'); return; }
   // (7.6.3, owner) a loaded charge: fires at once, no wait and no question (running, it starts over)
@@ -2314,9 +2333,9 @@ function useAbility() {
   const S0 = abilityState(g); if (A.loaded > 0 && (cooldownLeft(profile) > 0 || S0.activeT > 0) && !(A.charges && S0.charges > 0) && !g.dashAim) { profile.abilReadyAt = 0; S0.activeT = 0; S0.charges = 0; }
   // (5.16.0) Dash on a phone: pressed, it waits for a tap where to go (time slowed, the screen greyed, the view opened by
   // its tier); pressed again, or 3 s with no tap, and it is put away unspent
-  if (A.dash) { if (g.dashAim) { g.dashAim = null; renderer.aimZoom = 1; } else { g.dashAim = { t: 3, A }; renderer.aimZoom = A.zoom || 1; } return; }
-  if (A.siphon) { if (g.siphonAim) { g.siphonAim = null; renderer.aimZoom = 1; } else if (!g.siphon) { g.siphonAim = { t: 3, A }; renderer.aimZoom = 1.2; hud.toast('Tap a way to go', 'note'); } return; } // (7.6.8, owner) Siphon: aimed by a tap, as the dash
-  if (A.cast) { if (g.castAim) g.castAim = null; else { g.castAim = { t: 4, A }; hud.toast('Tap where to throw', 'note'); } return; } // (7.6.6, owner) Cast: aimed by a tap, as the dash
+  if (A.dash) { if (g.dashAim) { g.dashAim = null; renderer.aimZoom = 1; } else { g.dashAim = { t: 3, A, slot: slotNow() }; renderer.aimZoom = A.zoom || 1; } return; }
+  if (A.siphon) { if (g.siphonAim) { g.siphonAim = null; renderer.aimZoom = 1; } else if (!g.siphon) { g.siphonAim = { t: 3, A, slot: slotNow() }; renderer.aimZoom = 1.2; hud.toast('Tap a way to go', 'note'); } return; } // (7.6.8, owner) Siphon: aimed by a tap, as the dash
+  if (A.cast) { if (g.castAim) g.castAim = null; else { g.castAim = { t: 4, A, slot: slotNow() }; hud.toast('Tap where to throw', 'note'); } return; } // (7.6.6, owner) Cast: aimed by a tap, as the dash
   const S = abilityState(g), e = g.earl, P = profile;
   S.def = A; S.activeT = A.dur; S.maxT = A.dur; S.at = g.time;
   coolAfter(P, A.dur + A.cd); // (5.16.0) real time
@@ -2356,7 +2375,8 @@ function mythFire(A) {
 // (5.16.0) a tap while Dash waits: there in a fraction of a second (stopped short of rock), and only now is it spent
 // (7.6.6, owner) Cast: the net flies to the tap (within its range) and takes what its mouth holds there (the trawl's
 // rule: up to 2 m); Snatch: a tapped fish caught by the net's own chance; the specials' helpers
-function castTo(wx, wy) {
+function castTo(wx, wy) { const C0 = g.castAim; if (C0 && C0.slot > 1) return withSlot(g, profile, kitOf(profile), C0.slot, () => castTo1(wx, wy)); return castTo1(wx, wy); }
+function castTo1(wx, wy) {
   const C = g.castAim; if (!C) return false; g.castAim = null; const A = C.A, e = g.earl, P = profile;
   const dx = wx - e.x, dy = wy - e.y, L = Math.hypot(dx, dy) || 1, k = Math.min(1, A.cast.range / L), x1 = e.x + dx * k, y1 = Math.max(0.5, e.y + dy * k);
   const S = abilityState(g); S.def = A; S.activeT = A.dur; S.maxT = A.dur; S.at = g.time; coolAfter(P, A.dur + A.cd); saveProfile(P);
@@ -2374,7 +2394,7 @@ function skillCatch(c, x, y) {
   (g.skillCaught || (g.skillCaught = [])).push({ type: 'caught', sp: c.sp, spec, name: c.sp.name, x: c.x, y: c.y });
 }
 function snatchAt(wx, wy) {
-  const N = g.snatch; if (!N || N.left <= 0 || !(abilityState(g).activeT > 0 || (g.abil2 && g.abil2.activeT > 0))) return false;
+  const N = g.snatch; if (!N || N.left <= 0 || !(abilityState(g).activeT > 0 || (g.abil2 && g.abil2.activeT > 0) || (g.abil3 && g.abil3.activeT > 0))) return false;
   let best = null, bd = 2.2; for (const c of g.fauna.list) { if (c.dead || c.pet || c.companion) continue; const d = Math.hypot(c.x - wx, c.y - wy) - (c.len || 0) * 0.5; if (d < bd) { bd = d; best = c; } }
   if (!best) return false; N.left--; const net = gear(profile, 'net') || {}, maxLen = net.maxLen || 0.6;
   g.snatchFx = { x0: g.earl.x, y0: g.earl.y, x1: best.x, y1: best.y, t: 0, tier: N.def.tier }; for (let i = 0; i < 8; i++) g.bubbles.push({ x: best.x + (Math.random() - 0.5) * 0.4, y: best.y + (Math.random() - 0.5) * 0.4, r: 0.02 + Math.random() * 0.06, w: Math.random() * 6, t: -0.2 - Math.random() * 0.1 }); // (7.6.8) the bite: a puff of bubbles where the hook takes it
@@ -2416,7 +2436,8 @@ function fireBurst(A) {
 // the squid of the tier fades in, jets mantle first with ink spilling behind and the water ahead lit, then fades back
 // into him at the far end. Nothing bites him meanwhile, and a hunter on his trail breaks off, lost in the ink
 const SIPH = { fo: 0.24, fi: 0.32 };
-function siphonTo(wx, wy) {
+function siphonTo(wx, wy) { const D0 = g.siphonAim; if (D0 && D0.slot > 1) return withSlot(g, profile, kitOf(profile), D0.slot, () => siphonTo1(wx, wy)); return siphonTo1(wx, wy); }
+function siphonTo1(wx, wy) {
   const D = g.siphonAim; if (!D) return false;
   const A = D.A, e = g.earl, M = e.inSub ? g.sub : e, P = profile, dist = A.siphon.dist, r = e.inSub ? 2.2 : 0.6;
   let dx = wx - M.x, dy = wy - M.y; const L0 = Math.hypot(dx, dy) || 1; dx /= L0; dy /= L0;
@@ -2428,7 +2449,8 @@ function siphonTo(wx, wy) {
   for (const c of g.fauna.list) if (c.att && c.att.s !== 'idle' && c.att.s !== 'leave') { c.att.s = 'leave'; c.att.t = 0; c.att.cool = 30; }
   fireBurst(A); audio.ready && audio.click && audio.click(); return true;
 }
-function dashTo(wx, wy) {
+function dashTo(wx, wy) { const D0 = g.dashAim; if (D0 && D0.slot > 1) return withSlot(g, profile, kitOf(profile), D0.slot, () => dashTo1(wx, wy)); return dashTo1(wx, wy); }
+function dashTo1(wx, wy) {
   const D = g.dashAim; if (!D) return false;
   const A = D.A, e = g.earl, M = e.inSub ? g.sub : e, P = profile;
   let x1 = wx, y1 = Math.max(e.inSub ? 3 : 0.5, wy); const dx = x1 - M.x, dy = y1 - M.y, L = Math.hypot(dx, dy) || 1, r = e.inSub ? 2.2 : 0.5;
@@ -2468,27 +2490,32 @@ function tickAbility(dt) {
   // takes the stronger of the two (never the two together)
   const S2 = g.abil2 || null, A2 = S2 && S2.def; if (S2 && S2.activeT > 0) S2.activeT = Math.max(0, S2.activeT - dt);
   const on2 = !!(S2 && S2.activeT > 0 && A2);
-  e.abilSpeed = Math.max(on && A.speed ? A.speed : 1, on2 && A2.speed ? A2.speed : 1); e.abilNoAir = !!((on && A.noAir) || (on2 && A2.noAir));
+  // (7.6.71, owner) a third skill slot: all three tick, and each kind of effect still takes the strongest running (ACT)
+  const S3 = g.abil3 || null, A3 = S3 && S3.def; if (S3 && S3.activeT > 0) S3.activeT = Math.max(0, S3.activeT - dt);
+  const on3 = !!(S3 && S3.activeT > 0 && A3);
+  const ACT = [on && A, on2 && A2, on3 && A3].filter(Boolean), best = (k, d) => ACT.reduce((m, D) => (D[k] ? Math.max(m, D[k]) : m), d), firstW = (k) => ACT.find((D) => D[k]) || null, anyW = (f) => ACT.some(f);
+  e.abilSpeed = best('speed', 1); e.abilNoAir = anyW((D) => D.noAir);
   // (7.4.15) Rift's second dash waits 20 s at most; then the rest begins
   if (S.charges > 0) { S.chargeT -= dt; if (S.chargeT <= 0) { S.charges = 0; const R0 = currentAbility(); if (R0 && R0.charges) { coolAfter(profile, R0.cd); saveProfile(profile); } } }
+  for (const [SS, n] of [[S2, 2], [S3, 3]]) if (SS && SS.charges > 0) { SS.chargeT -= dt; if (SS.chargeT <= 0) { SS.charges = 0; withSlot(g, profile, kitOf(profile), n, () => { const R0 = currentAbility(); if (R0 && R0.charges) { coolAfter(profile, R0.cd); saveProfile(profile); } }); } } // (7.6.71) the other buttons' dashes too
   // (7.4.15) a mythical's 10 s: light, speed and air (in the sub, the cabin's air)
   // (7.4.19) Dauntless: the suit and the hull rated deeper while it runs; the field's strength is how much of the extra
   // depth he is using (0 at the old rating, 1 at the new)
-  { const PA = on && A.press ? A : on2 && A2.press ? A2 : null, PS = PA === A ? S : S2; const pm = PA ? PA.press : 1, pb = PA && PA.beyond ? PA.beyond : 0; e.pressMul = pm; e.pressBeyond = pb; g.sub.pressMul = 1; g.sub.pressBeyond = 0; // (7.4.22) the diver's suit only
+  { const PA = firstW('press'), PS = PA === A ? S : PA === A2 ? S2 : S3; const pm = PA ? PA.press : 1, pb = PA && PA.beyond ? PA.beyond : 0; e.pressMul = pm; e.pressBeyond = pb; g.sub.pressMul = 1; g.sub.pressBeyond = 0; // (7.4.22) the diver's suit only
     if (pm > 1) { const base = e.pressBase || 300, d = e.y; g.pressK = clamp((d - base) / (base * (pm - 1)), 0, 1); }
     if (pm > 1 && !g.pressFx && !PA.heat) { g.pressFx = { t: 0, end: 0, tier: PA.tier, def: PA }; if (audio.ready) { audio.thud && audio.thud(0.6); audio.creak && audio.creak(0.5); } } // it opens: a deep thud, the hull's creak
     if (g.pressFx) { const F = g.pressFx; F.t += dt; if (pm > 1 && !PA.heat) { F.tier = PA.tier; F.def = PA; F.left = PS.activeT; } else { if (!F.end && audio.ready && audio.groan) audio.groan(0.3); F.end += dt; if (F.end > 1.2) g.pressFx = null; } } } // it is crushed back: the pressure's groan
   // (7.6.0, owner) Dauntless gives air back early in its run (2/3/5/10 % a second for 10/15/20/30 s); beside a mythical's
   // +50 % the stronger rate wins, never the two together
-  const rate1 = (D, SS, o) => { if (!o) return 0; const el = D.dur - SS.activeT; if (D.airSteps) { for (const [r, until] of D.airSteps) if (el < until) return r; return 0; } return D.airBack && !e.inSub && el < D.airBack[1] ? D.airBack[0] : 0; }, dRate = Math.max(rate1(A, S, on), on2 ? rate1(A2, S2, on2) : 0);
+  const rate1 = (D, SS, o) => { if (!o) return 0; const el = D.dur - SS.activeT; if (D.airSteps) { for (const [r, until] of D.airSteps) if (el < until) return r; return 0; } return D.airBack && !e.inSub && el < D.airBack[1] ? D.airBack[0] : 0; }, dRate = Math.max(rate1(A, S, on), on2 ? rate1(A2, S2, on2) : 0, on3 ? rate1(A3, S3, on3) : 0);
   if (dRate > 0 && !(g.mythT > 0 && MYTH.air >= dRate)) { if (e.inSub) g.sub.o2 = Math.min(g.sub.o2Max, g.sub.o2 + g.sub.o2Max * dRate * dt); else e.o2 = Math.min(e.o2Max, e.o2 + e.o2Max * dRate * dt); }
-  g.breathGlow = (on && A.airSteps) || (on2 && A2.airSteps) ? 1 : Math.max(0, (g.breathGlow || 0) - dt); // (7.6.5) the air bar lit while Breath runs
+  g.breathGlow = anyW((D) => D.airSteps) ? 1 : Math.max(0, (g.breathGlow || 0) - dt); // (7.6.5) the air bar lit while Breath runs
   if (g.breathFx) { g.breathFx.t += dt; if (g.breathFx.t > 1.4) g.breathFx = null; }
   // (7.6.5, owner) Plunge: the anchor's pull (player.js), the strongest running; Lookout: the view drawn out
-  e.abilSink = Math.max(on && A.sink ? A.sink : 0, on2 && A2.sink ? A2.sink : 0); g.sinkDef = on && A.sink ? A : on2 && A2.sink ? A2 : null; if (g.sinkDef) { g.sinkK = 1; g.sinkLast = g.sinkDef; } else g.sinkK = Math.max(0, (g.sinkK || 0) - dt / 0.8); /* (7.6.29) the anchor's look fades as it lets go */
-  g.repelR = Math.max(on && A.repel ? A.repel : 0, on2 && A2.repel ? A2.repel : 0); // (7.6.7, owner) Revel: hunters that bite keep this far off
-  { const TA = on && A.heat ? A : on2 && A2.heat ? A2 : null; g.temper = TA && !e.inSub ? { tier: TA.tier, k: Math.min(1, (g.temper ? g.temper.k : 0) + dt * 1.5) } : g.temper && g.temper.k > 0 ? { tier: g.temper.tier, k: Math.max(0, g.temper.k - dt * 0.7) } : null; } // (7.6.7, owner) Temper: heat on the suit
-  { const z = Math.max(on && A.zoom ? A.zoom : 1, on2 && A2.zoom ? A2.zoom : 1); g.lookZoom = lerp(g.lookZoom || 1, z, Math.min(1, dt * 1.6)); g.eagle = (on && A.eagle) || (on2 && A2.eagle) ? Math.min(1, (g.eagle || 0) + dt * 1.2) : Math.max(0, (g.eagle || 0) - dt * 0.8); }
+  e.abilSink = best('sink', 0); g.sinkDef = firstW('sink'); if (g.sinkDef) { g.sinkK = 1; g.sinkLast = g.sinkDef; } else g.sinkK = Math.max(0, (g.sinkK || 0) - dt / 0.8); /* (7.6.29) the anchor's look fades as it lets go */
+  g.repelR = best('repel', 0); // (7.6.7, owner) Revel: hunters that bite keep this far off
+  { const TA = firstW('heat'); g.temper = TA && !e.inSub ? { tier: TA.tier, k: Math.min(1, (g.temper ? g.temper.k : 0) + dt * 1.5) } : g.temper && g.temper.k > 0 ? { tier: g.temper.tier, k: Math.max(0, g.temper.k - dt * 0.7) } : null; } // (7.6.7, owner) Temper: heat on the suit
+  { const z = best('zoom', 1); g.lookZoom = lerp(g.lookZoom || 1, z, Math.min(1, dt * 1.6)); g.eagle = anyW((D) => D.eagle) ? Math.min(1, (g.eagle || 0) + dt * 1.2) : Math.max(0, (g.eagle || 0) - dt * 0.8); }
   if (g.mythT > 0) { g.mythT = Math.max(0, g.mythT - dt); e.abilSpeed = Math.max(e.abilSpeed, MYTH.speed); e.abilNoAir = true;
     const full = e.inSub ? (g.sub.o2Max || 0) : (e.o2Max || 0), add = dRate > MYTH.air ? 0 : Math.min(full * MYTH.air * dt, full * 0.5 - (g.mythAir || 0));
     if (add > 0) { g.mythAir = (g.mythAir || 0) + add; if (e.inSub) g.sub.o2 = Math.min(g.sub.o2Max, g.sub.o2 + add); else e.o2 = Math.min(e.o2Max, e.o2 + add); } }
@@ -2502,7 +2529,7 @@ function tickAbility(dt) {
   if (g.callFx) { const C = g.callFx, m = g.earl.inSub ? g.sub : g.earl; C.t += dt; for (const h of C.homes) { h.x = m.x + (h.ox || 0); h.y = m.y + (h.oy || 0); } // (7.6.7) the called fish home on him while the call lasts; (7.6.13) each school at its own place round him
     for (const c of C.fish) if (!c.dead && c.called && c.home && Math.hypot(c.x - c.home.x, c.y - c.home.y) < 4) { c.speed = c.cruise; c.called = false; }
     if (C.t > C.dur) { for (const c of C.fish) if (C.homes.includes(c.home)) { c.home = null; c.speed = c.cruise; c.called = false; } g.callFx = null; } }
-  if (g.snatch && !(abilityState(g).activeT > 0 || (g.abil2 && g.abil2.activeT > 0))) g.snatch = null;
+  if (g.snatch && !(abilityState(g).activeT > 0 || (g.abil2 && g.abil2.activeT > 0) || (g.abil3 && g.abil3.activeT > 0))) g.snatch = null;
   if (g.snatchFx) { g.snatchFx.t += dt; if (g.snatchFx.t > 0.56) g.snatchFx = null; }
   if (g.ironT > 0) g.ironT = Math.max(0, g.ironT - dt);
   if (g.ironFx) { g.ironFx.t += dt; if (g.ironFx.t > 1.2) g.ironFx = null; }
@@ -2513,8 +2540,8 @@ function tickAbility(dt) {
   for (const k of ['shoalFx', 'revelFx']) { const F = g[k]; if (F) { F.t += dt; if (F.t > F.dur + (k === 'shoalFx' ? 3.5 : 1.5)) g[k] = null; } } // (7.6.32) the school takes its time swimming off
   if (g.songFx) { g.songFx.t += dt; if (g.songFx.t > 4) g.songFx = null; }
   if (g.markWashFx) { g.markWashFx.t += dt; if (g.markWashFx.t > 2) g.markWashFx = null; }
-  { const RA = on && A.reach ? A : on2 && A2.reach ? A2 : null; g.multiCatch = RA && RA.multi ? RA.multi : 1; g.reachMul = RA ? RA.reach : 1; g.swingMul = RA && RA.swing ? RA.swing : 1; g.sureCatch = !!(RA && RA.sure); g.blessCatch = !!(RA && RA.bless); g.reachDef = RA; }
-  { const L0 = Math.max(on && A.light ? A.light : 0, on2 && A2.light ? A2.light : 0, g.mythT > 0 ? MYTH.light : 0, g.siphon ? g.siphon.A.siphon.light : 0);
+  { const RA = firstW('reach'); g.multiCatch = RA && RA.multi ? RA.multi : 1; g.reachMul = RA ? RA.reach : 1; g.swingMul = RA && RA.swing ? RA.swing : 1; g.sureCatch = !!(RA && RA.sure); g.blessCatch = !!(RA && RA.bless); g.reachDef = RA; }
+  { const L0 = Math.max(best('light', 0), g.mythT > 0 ? MYTH.light : 0, g.siphon ? g.siphon.A.siphon.light : 0);
     // (7.6.29, owner) nothing snaps off: when a skill's light ends (or drops a level) it keeps its last strength and fades
     // to the new one over a second and a half (g.abilOutK, multiplied into every light the skills draw)
     if (L0 >= 2 && !(g.lhOn)) g.lhAt = g.time; g.lhOn = L0 >= 2;
@@ -2523,9 +2550,9 @@ function tickAbility(dt) {
     { const since = g.time - (g.lhAt ?? g.time), k3 = (g.abilLightHold || L0) >= 3 ? 1 - smoothstep(10, 11.5, since) : 1; g.beamK = k3; g.pulseK = k3; }
     if (L0 >= (g.abilLightHold || 0)) { g.abilLightHold = L0; g.abilOutK = 1; g.abilLight = L0; }
     else { g.abilOutK = Math.max(0, (g.abilOutK ?? 1) - dt / 1.5); g.abilLight = g.abilLightHold; if (g.abilOutK <= 0) { g.abilLightHold = L0; g.abilLight = L0; g.abilOutK = 1; } } }
-  { const lh = !!(((on && A.light >= 2) || (on2 && A2.light >= 2)) && (g.lightFade ?? 1) > 0.5); if (document.documentElement.classList.contains('lighthouse') !== lh) document.documentElement.classList.toggle('lighthouse', lh); } /* (5.16.0) Lighthouse: the HUD comes to life */
-  g.netRange = gear(profile, 'net').range || 1.2; g.wardOn = !!((on && A.ward && !A.tide) || (on2 && A2.ward && !A2.tide)); // (7.3.0) these two had slipped into the comment above: the Lighthouse never kept hunters off
-  { g.chargeTick = (g.chargeTick || 0) - (g.realDt || dt); if (g.chargeTick <= 0 && profile) { g.chargeTick = 1; if (growCharges(kitOf(profile).items, Date.now(), new Set([kitOf(profile).on.ability, kitOf(profile).on.ability2].filter(Boolean)))) { saveProfile(profile); ui.inventoryOpen && ui.inventoryOpen() && ui.renderInventory(); } } } // (7.6.30, owner) charges grow by themselves
+  { const lh = !!(anyW((D) => D.light >= 2) && (g.lightFade ?? 1) > 0.5); if (document.documentElement.classList.contains('lighthouse') !== lh) document.documentElement.classList.toggle('lighthouse', lh); } /* (5.16.0) Lighthouse: the HUD comes to life */
+  g.netRange = gear(profile, 'net').range || 1.2; g.wardOn = anyW((D) => D.ward && !D.tide); // (7.3.0) these two had slipped into the comment above: the Lighthouse never kept hunters off
+  { g.chargeTick = (g.chargeTick || 0) - (g.realDt || dt); if (g.chargeTick <= 0 && profile) { g.chargeTick = 1; if (growCharges(kitOf(profile).items, Date.now(), new Set([kitOf(profile).on.ability, kitOf(profile).on.ability2, kitOf(profile).on.ability3].filter(Boolean)))) { saveProfile(profile); ui.inventoryOpen && ui.inventoryOpen() && ui.renderInventory(); } } } // (7.6.30, owner) charges grow by themselves
   if (g.echoT > 0) g.echoT = Math.max(0, g.echoT - dt);
   // (7.6.70, owner) the echo keeps listening as he moves: every couple of seconds, once he has gone a quarter of its reach
   // from where it last listened, it finds what is round him now and lets go of what is far behind (it found them once)
@@ -2602,7 +2629,8 @@ function update(dt) {
     // (5.7.1) the sub's leave button: always works (the tutorial's own leave step, if it is the one asked)
     // (5.9.0) the ability: fired from the arc's button (key 'ability'), run each frame
     if (pressed.has('ability')) { pressed.delete('ability'); useAbility(); }
-    if (pressed.has('abswap')) { pressed.delete('abswap'); abilSwap(); } // (7.6.4)
+    for (const n of [2, 3]) if (pressed.has('ability' + n)) { pressed.delete('ability' + n); if (kitOf(profile).on['ability' + n]) withSlot(g, profile, kitOf(profile), n, useAbility); } // (7.6.71, owner) each skill slot its own button (the swap chip is gone)
+    if (pressed.has('slotempty')) { pressed.delete('slotempty'); if (!(ui.inventoryOpen && ui.inventoryOpen())) ui.toggleInventory && ui.toggleInventory(); } // (7.6.71, owner) an empty skill button opens the bag
     tickAbility(dt);
     if (pressed.has('petstay')) { pressed.delete('petstay'); if (g.anyTarget) { /* (7.4.4) something else claimed the button this frame: that, not the pet */ pressed.add(g.obsTarget && !target ? 'obs' : 'f-tap'); } else { const r = toggleStay(g); if (r) { audio.ready && audio.uiSoft && audio.uiSoft(); say(r === 'stay' ? 'Stay' : 'Follow', 'pet'); saveProfile(profile); } } } // (7.3.9) the pet's Stay / Follow, on the action arc
     if (pressed.has('leavesub')) { pressed.delete('leavesub'); if (e.inSub) { if (!(g.tutAction && g.tutAction.id === 'leavesub' && runTutAction('leavesub'))) leaveSub(); } }
@@ -2695,6 +2723,7 @@ function update(dt) {
     const atBoat = (Math.abs(e.x - BOAT.x) < 14 && e.y < 4 && !e.inSub) || (e.inSub && g.sub.docked);
     if (pressed.has('b')) ui.toggleInventory();
     if (pressed.has('store')) ui.toggleStore(); // (6.4.0)
+    if (pressed.has('pearlshop')) { ui.toggleStore(true); ui.storeTab = 'pearls'; const st = document.getElementById('store'); if (st && ui.pearlPage) st.innerHTML = ui.pearlPage(); } // (7.6.71, owner) the + by the pearls: the shop's pearls page
     if (pressed.has('events')) ui.toggleEvents();
     // (4.0.0) the shipyard: part of the Margaret, opened with P anywhere aboard her (deck, cabin, wheel) or
     // alongside her (in the water at her side, or in the sub in her cradle)
@@ -3542,7 +3571,7 @@ function frame(now) {
   /* (7.4.26, owner) the hand button in the cabin (the door picture at the door): it uses what he stands at. Nothing took it before, so in the tutorial's "Out on deck" a tap at the door did nothing */
   if (hud.inCabin && pressed.has('f')) { pressed.delete('f'); pressed.delete('f-tap'); if (ui.cabin.near && ui.cabin.near() && !(ui.anyOpen && ui.anyOpen('cabin davetalk'))) { fSwallow = keys.has('f'); ui.cabin.use(); audio.ready && audio.click && audio.click(); } } // (7.4.0, owner) at the cabin door the big button takes him out too
   hud.abilDef = currentAbility(); // (5.9.0) the arc's ability button
-  hud.abilDef2 = secondAbility(); hud.abil2Running = !!(g.abil2 && g.abil2.activeT > 0); // (7.6.4) its swap chip
+  hud.abilDef2 = slotAbility(2); hud.abilDef3 = slotAbility(3); // (7.6.71) the other two skill buttons
   hud.killTide = false; // (6.0.0) nothing saves him once it strikes: the Tidewarden is for before, while the water reddens // (5.10.8) the Tidewarden, offered in the jaws
   hud.cabinNear = hud.inCabin && ui.cabin.near ? ui.cabin.near() : null; // (7.1.0) which station is in reach, for the button's picture
   hud.handOn = !!(g.aboard && !(profile && profile.tut === 'on' && !hud.inCabin && !(g.tutAction && g.tutAction.id === 'cabin')) && (hud.inCabin ? ui.cabin.near && ui.cabin.near() : g.aboard.near === 'door' && !g.aboard.jump && !g.aboard.climb)); // (5.4) on a phone the touch buttons step aside while a panel is open
@@ -3651,7 +3680,7 @@ window.addEventListener('actdown', (ev) => {
 }, true);
 
 // debug hooks for automated testing
-window.__earl = { die: (c, k) => die(c, k), get g() { return g; }, get touch() { return touch; }, get profile() { return profile; }, set profile(p) { profile = p; }, newProfile, startRun, renderer, SPECIES_BY_ID, ui, step: (dt) => update(dt), keys, pressed, hud, leaveSub: () => leaveSub(), boardDeck: () => boardDeck() };
+window.__earl = { die: (c, k) => die(c, k), get g() { return g; }, get touch() { return touch; }, get profile() { return profile; }, set profile(p) { profile = p; }, newProfile, startRun, renderer, SPECIES_BY_ID, ui, step: (dt) => update(dt), keys, pressed, hud, leaveSub: () => leaveSub(), boardDeck: () => boardDeck(), tapFish: (x, y) => tapFish(x, y) };
 
 // leaving the page: whatever has changed is written to the slot at once
 function saveNow() { if (!profile) return; if (g.mode === 'play') syncProfile(); saveProfile(profile); flushSave(); }

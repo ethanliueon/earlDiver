@@ -237,6 +237,10 @@ export function kitOf(P) {
     for (const k of SIDE_KINDS) if (P.kit.on[k] === undefined) P.kit.on[k] = null;
   }
   // (5.9.0) every diver starts with a Sprint scroll on (once)
+  // (7.6.71) the swap chip is gone: bag slot n is the kit's own key for good (slot 1 'ability', 2 'ability2', 3 'ability3').
+  // A save whose bag showed the kit's second key in slot 1 has the two keys (and their timers) traded once
+  if (P.kit.bag1 === 'ability2') { const K = P.kit; [K.on.ability, K.on.ability2] = [K.on.ability2 || null, K.on.ability || null];
+    [P.abilReadyAt, P.abilReadyAt2] = [P.abilReadyAt2 || 0, P.abilReadyAt || 0]; [P.abilMinAt, P.abilMinAt2] = [P.abilMinAt2 || 0, P.abilMinAt || 0]; delete K.bag1; SLOT_HOOK.trade && SLOT_HOOK.trade(1, 2); }
   if (!P.abilInit) { P.abilInit = 1; if (!P.kit.on.ability) { const q = mk('ab_sprint_rare'); P.kit.items.push(q); P.kit.on.ability = q.u; } }
   // (5.0) a save from before 5.0: slurp guns and tag guns (and tag darts) are bought back at what they cost
   if (!P.retired5) {
@@ -260,32 +264,37 @@ export const instOf = (P, u) => kitOf(P).items.find((q) => q.u === u) || null;
 export const wornInst = (P, kind) => { const u = kitOf(P).on[kind]; return u ? instOf(P, u) : null; };
 export const worn = (P, kind) => { const q = wornInst(P, kind); return q ? ITEMS[q.id] : null; };
 export const ownsItem = (P, id) => kitOf(P).items.some((q) => q.id === id);
-export const isOn = (P, q) => { const K = kitOf(P), k = ITEMS[q.id].kind; return K.on[k] === q.u || (k === 'ability' && K.on.ability2 === q.u); }; // (7.6.4) a scroll in the second slot is on too
+export const isOn = (P, q) => { const K = kitOf(P), k = ITEMS[q.id].kind; return K.on[k] === q.u || (k === 'ability' && (K.on.ability2 === q.u || K.on.ability3 === q.u)); }; // (7.6.4) a scroll in the other skill slots is on too
 const bump = (P) => { kitOf(P).rev = (kitOf(P).rev || 0) + 1; };
 // a new thing into the locker (null if it is full)
 export function giveItem(P, id, rnd) { if (!ITEMS[id] || lockerFree(P) <= 0) return null; const q = mk(id, rnd); q.isNew = true; kitOf(P).items.push(q); P.bagGot = (P.bagGot || 0) + 1; /* (5.9.6) */ bump(P); return q; }
 export function putOn(P, u) { const q = instOf(P, u); if (!q) return false; const K = kitOf(P), it = ITEMS[q.id];
-  if (it.kind === 'ability') return equipScroll(P, u, 1) === 'ok'; // (7.6.48) a scroll: into the bag's first slot
+  if (it.kind === 'ability') { const myth = it.rarity === 'mythical', n = myth ? 1 : [2, 3, 1].find((k) => !K.on[SLOT_KEYS[k - 1]]) || 2; return equipScroll(P, u, n) === 'ok'; } // (7.6.71) a scroll: a Heart to the mythic slot, others to the first empty slot (2, 3, then the mythic slot) // (7.6.48) a scroll: into the bag's first slot
   K.on[it.kind] = u; bump(P); return true; }
-// (7.6.48, owner) the bag's two scroll slots. The kit's own keys (ability: the one on the button, ability2: the swap) keep
-// moving with the swap chip; the bag shows them in two fixed places, slot 1 the mythic slot (only it takes a Heart) and
-// slot 2 the secondary. K.bag1 is the kit key slot 1 shows, so the chip's swap never moves a scroll between the bag's slots
-export const slotKey = (K, n) => { const a = K.bag1 === 'ability2' ? 'ability2' : 'ability'; return n === 1 ? a : a === 'ability' ? 'ability2' : 'ability'; };
-export const bagSlotOf = (K, u) => (u && K.on[slotKey(K, 1)] === u ? 1 : u && K.on[slotKey(K, 2)] === u ? 2 : 0);
-// a Heart left in slot 2 by an older save goes to slot 1 (the two trade places)
-export function fixMythSlot(P) { const K = kitOf(P), q = K.on[slotKey(K, 2)] && instOf(P, K.on[slotKey(K, 2)]); if (q && ITEMS[q.id] && ITEMS[q.id].rarity === 'mythical') { K.bag1 = slotKey(K, 2); bump(P); } }
-// a scroll into bag slot n (1 or 2): 'ok', 'mythic' (a Heart only goes in slot 1), 'family' (not two of one family), 'none'
+// (7.6.71, owner) the bag's three skill slots, a button each: slot 1 the mythic slot (any skill, and only it takes a Heart),
+// slots 2 and 3 any skill but a Heart. A scroll's cooldown and run go with it when it moves between slots
+export const SLOT_KEYS = ['ability', 'ability2', 'ability3'];
+export const SLOT_HOOK = { trade: null }; // main.js: trades the running states (g.abil…) of two slots
+export const slotKey = (K, n) => SLOT_KEYS[n - 1];
+export const bagSlotOf = (K, u) => (u ? SLOT_KEYS.findIndex((k) => K.on[k] === u) + 1 : 0);
+const tsuf = (n) => (n === 1 ? '' : String(n));
+function tradeSlots(P, K, m, n) { const a = SLOT_KEYS[m - 1], b = SLOT_KEYS[n - 1]; [K.on[a], K.on[b]] = [K.on[b] || null, K.on[a] || null];
+  for (const f of ['abilReadyAt', 'abilMinAt']) { const x = f + tsuf(m), y = f + tsuf(n); [P[x], P[y]] = [P[y] || 0, P[x] || 0]; }
+  SLOT_HOOK.trade && SLOT_HOOK.trade(m, n); }
+// a Heart left in slot 2 or 3 (an older save) goes to slot 1 (the two trade places)
+export function fixMythSlot(P) { const K = kitOf(P); for (const n of [2, 3]) { const q = K.on[slotKey(K, n)] && instOf(P, K.on[slotKey(K, n)]); if (q && ITEMS[q.id] && ITEMS[q.id].rarity === 'mythical') { const o = K.on.ability && instOf(P, K.on.ability); if (o && ITEMS[o.id] && ITEMS[o.id].rarity === 'mythical') continue; tradeSlots(P, K, 1, n); bump(P); } } }
+// a scroll into bag slot n (1, 2 or 3): 'ok', 'mythic' (a Heart only goes in slot 1), 'none'. One of the same family worn
+// in another slot comes off (not two of one family)
 export function equipScroll(P, u, n) { const K = kitOf(P), q = instOf(P, u); if (!q) return 'none'; const it = ITEMS[q.id]; if (!it || it.kind !== 'ability') return 'none';
-  const k = slotKey(K, n), ko = slotKey(K, n === 1 ? 2 : 1), myth = (id) => ITEMS[id] && ITEMS[id].rarity === 'mythical';
-  if (n === 2 && myth(q.id)) return 'mythic';
+  const k = slotKey(K, n), myth = (id) => ITEMS[id] && ITEMS[id].rarity === 'mythical';
+  if (n !== 1 && myth(q.id)) return 'mythic';
   if (K.on[k] === u) return 'ok';
-  if (K.on[ko] === u) { // worn in the other slot: the two trade places (or it moves across to an empty one)
-    const there = K.on[k] && instOf(P, K.on[k]); if (n === 1 && there && myth(there.id)) return 'mythic';
-    K.bag1 = slotKey(K, 2); bump(P); return 'ok'; }
-  const o = K.on[ko] && instOf(P, K.on[ko]), oi = o && ITEMS[o.id];
-  if (oi && oi.fam === it.fam) { if (n === 1) K.on[ko] = null; else return 'family'; }
+  const m = bagSlotOf(K, u);
+  if (m) { // worn in another slot: the two trade places (or it moves across to an empty one)
+    const there = K.on[k] && instOf(P, K.on[k]); if (m !== 1 && there && myth(there.id)) return 'mythic';
+    tradeSlots(P, K, m, n); bump(P); return 'ok'; }
+  for (const k2 of SLOT_KEYS) { if (k2 === k) continue; const o = K.on[k2] && instOf(P, K.on[k2]); if (o && ITEMS[o.id] && ITEMS[o.id].fam === it.fam) K.on[k2] = null; }
   K.on[k] = u; bump(P); return 'ok'; }
-// (7.6.4, owner) the second scroll slot
 export function putOn2(P, u) { return equipScroll(P, u, 2); }
 // take a thing off, back into the locker. Net, fins, tank, bag and suit always have one on: taking one off puts his
 // starter one back on (3.0.31). Not when the locker has no room for it; not the starter itself.
