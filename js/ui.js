@@ -204,10 +204,13 @@ function davePortrait() {
 }
 // (6.9.0) a Log step's reward: each item as its picture and its name in its rarity's ink, then the money if any
 const REWARD_INK = { common: '#66665e', uncommon: '#3c6e42', rare: '#2c5884', exotic: '#6a3c8a', legendary: '#8a6224' };
+// (7.6.42, owner) a quest's money shown with the game's own banknote stack before it, as the pearls have their pearl
+let CASH_IC = null;
+function cashIc() { if (!CASH_IC) { const c = document.createElement('canvas'); c.width = 64; c.height = 48; drawCash(c.getContext('2d'), 32, 24, 40); CASH_IC = c.toDataURL(); } return `<img class="qs-cash-ic" src="${CASH_IC}" alt="">`; }
 function rewardHtml(m) {
   const ids = [].concat(m.gift ? [['item', m.gift]] : [], m.kit || []).filter(([k, id]) => k === 'item' && ITEMS[id]).map(([, id]) => ITEMS[id]);
   const items = ids.map((it) => `<span class="qs-gift"><img src="${pictureOf(it.kind, it, 150, 90, true)}" alt=""><em style="color:${REWARD_INK[it.rarity] || REWARD_INK.common}">${it.name}</em></span>`).join('');
-  return items + (m.pay ? `<span class="qs-cash">${money(m.pay, false)}</span>` : '');
+  return items + (m.pay ? `<span class="qs-cash">${cashIc()}${money(m.pay, false)}</span>` : '');
 }
 export class UI {
   constructor(h) {
@@ -769,7 +772,7 @@ export class UI {
       const timer = q.claimed ? `done, a new quest in ${hm(left)}` : ok ? 'done: claim it' : `${hm(left)} left`;
       const pr = q.n > 1 && !q.claimed ? nbar(q.prog, q.n, q.kind === 'sell' ? money(q.prog, false) + ' / ' + money(q.n, false) : q.prog + ' / ' + q.n) : '';
       html += `<div class="qs-q bd r-${q.rarity}${ok && !q.claimed ? ' ready' : ''}${q.claimed ? ' claimed' : ''}"><div class="qs-t"><b>${q.text}${q.fresh ? '<i class="qs-new">New</i>' : ''}</b>${pr}</div>
-        <div class="qs-row"><small class="qs-time">${timer}</small><div class="qs-pay">${q.claimed ? '<span class="qs-paid">paid</span>' : `<span class="qs-amt">${money(q.pay, false)}</span>`}${ok && !q.claimed ? `<button data-q="claim|${q.key}">Claim</button>` : ''}</div></div><button class="qs-info" data-q="info|${q.key}" title="About this quest">i</button></div>`;
+        <div class="qs-row"><small class="qs-time">${timer}</small><div class="qs-pay">${q.claimed ? '<span class="qs-paid">paid</span>' : `<span class="qs-amt">${cashIc()}${money(q.pay, false)}</span>`}${ok && !q.claimed ? `<button data-q="claim|${q.key}">Claim</button>` : ''}</div></div><button class="qs-info" data-q="info|${q.key}" title="About this quest">i</button></div>`;
     }
     // (4.0.0) the free refresh, or the next price on the ladder for this three-hour window
     const wait = boardIn(P), price = refreshPrice(P);
