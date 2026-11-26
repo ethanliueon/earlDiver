@@ -213,6 +213,8 @@ function rewardHtml(m) {
   const items = ids.map((it) => `<span class="qs-gift"><img src="${pictureOf(it.kind, it, 150, 90, true)}" alt=""><em style="color:${REWARD_INK[it.rarity] || REWARD_INK.common}">${it.name}</em></span>`).join('');
   return items + (m.pay ? `<span class="qs-cash">${cashIc()}${money(m.pay, false)}</span>` : '');
 }
+// (7.6.55, owner) the diver on the bag's stand: his middle, his length and where his feet meet the floor, as shares of the stand's height
+const EQ_MID = 0.35, EQ_LEN = 0.614, EQ_FEET = 0.885; // (measured: his head sits 0.43 of his length above his middle, his fins 0.87 below)
 export class UI {
   constructor(h) {
     this.h = h;
@@ -1484,8 +1486,12 @@ export class UI {
   // (7.6.51-53, owner) behind the diver in the bag: a scene of the deep over the whole stage, see-through so the plate shows
   // through it and fading out at its edges; the player picks which (BAG_SCENES, the button at the top of the stage). Each is
   // drawn once at the stage's size; the plants and things in it are drawn in the turntable's own frame (360 x 520) under him
-  eqBackdropURL(w, h, scene) { const k = `${w}x${h}:${scene}`; if (this.eqBdKey !== k) { this.eqBdKey = k; this.eqBdURL = this.eqBackdrop(w * 2, h * 2, scene).toDataURL(); } return this.eqBdURL; }
-  eqBackdrop(W, H, scene = 'reef') {
+  // the shadow under his feet, painted once: a few soft overlapping smudges, wider behind him than in front
+  feetShadow(W, H) { if (this.fsh && this.fsh.width === W) return this.fsh; const c = document.createElement('canvas'); c.width = W; c.height = H; const x = c.getContext('2d'); const fy = H * EQ_FEET;
+    x.filter = 'blur(7px)'; for (const [dx, rx, ry, a] of [[-6, 0.17, 0.016, 0.42], [10, 0.11, 0.012, 0.5], [-22, 0.1, 0.01, 0.28], [2, 0.06, 0.008, 0.6]]) { x.fillStyle = `rgba(0, 0, 0, ${a})`; x.beginPath(); x.ellipse(W / 2 + dx, fy, W * rx, H * ry, 0, 0, Math.PI * 2); x.fill(); }
+    return (this.fsh = c); }
+  eqBackdropURL(w, h, scene) { const fl = this.eqFloor || 0.92, k = `${w}x${h}:${scene}:${fl.toFixed(3)}`; if (this.eqBdKey !== k) { this.eqBdKey = k; this.eqBdURL = this.eqBackdrop(w * 2, h * 2, scene, fl).toDataURL(); } return this.eqBdURL; }
+  eqBackdrop(W, H, scene = 'reef', floor = 0.92) {
     const c = document.createElement('canvas'); c.width = W; c.height = H; const x = c.getContext('2d');
     let sd = 5; const rnd = () => ((sd = (sd * 16807) % 2147483647) / 2147483647);
     const w = document.createElement('canvas'); w.width = W; w.height = H; const y = w.getContext('2d');
@@ -1493,7 +1499,7 @@ export class UI {
     S.water.forEach((col, i) => gr.addColorStop(i / (S.water.length - 1), col)); y.fillStyle = gr; y.fillRect(0, 0, W, H);
     // light from above, uneven: a few broad soft patches
     for (let i = 0; i < 5; i++) { const px = W * (0.15 + rnd() * 0.7), py = H * rnd() * 0.3, r = W * (0.25 + rnd() * 0.25), g2 = y.createRadialGradient(px, py, 0, px, py, r); g2.addColorStop(0, S.light); g2.addColorStop(1, 'rgba(0,0,0,0)'); y.fillStyle = g2; y.fillRect(0, 0, W, H); }
-    const PS = H / 520, FW = W / PS; y.save(); y.scale(PS, PS); S.draw(y, rnd, FW, 520); y.restore(); // the scene, in the turntable's units across the whole stage
+    const PS = H / 520, FW = W / PS; y.save(); y.scale(PS, PS); y.translate(0, (floor - 0.92) * 520); S.draw(y, rnd, FW, 520); y.restore(); // the scene's floor (0.92) on his feet // the scene, in the turntable's units across the whole stage
     // sea snow: tiny sharp specks
     const d0 = Math.max(1, Math.round(W / 600));
     for (let i = 0; i < (S.snow || 140); i++) { y.fillStyle = `rgba(${S.snowCol || '200, 212, 204'}, ${0.15 + rnd() * 0.35})`; const px = rnd() * W, py = rnd() * H * 0.88; y.fillRect(px, py, rnd() < 0.3 ? d0 * 2 : d0, rnd() < 0.2 ? d0 * 2 : d0); }
@@ -1605,7 +1611,7 @@ export class UI {
     // Earl, in what he has on
     // (2.8.1) Earl, in what he has on, on a turntable: drag across him to turn him round; he keeps turning a
     // little after you let go, slows, and settles facing you
-    { const st = root.querySelector('.eq-stage'), dp = st && st.querySelector('.eq-deep'); if (dp) { const w0 = st.clientWidth, h0 = st.clientHeight; if (w0 > 20 && h0 > 20) dp.style.backgroundImage = `url(${this.eqBackdropURL(w0, h0, P.bagScene || 'reef')})`; } } // (7.6.52, owner)
+    { const st = root.querySelector('.eq-stage'), dp = st && st.querySelector('.eq-deep'); if (dp) { const w0 = st.clientWidth, h0 = st.clientHeight; if (w0 > 20 && h0 > 20) { const cvE = st.querySelector('.eq-earl'); this.eqFloor = cvE ? (cvE.offsetTop + cvE.offsetHeight * EQ_FEET) / h0 : 0.92; dp.style.backgroundImage = `url(${this.eqBackdropURL(w0, h0, P.bagScene || 'reef')})`; } } } // (7.6.52, owner)
     const cv = root.querySelector('.eq-earl');
     if (cv) {
       const sp = this.spin || (this.spin = { a: 0.35, v: 0 });
@@ -1614,10 +1620,10 @@ export class UI {
       const draw = () => {
         const cv = this.spinCv, c = cv.getContext('2d'), W2 = cv.width, H2 = cv.height, t = performance.now() / 1000, k = Math.cos(sp.a);
         c.clearRect(0, 0, W2, H2);
-        // his shadow on the floor of the stand
-        c.fillStyle = 'rgba(0,0,0,0.35)'; c.beginPath(); c.ellipse(W2 / 2, H2 * 0.93, W2 * 0.22, H2 * 0.03, 0, 0, Math.PI * 2); c.fill();
-        c.save(); c.translate(W2 / 2, H2 * 0.5 + Math.sin(t * 1.2) * 2); c.scale(Math.sign(k || 1) * Math.max(0.12, Math.abs(k)), 1); c.rotate(-Math.PI / 2);
-        drawEarl(c, H2 * 0.84, t * 1.5, 0.08, null, null, look());
+        // (7.6.55, owner) his shadow where his feet are: soft, uneven, darkest right under the fins (not a flat oval floating behind him)
+        c.drawImage(this.feetShadow(W2, H2), 0, 0);
+        c.save(); c.translate(W2 / 2, H2 * EQ_MID + Math.sin(t * 1.2) * 2); c.scale(Math.sign(k || 1) * Math.max(0.12, Math.abs(k)), 1); c.rotate(-Math.PI / 2);
+        drawEarl(c, H2 * EQ_LEN, t * 1.5, 0.08, null, null, look());
         c.restore();
         if (Math.abs(k) < 0.5) { c.fillStyle = `rgba(10,14,12,${(0.5 - Math.abs(k)) * 0.5})`; c.fillRect(0, 0, W2, H2); } // edge on: he darkens as he turns away from the light
       };

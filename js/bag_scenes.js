@@ -11,10 +11,10 @@ const lerp = (a, b, t) => a + (b - a) * t;
 // a seabed band: an uneven top edge, darker below, speckled with grit and the odd pebble
 function seabed(y, rnd, FW, PH, top, col, dark, amp = 6) {
   const g = y.createLinearGradient(0, top - amp, 0, PH); g.addColorStop(0, col); g.addColorStop(1, dark);
-  y.fillStyle = g; y.beginPath(); y.moveTo(0, PH + 2); const ph = rnd() * 6;
+  y.fillStyle = g; y.beginPath(); y.moveTo(0, PH + 300); const ph = rnd() * 6;
   for (let i = 0; i <= 40; i++) { const px = (i / 40) * FW; y.lineTo(px, top - amp * (0.5 + 0.5 * Math.sin(i * 0.45 + ph)) - rnd() * 1.5); }
-  y.lineTo(FW, PH + 2); y.closePath(); y.fill();
-  for (let i = 0; i < FW * 0.5; i++) { const px = rnd() * FW, py = top + rnd() * (PH - top); y.fillStyle = `rgba(${rnd() < 0.5 ? '0,0,0' : '170,170,150'}, ${0.06 + rnd() * 0.1})`; y.fillRect(px, py, 1, 1); }
+  y.lineTo(FW, PH + 300); y.closePath(); y.fill();
+  for (let i = 0; i < FW * 0.5; i++) { const px = rnd() * FW, py = top + rnd() * (PH + 120 - top); y.fillStyle = `rgba(${rnd() < 0.5 ? '0,0,0' : '170,170,150'}, ${0.06 + rnd() * 0.1})`; y.fillRect(px, py, 1, 1); }
   for (let i = 0; i < FW * 0.04; i++) { const px = rnd() * FW, py = top + 4 + rnd() * (PH - top - 4), r = 1 + rnd() * 2.4; y.fillStyle = 'rgba(0,0,0,0.3)'; y.beginPath(); y.ellipse(px + 0.6, py + 0.8, r, r * 0.6, 0, 0, TAU); y.fill(); y.fillStyle = `rgba(${90 + rnd() * 40}, ${92 + rnd() * 30}, ${84 + rnd() * 20}, 0.5)`; y.beginPath(); y.ellipse(px, py, r, r * 0.6, 0, 0, TAU); y.fill(); }
 }
 // a boulder: lit from above, shadowed below, a few cracks
