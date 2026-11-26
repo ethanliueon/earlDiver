@@ -2590,12 +2590,6 @@ export class Renderer {
     const ctx = V ? V.ctx : this.ctx, H = V ? V.H : this.H, W = V ? V.W : this.W;
     const camY = V ? V.camY : this.cam.y, area = V ? [0, 0, W, H] : null;
     const step = Math.max(0.5, 6 / ppm);
-    // (7.6.26, owner) a second line of seabed behind the near one, a little higher and paler, hazed by the water between:
-    // the floor reads as land going back, not one cut edge
-    { const midD0 = V ? V.midD : g.world.floorAt(this.cam.x), c0 = sampleTable(FLOOR_COL, midD0), wc = [70, 96, 112], k0 = 1 - smoothstep(300, 1400, midD0);
-      if (k0 > 0.02) { ctx.beginPath(); ctx.moveTo(S(x0), H + 20);
-        for (let x = x0; x <= x1 + step; x += step) { const d = g.world.floorAt(x), lift = (1.4 + 2.6 * (0.5 + 0.5 * fbm1(x / 38, 3, 911))) * (0.6 + 0.4 * smoothstep(5, 120, d)); ctx.lineTo(S(x), Sy(Math.max(0.6, d - lift))); }
-        ctx.lineTo(S(x1 + step), H + 20); ctx.closePath(); ctx.fillStyle = rgbStr(mixRgb(c0, wc, 0.55)); ctx.globalAlpha = 0.55 * k0; ctx.fill(); ctx.globalAlpha = 1; } }
     ctx.beginPath();
     ctx.moveTo(S(x0), H + 20);
     for (let x = x0; x <= x1 + step; x += step) ctx.lineTo(S(x), Sy(g.world.floorAt(x)));
