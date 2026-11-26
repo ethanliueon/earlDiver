@@ -2429,3 +2429,7 @@ html body #store .st-tabs button.on:not(#_a):not(#_b) { color: #f6efd8; padding-
 html body #store .st-tabs button:not(#_a):not(#_b) .st-ti { width: 30px; height: 22px; flex: 0 0 auto; background: center / contain no-repeat; filter: drop-shadow(0 1px 1px rgba(0,0,0,0.7)) saturate(0.85) brightness(0.9); }
 html body #store .st-tabs button.on:not(#_a):not(#_b) .st-ti { filter: drop-shadow(0 1px 1px rgba(0,0,0,0.7)); }
 html body #store .st-tabs button[data-tab="test"]:not(#_a):not(#_b) { font-size: 12px; letter-spacing: 0.12em; text-transform: uppercase; padding: 9px 10px 6px; }
+/* (7.6.76, owner) the shop's close cross a little higher (it overlapped the last card's corner), and the pearl count
+   centred on the cross's own line */
+html body .store-panel .st-x:not(#_a):not(#_b):not(#_c):not(#_d):not(#_e) { top: -20px; }
+html body .store-panel .st-shopplate .pet-have:not(#_a):not(#_b) { top: -9px; }
