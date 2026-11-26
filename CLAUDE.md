@@ -391,7 +391,7 @@ last desktop build is kept on the branch `desktop-4.25.5`).
 - Phones always run lite mode (no rim light on animals, no film grain, no far kelp, a lower-resolution light map). The
   Battery saver setting adds a 30 fps cap. Image caches are all bounded; `rockAt` is binned by x.
 - The painted creator heads are planned in docs/PLAN_CREATOR.md (ChatGPT edits on one template; not built).
-- (7.5.2, owner) The locker holds 60; its grid scrolls inside the frame (heading fixed, lower edge fading while more lies
+- (7.5.2, owner; 7.6.84: 100) The locker holds 100; its grid scrolls inside the frame (heading fixed, lower edge fading while more lies
   below). A chest opened from the bag returns to the bag when its reveal closes.
 - (7.5.3, owner) Sparks on legendary and mythical pictures are drawn on a small canvas inside each picture's own frame
   (legendfx.js), so they scroll with it and never trail; never one canvas over the page chasing positions.
