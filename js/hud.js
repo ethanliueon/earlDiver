@@ -49,16 +49,30 @@ import { drawSpecies } from './creatures_draw.js';
 // (7.2.8) the tutorial's pointing glove (painted by tools/action_icons.py point()), pointing down in its picture, the
 // fingertip at 0.451, 0.883 of it
 const PEARL_ROW = 24; // (7.3.9) the pearls' row under the money (in the HUD's unit): everything under the money moves down by it
-// (7.6.79, owner) an empty ability slot's mark: the outline of the game's own scroll (drawScroll3's silhouette, traced once),
-// nothing inside it, as two tinted copies (the cut's shadow and its lit lip) for an engraving pressed into the socket
+// (7.6.80, owner) an empty ability slot's mark: the game's own scroll drawn as an engraving, its rolls, turns and edges traced
+// from the painted scroll (drawScroll3, its light and dark edges found once) with no paper colour, and in the middle,
+// where a scroll's emblem sits, a shaped question mark (a tapering hook and a dot, never a typed "?")
 let GHOST_SCROLL = null;
 function ghostScroll() {
-  if (GHOST_SCROLL || typeof document === 'undefined') return GHOST_SCROLL; const S = 160, mk = () => { const c = document.createElement('canvas'); c.width = c.height = S; return c; };
-  const sil = mk(), sx = sil.getContext('2d'); drawScroll3(sx, S / 2, S / 2, S * 0.86, 'sprint', 'common', 1); sx.globalCompositeOperation = 'source-in'; sx.fillStyle = '#fff'; sx.fillRect(0, 0, S, S);
-  const ring = mk(), rx = ring.getContext('2d'), t = 3.2; for (let k = 0; k < 16; k++) { const a = k / 16 * Math.PI * 2; rx.drawImage(sil, Math.cos(a) * t, Math.sin(a) * t); }
-  rx.globalCompositeOperation = 'destination-out'; rx.drawImage(sil, 0, 0);
-  const tint = (col) => { const c = mk(), x = c.getContext('2d'); x.drawImage(ring, 0, 0); x.globalCompositeOperation = 'source-in'; x.fillStyle = col; x.fillRect(0, 0, S, S); return c; };
-  GHOST_SCROLL = { dark: tint('rgba(0,0,0,0.85)'), lit: tint('rgba(214,206,178,0.5)'), S }; return GHOST_SCROLL;
+  if (GHOST_SCROLL || typeof document === 'undefined') return GHOST_SCROLL; const S = 200, mk = () => { const c = document.createElement('canvas'); c.width = c.height = S; return c; };
+  const src = mk(), sx = src.getContext('2d'); sx.filter = 'blur(0.7px)'; drawScroll3(sx, S / 2, S / 2, S * 0.88, 'sprint', 'common', 1); sx.filter = 'none';
+  const im = sx.getImageData(0, 0, S, S), d = im.data, L = new Float32Array(S * S), A = new Float32Array(S * S);
+  for (let i = 0; i < S * S; i++) { A[i] = d[i * 4 + 3] / 255; L[i] = (0.3 * d[i * 4] + 0.59 * d[i * 4 + 1] + 0.11 * d[i * 4 + 2]) / 255 * A[i]; }
+  const out = sx.createImageData(S, S), o = out.data, ex = S / 2 - 2 / 104 * S * 0.88, ey = S / 2 + 1 / 104 * S * 0.88, er = S * 0.88 * 0.27;
+  for (let y = 1; y < S - 1; y++) for (let x = 1; x < S - 1; x++) { const i = y * S + x;
+    const gx = (L[i - S + 1] + 2 * L[i + 1] + L[i + S + 1]) - (L[i - S - 1] + 2 * L[i - 1] + L[i + S - 1]), gy = (L[i + S - 1] + 2 * L[i + S] + L[i + S + 1]) - (L[i - S - 1] + 2 * L[i - S] + L[i - S + 1]);
+    const ax = (A[i - S + 1] + 2 * A[i + 1] + A[i + S + 1]) - (A[i - S - 1] + 2 * A[i - 1] + A[i + S - 1]), ay = (A[i + S - 1] + 2 * A[i + S] + A[i + S + 1]) - (A[i - S - 1] + 2 * A[i - S] + A[i - S + 1]);
+    let m = Math.max(Math.hypot(gx, gy) * 2.2, Math.hypot(ax, ay) * 1.4); m = Math.max(0, Math.min(1, (m - 0.36) / 0.5));
+    if (Math.hypot(x - ex, y - ey) < er) m = 0; // the emblem's place, cleared for the question mark
+    o[i * 4] = o[i * 4 + 1] = o[i * 4 + 2] = 255; o[i * 4 + 3] = Math.round(m * 255); }
+  const line = mk(), lx = line.getContext('2d'); lx.putImageData(out, 0, 0);
+  // the question mark: a hook that thickens toward its foot, then a round dot, in the emblem's place
+  { lx.save(); lx.translate(ex, ey); const k = er / 22; lx.strokeStyle = '#fff'; lx.lineCap = 'round'; lx.lineJoin = 'round';
+    const hook = (w, a, b, c2, d2) => { lx.lineWidth = w * k; lx.beginPath(); lx.moveTo(a[0] * k, a[1] * k); lx.bezierCurveTo(b[0] * k, b[1] * k, c2[0] * k, c2[1] * k, d2[0] * k, d2[1] * k); lx.stroke(); };
+    hook(4.2, [-8, -8], [-8, -18], [9, -19], [8, -9]); hook(4.6, [8, -9], [7, -3], [0, -2], [0, 4]); lx.lineWidth = 4.8 * k; lx.beginPath(); lx.moveTo(0, 4 * k); lx.lineTo(0, 7 * k); lx.stroke();
+    lx.fillStyle = '#fff'; lx.beginPath(); lx.arc(0, 14 * k, 3 * k, 0, TAU); lx.fill(); lx.restore(); }
+  const tint = (col) => { const c = mk(), x = c.getContext('2d'); x.drawImage(line, 0, 0); x.globalCompositeOperation = 'source-in'; x.fillStyle = col; x.fillRect(0, 0, S, S); return c; };
+  GHOST_SCROLL = { dark: tint('rgba(0,0,0,0.9)'), lit: tint('rgba(214,206,178,0.55)'), S }; return GHOST_SCROLL;
 }
 const TUT_POINT = typeof Image !== 'undefined' ? Object.assign(new Image(), { src: 'assets/ui/icons/tut-point.png' }) : null;
 const MONO = '"Barlow Semi Condensed", "Arial Narrow", sans-serif';
@@ -510,7 +524,7 @@ e.inSub ? [
         ctx.strokeStyle = 'rgba(0,0,0,0.5)'; ctx.lineWidth = 3 * u; ctx.beginPath(); ctx.arc(x, y + 1.5 * u, r * 0.86, Math.PI * 1.1, Math.PI * 1.9); ctx.stroke(); // its inner shadow under the top rim
         // (7.6.79, owner) what goes here: the outline of the game's own scroll, engraved into the socket's floor (its shadow above,
         // its lit lip below), nothing inside it: empty, not missing; a tap still opens the bag
-        { const G0 = ghostScroll(); if (G0) { const sz = r * 1.5, gx = x - sz / 2, gy = y - sz / 2; ctx.save(); ctx.globalAlpha = 0.75; ctx.drawImage(G0.dark, gx, gy - 1 * u, sz, sz); ctx.globalAlpha = 0.9; ctx.drawImage(G0.lit, gx, gy + 1 * u, sz, sz); ctx.globalAlpha = 0.55; ctx.drawImage(G0.dark, gx, gy, sz, sz); ctx.restore(); } }
+        { const G0 = ghostScroll(); if (G0) { const sz = r * 1.62, gx = x - sz / 2, gy = y - sz / 2; ctx.save(); ctx.globalAlpha = 0.75; ctx.drawImage(G0.dark, gx, gy - 1 * u, sz, sz); ctx.globalAlpha = 0.9; ctx.drawImage(G0.lit, gx, gy + 1 * u, sz, sz); ctx.globalAlpha = 0.55; ctx.drawImage(G0.dark, gx, gy, sz, sz); ctx.restore(); } }
         ctx.restore(); hot(x - r, y - r, r * 2, r * 2, 'slotempty'); return; }
       if (a.dom) { this.journalAt = { x: (x + this.safeL) * kx, y: (y + this.safeT) * kx, r: r * kx }; this.journalR = r * kx; return; } // (5.6.9) the journal's HTML coin is placed here by main.js
       const down = pressFx(a.key, x, y, r);

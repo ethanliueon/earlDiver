@@ -47,7 +47,7 @@ import { rollChestAll } from './chests.js';
 import { setDiverLook } from './earl_draw.js'; // (6.7.0)
 import { isTestStore } from './purchases.js';
 import { CODES, normCode } from './codes.js';
-import { achClaim, achReadyCount } from './achievements.js'; // (6.5.9)
+import { achClaim, achReadyCount, ACH } from './achievements.js'; // (6.5.9)
 import { calState, calClaimed, calWeek, giftPearls, syncServerTime } from './store.js';
 syncServerTime(); setInterval(syncServerTime, 10 * 60e3); /* (7.4.26) the daily gift's clock */
 import { hullCap } from './economy.js';
@@ -601,11 +601,11 @@ const depthMarks = (d) => { const m = [[100, 5], [500, 50]]; for (let k = 1000; 
 function depthPearls() {
   const P = profile, e = g.earl; if (!P || g.mode !== 'play') return;
   const d = Math.max(e.y, e.inSub ? g.sub.y : 0);
-  if (d > (P.deepest || 0) + 1) { const was = achReadyCount(P); P.deepest = Math.floor(d); if (achReadyCount(P) > was) { saveProfile(P); hud.toast('Achievement ready', 'note'); /* (7.6.77, owner) the words name it; the quests button's red ! says where */ } } /* (7.6.38, owner) the record the achievements read */
+  if (d > (P.deepest || 0) + 1) { const was = achReadyCount(P); P.deepest = Math.floor(d); if (achReadyCount(P) > was) { saveProfile(P); const A0 = ACH[0], hit = A0.tiers.filter((t) => P.deepest >= t[0]).pop(); hud.toast(`Achievement: ${A0.name}, ${(hit ? hit[0] : P.deepest).toLocaleString('en-US')} m`, 'note'); /* (7.6.80, owner) a notification at the top, nothing written in the world; the quests button's red ! says where to claim it */ } } /* (7.6.38, owner) the record the achievements read */
   if (P.tut === 'on') return;
   for (const [m] of depthMarks(d)) if (d >= m && (P.depthRec || 0) < m) { /* (7.6.38, owner) no pearls here any more: the Into the deep achievement pays them, when claimed */
     P.depthRec = m; saveProfile(P);
-    (g.obsLabels || (g.obsLabels = [])).push({ c: null, x: e.inSub ? g.sub.x : e.x, y: (e.inSub ? g.sub.y - 3.4 : e.y - 2.3), text: `${m.toLocaleString('en-US')} m` /* (7.6.78) written above him or the sub, never over them */, rar: null, nameCol: '#e4dcc6', t: 0 });
+    // (7.6.80, owner) no depth written in the water: a new record is only an achievement (its notification above)
   }
 }
 // (7.4.14) a pet he owns out with him: its size and its glow come from petshop.js (pets.js updatePet)
