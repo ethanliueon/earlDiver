@@ -2293,7 +2293,7 @@ html body #quests .qs-sw .qs-dot { position: absolute; top: 3px; right: 3px; wid
 /* (7.6.40, owner) an achievement: name, stars and goal on the left, the anglerfish in the middle beside them, the pearls at
    the right; under them a bar carrying its own numbers, with the Claim beside it */
 html body #quests .qs-q.ach:not(#_a):not(#_b) { display: grid !important; grid-template-columns: auto minmax(0, 1fr) auto; grid-template-rows: auto auto auto auto; column-gap: 12px; row-gap: 2px; align-items: center; padding: 8px 8px 10px !important; }
-html body #quests .ach-art { grid-column: 2; grid-row: 1 / 4; justify-self: center; align-self: center; width: 100%; max-width: 220px; height: 84px; object-fit: contain; }
+html body #quests .ach-art { grid-column: 2; grid-row: 1 / 4; justify-self: center; align-self: center; width: 100%; max-width: 300px; height: 96px; object-fit: contain; margin: -6px 0; }
 html body #quests .ach-name { grid-column: 1; grid-row: 1; font: 600 18px/1.2 var(--o-text) !important; color: #2e2618; }
 html body #quests .ach-pay { grid-column: 3; grid-row: 1; justify-self: end; display: inline-flex; align-items: center; gap: 4px; font: 700 17px var(--o-num, sans-serif); color: #2e2618; }
 html body #quests .ach-pay .qs-pearl { width: 18px; height: 18px; }
