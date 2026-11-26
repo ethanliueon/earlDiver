@@ -114,7 +114,7 @@ export function updateEarl(g, dt, inp) {
     }
   } else {
     // ---- diver ----
-    let sp = DIVE_SPEED * e.speedMul * e.finSpeed * Math.max(inp.sprint ? e.sprintMul || 1.5 : 1, lowO2 ? 1.5 : 1, e.abilSpeed || 1); // (5.9.0). (7.6.0, owner) his own speed (fins, suit, the bag's weight) times the strongest boost running, never the boosts multiplied
+    let sp = DIVE_SPEED * e.speedMul * e.finSpeed * Math.max(inp.sprint ? 1.5 : 1, lowO2 ? 1.5 : 1, e.abilSpeed || 1); // (5.9.0). (7.6.0, owner) his own speed (fins, suit, the bag's weight) times the strongest boost running, never the boosts multiplied
     // (5.0) the camera's shutter is open: he holds still (he can still aim)
     const hold = !!g.photo;
     const mag = hold ? 0 : Math.hypot(inp.x, inp.y);
@@ -156,7 +156,7 @@ export function updateEarl(g, dt, inp) {
     const kickRate = st > 0 ? 0.55 + 1.1 * Math.pow(Math.abs(Math.sin(g.time * 2.3)), 2) : 1;
     // the kick: 1.5x the old pace. Sprinting scales it by the sprint's own factor. Faster fins and speed
     // upgrades quicken it too, but never past 1.5x the base kick (before the sprint)
-    const sprintK = inp.sprint ? (e.sprintMul || 1.5) : 1;
+    const sprintK = inp.sprint ? 1.5 : 1; // (7.6.49) running on deck only: no sprint figure any more
     const baseKick = (3.2 + DIVE_SPEED * 0.9) * 2.25;                  // plain swimming, no upgrades, no sprint
     const nowKick = (3.2 + (e.speedNow / sprintK) * 0.9) * 2.25;      // from his actual speed, sprint taken out
     const kickNow = Math.min(nowKick, baseKick * 1.5) * sprintK;

@@ -105,7 +105,7 @@ function goodOf(kind, s) {
   if (kind === 'net' || kind === 'slurp') return `${s.multi ? `Up to ${s.multi} from a school at once; ` : ''}fish size ${s.minLen ? `${s.minLen.toFixed(2)}–${s.maxLen.toFixed(2)} m` : `${s.maxLen.toFixed(2)} m`}, reach ${s.range} m`; // (6.0.8)
   if (kind === 'tag') return `Tagging from ${s.range} m`;
   if (kind === 'cam') return `Quality ${(s.idx || 10).toFixed(2)}; holds ${s.shots} exposures, ${s.exp} s to take${s.flash ? '' : ', no flash'}`;
-  if (kind === 'fins') return `Speed ${+s.swim.toFixed(2)}, sprint ${+s.sprint.toFixed(2)}`; // (6.5.8) the real figure: the first fins 1, the best about 3 (halved, the first read 0.5, like a loss)
+  if (kind === 'fins') return `Speed ${+s.swim.toFixed(2)}, air use ×${(s.airUse ?? 1).toFixed(2)}`; // (7.6.49, owner) sprint is gone: a stiffer kick is easier on air // (6.5.8) the real figure: the first fins 1, the best about 3 (halved, the first read 0.5, like a loss)
   if (kind === 'tank') return `About ${s.air} s of air${s.quiet ? ', no bubbles' : ''}`;
   if (kind === 'bag') return `${s.slots} spaces`;
   if (kind === 'suit') return `Pressure starts at ${s.press} m${s.air < 1 ? `; air use ×${s.air}` : ''}${s.warm ? '; keeps out the cold' : ''}${s.bite ? '; turns a bite' : ''}`;
@@ -403,9 +403,15 @@ if (ITEMS.mesh && ITEMS.mesh.slots === 3) { ITEMS.mesh.slots = 2; reword(ITEMS.m
     list.forEach((it, i) => {
       const [lo, hi] = SB[r], shown = it.id === 'rubber' ? 0.5 : lo + (hi - lo) * (list.length < 2 ? 0.5 : i / (list.length - 1)), ratio = it.sprint / it.swim;
       it.swim = +(shown * 2).toFixed(2); it.sprint = +(it.swim * ratio).toFixed(2);
-      it.good = it.chest || /cruis|sprint|speed|×/i.test(it.good || '') || !it.good ? goodOf('fins', it) : it.good;
     });
   }
+  // (7.6.49, owner) no sprint of his own any more: a fin's kick (what was its sprint figure) now makes it easier on air, in
+  // proportion: air use 1 - 0.4 x (kick - 1) / (the strongest kick in the game - 1), so the best fins reach 0.6 (air lasts
+  // two-thirds longer) and a 1.5 kick about 0.9
+  { const fins = Object.values(ITEMS).filter((it) => it.kind === 'fins'), top = Math.max(...fins.map((it) => it.sprint || 1));
+    for (const it of fins) { it.airUse = +(1 - 0.4 * Math.max(0, (it.sprint || 1) - 1) / Math.max(0.01, top - 1)).toFixed(2);
+      if (/sprint/i.test(it.bad || '')) it.bad = '';
+      it.good = it.chest || /cruis|sprint|speed|×/i.test(it.good || '') || !it.good ? goodOf('fins', it) : it.good; } }
 }
 // (5.12.5) tanks, bags, nets and cameras by rarity (owner-agreed): even steps from Common to Exotic, then a large jump to
 // Legendary so the best is obviously the best. Items keep their order within a rarity; their words follow the numbers.

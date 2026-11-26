@@ -139,14 +139,20 @@ let profile = loadProfile();
 // what his suit does: pressure, air, speed (see SUITS)
 // what he has on (2.6.0): the tank's air, the fins (and a heavy tank's drag), the camera's card
 // (7.6.48, owner) the diver's own figures, everything he wears counted in: [key, label, value, text, 1 when higher is better]
+// (7.6.49, owner) Air is the seconds it really lasts swimming in shallow water (tank, Rebreathing, the suit's and the fins'
+// air use all in); no sprint; Safe depth is where the suit stops keeping the pressure off
+function airWith(P, swap) { // swap: an item instance tried on in place of what he wears of its kind (null: as he is)
+  const def = (k) => (swap && ITEMS[swap.id] && ITEMS[swap.id].kind === k ? ITEMS[swap.id] : worn(P, k)) || {};
+  const K = kitOf(P), cur = swap && ITEMS[swap.id] ? K.on[ITEMS[swap.id].kind] && instOf(P, K.on[ITEMS[swap.id].kind]) : null, rb = (q) => ((q && q.sk) || []).filter(([k]) => k === 'rebreathing').reduce((a, [, l]) => a + l, 0);
+  const lvR = skillLv(P, 'rebreathing') - rb(cur) + rb(swap), suitAir = (swap && ITEMS[swap.id].kind === 'suit' ? ITEMS[swap.id] : suitOf(P)).air || 1;
+  const tank = Math.min(300, (def('tank').air || 20) * (1 + 0.1 * lvR) * (setOn(P, 'sealab') ? 1.5 : 1)) * (firstDive(P) ? 1.5 : 1);
+  return tank / (suitAir * (def('fins').airUse || 1)); }
 function statRows(P) { if (!P) return []; const S = suitOf(P), tk = worn(P, 'tank') || {}, nt = worn(P, 'net'), res = Math.max(0.4, 1 - 0.15 * skillLv(P, 'resilience'));
   return [
-    ['air', 'Air', airMax(P), (v) => `${Math.round(v)} s`, 1],
-    ['press', 'Pressure from', S.press || 0, (v) => `${Math.round(v)} m`, 1],
-    ['resist', 'Pressure resist', Math.round((1 - res) * 100), (v) => `${Math.round(v)} %`, 1],
-    ['airuse', 'Air use', S.air || 1, (v) => `×${v.toFixed(2)}`, -1],
+    ['air', 'Air', airWith(P, null), (v) => (v >= 60 ? `${Math.floor(v / 60)} min ${String(Math.round(v % 60)).padStart(2, '0')} s` : `${Math.round(v)} s`), 1],
+    ['press', 'Safe depth', S.press || 0, (v) => `${Math.round(v)} m`, 1],
+    ['resist', 'Pressure resistance', Math.round((1 - res) * 100), (v) => `${Math.round(v)} %`, 1],
     ['swim', 'Swim speed', statValue(P, 'swim') * (S.speed || 1) * (tk.speed || 1), (v) => v.toFixed(2), 1],
-    ['sprint', 'Sprint', statValue(P, 'sprint'), (v) => `×${v.toFixed(2)}`, 1],
     ['bag', 'Bag', Math.round(statValue(P, 'bag')), (v) => `${Math.round(v)} spaces`, 1],
     ['reach', 'Net reach', nt ? nt.range || 0 : 0, (v) => `${v.toFixed(1)} m`, 1],
   ]; }
@@ -157,7 +163,7 @@ function applyKit(e, P) {
   // smaller one keeps only what fits (said once). At the start of a run (nothing yet) he starts full
   const was = e.o2Max || 0; e.o2Max = airMax(P);
   if (!was) e.o2 = e.o2Max; else if ((e.o2 || 0) > e.o2Max + 0.5) { e.o2 = e.o2Max; if (g && g.mode === 'play' && hud) say(`This tank holds ${Math.round(e.o2Max)} s: the rest of the air is gone`, 'earl'); } else e.o2 = Math.min(e.o2Max, e.o2 || 0);
-  e.finSpeed = statValue(P, 'swim'); e.sprintMul = statValue(P, 'sprint');
+  e.finSpeed = statValue(P, 'swim'); e.finAir = (worn(P, 'fins') || {}).airUse || 1; // (7.6.49, owner) the fins' kick: easier on air
   e.tankQuiet = !!(worn(P, 'tank') || {}).quiet;
   // (2.8.0) skills, Legendary skills and set traits, all stacked across what he has on
   const T = totals(P), L = (k) => skillLv(P, k);
@@ -421,7 +427,7 @@ const ui = new UI({
   onMessage: (m) => hud.toast(m),
   moneyAt: () => (hud.moneyAt), // (5.7.5) where the money is on the HUD, for the quest's sum
   onEquip: (k) => { const ok = buy(k); normAbil(); return ok; },
-  playerStats: () => statRows(profile), // (7.6.48, owner) the diver's figures, all his gear counted, under the locker
+  playerStats: () => statRows(profile), airWith: (q) => (profile ? airWith(profile, q) : 0), playerName: () => (profile && profile.name) || '', // (7.6.48, owner) the diver's figures, all his gear counted, under the locker
   canSellGear: () => !!(g && g.mode === 'play'), // (7.5.5, owner) sold from the bag anywhere (once only aboard, at the station or Dave's)
 });
 // (4.10.0) the chart (K, or the chart button under the journal): the whole sea, and the player's own markers
@@ -1498,7 +1504,7 @@ function startRun() {
   // (5.5) an iPhone's browser cannot show a page full screen: once, on the first dive there, how to get it
   if (/iPhone|iPod/.test(navigator.userAgent) && !(window.matchMedia && matchMedia('(display-mode: standalone), (display-mode: fullscreen)').matches) && !navigator.standalone) {
     let seen = false; try { seen = !!localStorage.getItem('earl.iosFsTip'); localStorage.setItem('earl.iosFsTip', '1'); } catch (e) { seen = true; }
-    if (!seen) setTimeout(() => hud.toast('For full screen: Share, then Add to Home Screen, and open Earl from there', 'note'), 6000);
+    if (!seen) setTimeout(() => hud.toast('For full screen: Share, then Add to Home Screen, and open the game from there', 'note'), 6000);
   }
   g.menuT0 = null; // (5.7.0) the title's dive starts again next time
   g.abilUsed = 0; g.abil = null; g.tideFx = null; if (profile && profile.markers) profile.markers = profile.markers.filter((m) => !m.auto); // (5.9.0) a new dive: per-dive abilities back; Fathom's marks cleared
@@ -2995,7 +3001,7 @@ function update(dt) {
     const kg = loadKg(g); g.loadKg = kg;
     e.speedMul = INJURY.speed[lvl] * (g.noAir ? 1 - clamp(g.noAir / 15, 0, 1) * 0.35 : 1) * loadSpeed(kg * (e.featherK ?? 1)) * (e.suitSpeed || 1);
     const cold = !e.inSub && !suitOf(profile).warm && e.y > 200 ? 1 + clamp((e.y - 200) / 800, 0, 1) * 0.35 * (e.warmK ?? 1) : 1;
-    e.o2Mul = INJURY.air[lvl] * loadAir(kg * (e.featherK ?? 1)) * (e.suitAir || 1) * cold;
+    e.o2Mul = INJURY.air[lvl] * loadAir(kg * (e.featherK ?? 1)) * (e.suitAir || 1) * (e.inSub ? 1 : e.finAir || 1) * cold;
     // (5.14.0) overencumbered (more in the bag than it holds), out of the sub: half speed, air three times as fast, and no
     // more catching until the bag is lightened. The sub is never overencumbered
     { const over = !e.inSub && !g.aboard && overencumbered(g); if (over) { e.speedMul *= 0.5; e.o2Mul *= 3; }

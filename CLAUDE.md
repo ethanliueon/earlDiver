@@ -71,6 +71,8 @@ last desktop build is kept on the branch `desktop-4.25.5`).
 
 ## How to work
 
+- **Never say "Earl" to the player (7.6.49, owner).** Text the player reads uses the diver's own name (the profile's name) or no name at all; "Earl" stays only in code and comments.
+
 - **The game as it is (6.2) is the standard.** What is in the game now is the owner's taste made real: the suits'
   orientation and 3D, the shop's layout, the close buttons (easy to find beats quiet), the HUD. Build on it; change it
   only where asked or where it clearly fails the philosophy, and say why.

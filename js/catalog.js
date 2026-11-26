@@ -40,7 +40,7 @@ const ITEM_CATS = ['net', 'cam', 'fins', 'tank', 'bag', 'suit'];
 const LEDE = {
   net: 'You carry one; change it in your bag.',
   cam: 'Hold still while the shutter is open; sell the pictures at the boat. The higher its Quality, the more each picture earns. Film is bought by the exposure.', trawl: "One in the sub's belly hatch; used up in one haul.",
-  trap: 'Set from the surface, on a line from a buoy.', suit: 'One worn at a time.', fins: 'How fast you swim, and sprint.',
+  trap: 'Set from the surface, on a line from a buoy.', suit: 'One worn at a time.', fins: 'How fast you swim, and how hard they are on your air.',
   tank: 'How long you can stay down.', bag: 'How many animals you can carry.', supply: 'Bought by the number.',
 };
 
@@ -83,7 +83,7 @@ export const MEASURES = {
   slurp: [['Fish size', sizeOf, (it) => it.maxLen, true], ['Reach', (it) => `${it.range} m`, (it) => it.range, true], ['Reload', (it) => `${it.time} s`, (it) => -it.time, true]],
   tag: [['Range', (it) => `${it.range} m`, (it) => it.range, true], ['Reload', (it) => `${it.time} s`, (it) => -it.time, true]],
   cam: [['Quality', (it) => (it.idx || 10).toFixed(2), (it) => it.idx || 10, true], /* (5.10.10) */ ['Holds', (it) => `${it.shots} exposures`, (it) => it.shots, true], ['Shutter', (it) => `${it.exp} s`, (it) => -it.exp, true], ['Range', (it) => `${it.range} m`, (it) => it.range, true]],
-  fins: [['Speed', (it) => n2(it.swim), (it) => it.swim, true], ['Sprint', (it) => n2(it.sprint), (it) => it.sprint, true]], // (6.5.8) the real figure: the rubber fins 1, the best about 3
+  fins: [['Speed', (it) => n2(it.swim), (it) => it.swim, true], ['Air use', (it) => `×${(it.airUse ?? 1).toFixed(2)}`, (it) => -(it.airUse ?? 1), true]], // (7.6.49, owner) the sprint figure is gone: a stiffer kick is easier on air // (6.5.8) the real figure: the rubber fins 1, the best about 3
   tank: [['Air', (it) => `about ${secs(it.air)}`, (it) => it.air, true], ['Speed', (it) => (it.speed >= 1 ? 'no slower' : it.speed >= 0.96 ? 'a little slower' : 'slower'), (it) => it.speed, true]],
   bag: [['Spaces', (it) => `${it.slots}`, (it) => it.slots, true]], // (5.14.0)
   suit: [['Pressure starts', (it) => `at ${it.press} m`, (it) => it.press, true], ['Air use', (it) => (it.air !== 1 ? x(it.air) : 'normal'), (it) => -it.air, true] /* (6.5.8) the wetsuit's x1.05 shown too */], // (5.12.0) no speed: fins alone give it

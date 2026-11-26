@@ -300,7 +300,7 @@ export class UI {
       else (d.documentElement.requestFullscreen ? d.documentElement.requestFullscreen({ navigationUI: 'hide' }).then(() => screen.orientation && screen.orientation.lock && screen.orientation.lock('landscape').catch(() => {})) : Promise.reject()).catch(() => {
         // (5.3) an iPhone's browser has no full screen for a page: the way is Add to Home Screen
         const ios = /iPhone|iPod/.test(navigator.userAgent);
-        if (ios) this.confirm('Full screen on iPhone', 'Tap the Share button, then Add to Home Screen. Opened from there, Earl plays full screen and sideways, with no browser bars.', 'OK', 'Close', () => {});
+        if (ios) this.confirm('Full screen on iPhone', 'Tap the Share button, then Add to Home Screen. Opened from there, the game plays full screen and sideways, with no browser bars.', 'OK', 'Close', () => {});
         else $('fullscreen').textContent = 'Full screen: add the game to your home screen';
       });
     });
@@ -563,7 +563,7 @@ export class UI {
       else if (b.dataset.ec != null) L.eyeCol = +b.dataset.ec;
       else if (b.dataset.k === 'beard') L.beard = ((L.beard || 0) + +b.dataset.d + BEARDS.length) % BEARDS.length;
       else if (b.classList.contains('cr-skip')) { el.hidden = true; inp.blur(); done(null); return; }
-      else if (b.classList.contains('cr-go')) { el.hidden = true; inp.blur(); done({ name: name.trim().slice(0, 12) || 'Earl', look: { ...L } }); return; }
+      else if (b.classList.contains('cr-go')) { el.hidden = true; inp.blur(); done({ name: name.trim().slice(0, 12) || 'Diver', look: { ...L } }); return; }
       draw();
     };
   }
@@ -1385,7 +1385,7 @@ export class UI {
       // (5.11.7) the name inside the box, under the picture (it no longer hangs below and gets cut off); no key numbers (touch
       // only); an empty slot is just its name; a slot for something he does not own yet (the camera) carries a padlock
       const lockedSlot = !q && kind === 'cam' && !K.items.some((x2) => ITEMS[x2.id] && ITEMS[x2.id].kind === 'cam');
-      return `<div class="eq-slot sq${q ? ' r-' + it.rarity : ' empty'}${lockedSlot ? ' locked' : ''}${bs === 1 ? ' myth-slot' : ''}" data-slot="${bs ? 'ability' : kind}"${bs ? ` data-bs="${bs}"` : ''} title="${q ? it.name : nm + (lockedSlot ? ': not bought yet' : bs === 1 ? ': any skill, mythical too' : bs === 2 ? ': any skill but a mythical one' : ': nothing on')}">${bs === 1 ? '<i class="ms-c a"></i><i class="ms-c b"></i><i class="ms-c c"></i><i class="ms-c d"></i>' : ''}${q ? `<img src="${pic(q)}" alt="" draggable="${free}" data-kind="${kind}" data-u="${q.u}">` : lockedSlot ? '<i class="lock"></i>' : ''}<small class="slot-nm">${nm}</small></div>`; };
+      return `<div class="eq-slot sq${q ? ' r-' + it.rarity : ' empty'}${lockedSlot ? ' locked' : ''}${bs === 1 ? ' myth-slot' : ''}" data-slot="${bs ? 'ability' : kind}"${bs ? ` data-bs="${bs}"` : ''} title="${q ? it.name : nm + (lockedSlot ? ': not bought yet' : bs === 1 ? ': any skill, mythical too' : bs === 2 ? ': any skill but a mythical one' : ': nothing on')}">${q ? `<img src="${pic(q)}" alt="" draggable="${free}" data-kind="${kind}" data-u="${q.u}">` : lockedSlot ? '<i class="lock"></i>' : ''}<small class="slot-nm">${nm}</small></div>`; };
     const order = ['net', 'cam', 'suit', 'fins', 'tank', 'bag'], rk = (q) => RARITY[ITEMS[q.id].rarity].k;
     const list = K.items.filter((q) => !onSet.has(q.u)).sort((a2, b2) => rk(a2) - rk(b2) || order.indexOf(ITEMS[a2.id].kind) - order.indexOf(ITEMS[b2.id].kind) || ITEMS[a2.id].name.localeCompare(ITEMS[b2.id].name));
     const tiles = list.map((q) => { const it = ITEMS[q.id];
@@ -1440,10 +1440,12 @@ export class UI {
     const pTier = psp && PET_BY_ID.get(psp.id) ? PET_BY_ID.get(psp.id).tier : 'common';
     const petGear = `<div class="eq-slot sq petg${pet ? ` r-${pTier}` : ' empty'}" data-petslot title="${pet ? psp.name : 'Pet: empty'}">${pet ? `<img src="${fit(psp)}" alt="">` : ''}${!pet && nOwned ? '<i class="badge-x">!</i>' : ''}<small class="slot-nm">Pet</small></div>`;
     const petPick = this.petPick ? this.petsPanel(P, g, fit) : '';
+    const helmetSlot = `<div class="eq-slot sq empty helmet" data-helmet title="Helmet: none yet"><small class="slot-nm">Helmet</small></div>`;
     const nSpare = ['necklace', 'glowAdv'].filter((k) => (SP[k] || 0) > 0).length + trapKinds.length + Math.ceil(nGold / 10);
     const pop = this.lkSel ? this.itemPop(P, g, free) : '';
     return `<div class="inv-sec wide eq inv-split${free ? '' : ' locked'}"><div class="inv-left"><div class="cash-plate"><span>CASH</span><b>${moneyExact(P.cash)}</b></div>`
-      + `<div class="eq-stage"><div class="eq-col">${SLOTS.slice(0, 5).map(slot).join('')}</div><canvas class="eq-earl" width="360" height="520"></canvas><div class="eq-col">${SLOTS.slice(5, 7).map(slot).join('')}${petGear}${beltSlot()}${SLOTS.slice(7).map(slot).join('')}</div>`
+      + `<div class="eq-stage"><div class="eq-col">${SLOTS.slice(0, 5).map(slot).join('')}</div><canvas class="eq-earl" width="360" height="520"></canvas><div class="eq-pouch">${beltSlot()}</div><div class="eq-col">${helmetSlot}${SLOTS.slice(5, 7).map(slot).join('')}${petGear}${SLOTS.slice(7).map(slot).join('')}</div>`
+      /* (7.6.49, owner) a helmet slot at the top right, ready for helmets to come; the glow sticks (used up, not worn) moved to a pouch at his feet */
       /* (7.6.26, owner) Ability 2 at the foot of its column, level with Ability: the two scrolls on one row; the pet moved up */ + `</div>`
       /* (6.0.0) no lock note: gear changes anywhere */
       /* (5.11.7) no tank panel under him: the tank's slot already shows it */
@@ -1462,7 +1464,8 @@ export class UI {
       return `<div class="st-cell${live ? (fx.up ? ' fx-up' : ' fx-down') : ''}" data-st="${k}" style="--el:-${Math.round(Math.min(el, 1800))}ms"><span>${label}</span><b>${fmt(live && el < 700 ? fx.from + (fx.to - fx.from) * (1 - Math.pow(1 - el / 700, 3)) : v)}</b>${live ? `<i class="st-d">${dTxt}</i>` : ''}</div>`; }).join('');
     this.statFmt = Object.fromEntries(rows.map((r) => [r[0], r[3]]));
     if (Object.values(this.statFx).some((f) => now - f.t0 < 700)) this.statTick();
-    return `<div class="inv-stats"><h5>Your diver</h5><div class="st-grid">${cells}</div></div>`;
+    const nm0 = (this.h.playerName && this.h.playerName()) || '';
+    return `<div class="inv-stats">${nm0 ? `<h5>${esc(nm0)}</h5>` : ''}<div class="st-grid">${cells}</div></div>`;
   }
   statTick() { if (this.statRaf) return; const step = () => { this.statRaf = null; const now = performance.now(); let more = false;
       for (const [k, f] of Object.entries(this.statFx || {})) { const el = now - f.t0; if (f.done) continue; const fin = el >= 700; if (!fin) more = true; else f.done = true;
@@ -1545,6 +1548,9 @@ export class UI {
         const bv = (i2, sk2) => { const B = boostOf(i2.kind, label, i2, sk2); return B && B.val != null ? B.val : num(i2); }, d = bv(it, q.sk) - bv(cur, curQ.sk), up = hi ? d > 0 : d < 0; // (6.0.8) compared with the skills counted in
         return `<tr><th>${label}</th><td>${a2}</td><td class="${up ? 'up' : 'down'}">${b2} ${up ? '▲' : '▼'}</td></tr>`;
       }).join('');
+      // (7.6.49, owner) a tank, suit or fins: what his air would be with it on, everything else as it is
+      if (['tank', 'suit', 'fins'].includes(it.kind) && this.h.airWith) { const a0 = this.h.airWith(null), a1 = this.h.airWith(q), f = (v) => (v >= 60 ? `${Math.floor(v / 60)} min ${String(Math.round(v % 60)).padStart(2, '0')} s` : `${Math.round(v)} s`);
+        rows += Math.round(a0) === Math.round(a1) ? `<tr class="same"><th>Your air</th><td>${f(a0)}</td><td>${f(a1)}</td></tr>` : `<tr><th>Your air</th><td>${f(a0)}</td><td class="${a1 > a0 ? 'up' : 'down'}">${f(a1)} ${a1 > a0 ? '▲' : '▼'}</td></tr>`; }
       body = `<div class="ip-cols">${cur ? this.chargeCol(P, curQ, 'Equipped') : `<div class="ip-col empty"><h5>Equipped</h5><p>Nothing in that slot.</p></div>`}<div class="ip-arrow">→</div>${this.chargeCol(P, q, 'Selected')}</div>`
         + (rows ? `<table class="ip-vs"><thead><tr><th></th><td>${cur ? cur.name : '—'}</td><td>${it.name}</td></tr></thead><tbody>${rows}</tbody></table>` : '');
       if (free) acts += `<button data-lk="on:${q.u}">${scr ? 'Equip' : 'Put it on'}</button>`;
@@ -1935,7 +1941,7 @@ export class UI {
       if (r.state === 'ok') {
         const p = r.profile, deep = p.deepest || 0, found = (p.journal || []).length;
         html += `<div class="slot tag sv${n === last0 ? ' last' : ''}" data-n="${n}">${num}
-          <div class="sv-head"><b class="sv-name">${(p.name || 'Earl').replace(/</g, '&lt;')}</b><span class="sv-when">${r.saved ? 'Played ' + ago(r.saved) : 'New'}</span></div>
+          <div class="sv-head"><b class="sv-name">${(p.name || 'Diver').replace(/</g, '&lt;')}</b><span class="sv-when">${r.saved ? 'Played ' + ago(r.saved) : 'New'}</span></div>
           <dl class="sv-stats"><div><dt>Cash</dt><dd>${moneyExact(p.cash, false)}</dd></div><div><dt>Deepest</dt><dd>${deep.toLocaleString()} m</dd></div><div><dt>Species</dt><dd>${found}</dd></div></dl>
           <div class="sv-foot"><em class="sv-go">${n === last0 ? 'Continue' : 'Dive'}</em><button class="del sv-del" aria-label="Delete">Delete</button></div></div>`;
       } else if (r.state === 'damaged') {
