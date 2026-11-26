@@ -1367,7 +1367,7 @@ function tutor() {
   // the steps that need a fish: the fish to go to, and what to do at it
   // (7.6.71) where a fish is on the page, for the glove to point at it
   const fishSpot = (f) => { const cm = renderer.cam; if (!f || !cm) return null; const kk = innerWidth / renderer.c.width, px = ((f.x - cm.x) * cm.ppm + renderer.c.width / 2) * kk, py = ((f.y - cm.y) * cm.ppm + renderer.c.height / 2) * kk, w = Math.max(40, (f.len || f.sp && f.sp.len || 0.4) * cm.ppm * kk);
-    return { pt: [px, py, w, w * 0.6], inPanel: true, say: 'Observe' }; };
+    return { pt: [px, py, w, w * 0.6], inPanel: true, say: 'Observe', tap: true }; }; // (7.6.79, owner) tap: the glove taps the fish itself
   const fishStep = (doWhat) => {
     const tf = tutorFish(dir), bd = dist(e.x, e.y, tf.x, tf.y); to = { x: tf.x, y: tf.y }; fish = tf;
     if (inCabin) { text = 'Leave the cabin: walk to the door'; cabinTo('door', 'outdoor', 'Out on deck'); return; } // (4.3.3) arrows to the door
@@ -1551,7 +1551,7 @@ function startRun() {
 // V, G, Q, E, the tools ...) are off; moving, sprinting, the net, the journal, quests, inventory, pause and mute
 // always work. The step's own action (g.tutAction, set by tutor()) runs from its key or its button: runTutAction()
 const TUT_ALWAYS = new Set(['sprint', 'sprinton', 'leavesub', 'divein', 'outdeck', 'ability', 'ability2', 'ability3', 'slotempty', 'swap', ' ', '1', 'b', 'menu', 'settings']);
-function tutGated(k) { if (g && g.lesson && g.frozen) return !(g.lesson.allow || new Set()).has(k) && k !== 'settings'; return !!(g && g.mode === 'play' && g.tutHidePrompts && !TUT_ALWAYS.has(k)); } // (4.7.0) a lesson lets through only what it teaches
+function tutGated(k) { if (g && g.lesson && g.frozen) return !(g.lesson.allow || new Set()).has(k) && k !== 'settings'; if (g && g.mode === 'play' && g.tutAction && g.tutAction.id === 'observe') return k !== String(g.tutAction.key).toLowerCase() && k !== 'settings'; /* (7.6.79, owner) until the fish is observed, the tap on it is the one thing that works: no net, no skill, no hand */ return !!(g && g.mode === 'play' && g.tutHidePrompts && !TUT_ALWAYS.has(k)); } // (4.7.0) a lesson lets through only what it teaches
 const deckAtDoor = () => !!g.aboard && g.aboard.x > (DECK_MIN + DECK_MAX) / 2 - (DECK_MAX - DECK_MIN) / 6 && g.aboard.x < DOOR_M + 0.7; // as deckInput's door zone
 // (4.4.1) the tutorial's actions, done directly (not through whatever the game is aiming at, which can change frame
 // to frame): observe the tutorial fish, sell, climb aboard, into the cabin, the shop, back out on deck, out of the sub

@@ -9,7 +9,7 @@ import { drawNet3, drawCam3 } from './gear_art.js';
 import { drawHourglass, drawPowerBadge, POWER_EMBLEMS } from './coin_art.js';
 import { LEGEND } from './item_data.js';
 import { rarityOf } from './specimens.js';
-import { legendMotes, glint, ember } from './scrolls.js';
+import { legendMotes, glint, ember, drawScroll3 } from './scrolls.js';
 import { drawGlyph } from './glyphs.js';
 import { calState } from './store.js';
 // (olive) a small plate of the locker's painted steel (the same painter, so the same material), cached by size
@@ -49,6 +49,17 @@ import { drawSpecies } from './creatures_draw.js';
 // (7.2.8) the tutorial's pointing glove (painted by tools/action_icons.py point()), pointing down in its picture, the
 // fingertip at 0.451, 0.883 of it
 const PEARL_ROW = 24; // (7.3.9) the pearls' row under the money (in the HUD's unit): everything under the money moves down by it
+// (7.6.79, owner) an empty ability slot's mark: the outline of the game's own scroll (drawScroll3's silhouette, traced once),
+// nothing inside it, as two tinted copies (the cut's shadow and its lit lip) for an engraving pressed into the socket
+let GHOST_SCROLL = null;
+function ghostScroll() {
+  if (GHOST_SCROLL || typeof document === 'undefined') return GHOST_SCROLL; const S = 160, mk = () => { const c = document.createElement('canvas'); c.width = c.height = S; return c; };
+  const sil = mk(), sx = sil.getContext('2d'); drawScroll3(sx, S / 2, S / 2, S * 0.86, 'sprint', 'common', 1); sx.globalCompositeOperation = 'source-in'; sx.fillStyle = '#fff'; sx.fillRect(0, 0, S, S);
+  const ring = mk(), rx = ring.getContext('2d'), t = 3.2; for (let k = 0; k < 16; k++) { const a = k / 16 * Math.PI * 2; rx.drawImage(sil, Math.cos(a) * t, Math.sin(a) * t); }
+  rx.globalCompositeOperation = 'destination-out'; rx.drawImage(sil, 0, 0);
+  const tint = (col) => { const c = mk(), x = c.getContext('2d'); x.drawImage(ring, 0, 0); x.globalCompositeOperation = 'source-in'; x.fillStyle = col; x.fillRect(0, 0, S, S); return c; };
+  GHOST_SCROLL = { dark: tint('rgba(0,0,0,0.85)'), lit: tint('rgba(214,206,178,0.5)'), S }; return GHOST_SCROLL;
+}
 const TUT_POINT = typeof Image !== 'undefined' ? Object.assign(new Image(), { src: 'assets/ui/icons/tut-point.png' }) : null;
 const MONO = '"Barlow Semi Condensed", "Arial Narrow", sans-serif';
 const HUDT = '"Barlow Semi Condensed", "Arial Narrow", sans-serif'; // (4.28) the instruments' figures
@@ -497,15 +508,9 @@ e.inSub ? [
         ctx.lineWidth = 1.6 * u; ctx.strokeStyle = 'rgba(0,0,0,0.85)'; ctx.beginPath(); ctx.arc(x, y, r * 0.96, 0, TAU); ctx.stroke();
         ctx.strokeStyle = 'rgba(206,198,170,0.3)'; ctx.lineWidth = 1.4 * u; ctx.beginPath(); ctx.arc(x, y, r * 0.99, 0, TAU); ctx.stroke(); ctx.strokeStyle = 'rgba(214,206,178,0.42)'; /* (7.6.78, owner) the rim a little brighter: empty, not missing */ ctx.beginPath(); ctx.arc(x, y, r * 0.99, Math.PI * 0.15, Math.PI * 0.85); ctx.stroke(); // its rim, the lip catching light below
         ctx.strokeStyle = 'rgba(0,0,0,0.5)'; ctx.lineWidth = 3 * u; ctx.beginPath(); ctx.arc(x, y + 1.5 * u, r * 0.86, Math.PI * 1.1, Math.PI * 1.9); ctx.stroke(); // its inner shadow under the top rim
-        // (7.6.78, owner) what goes here, pressed into the metal: a rolled scroll engraved in the socket's floor, dim and flat (a shadow
-        // above, a lit lip below), so the slot reads "a scroll goes here" (empty, not missing); a tap still opens the bag
-        { const ang = -0.42, L = r * 0.44, hh = r * 0.23, er = r * 0.26; ctx.save(); ctx.translate(x, y + r * 0.04); ctx.rotate(ang);
-          const shape = () => { const p = new Path2D(); p.rect(-L, -hh, L * 2, hh * 2); p.ellipse(-L, 0, er * 0.5, er, 0, 0, TAU); p.ellipse(L, 0, er * 0.5, er, 0, 0, TAU); return p; };
-          const sh = shape(); ctx.translate(0, -1.1 * u); ctx.fillStyle = 'rgba(0,0,0,0.42)'; ctx.fill(sh); // the cut's shadow, up-left
-          ctx.translate(0, 2.2 * u); ctx.strokeStyle = 'rgba(214,206,178,0.2)'; ctx.lineWidth = 1 * u; ctx.stroke(sh); // the lit lower lip
-          ctx.translate(0, -1.1 * u); ctx.fillStyle = 'rgba(30,36,32,0.55)'; ctx.fill(sh);
-          ctx.strokeStyle = 'rgba(0,0,0,0.45)'; ctx.lineWidth = 0.9 * u; ctx.beginPath(); for (const k of [-0.45, 0, 0.45]) { ctx.moveTo(-L * 0.7, k * hh * 1.3); ctx.lineTo(L * 0.7, k * hh * 1.3); } ctx.stroke(); // its rolled lines
-          ctx.restore(); }
+        // (7.6.79, owner) what goes here: the outline of the game's own scroll, engraved into the socket's floor (its shadow above,
+        // its lit lip below), nothing inside it: empty, not missing; a tap still opens the bag
+        { const G0 = ghostScroll(); if (G0) { const sz = r * 1.5, gx = x - sz / 2, gy = y - sz / 2; ctx.save(); ctx.globalAlpha = 0.75; ctx.drawImage(G0.dark, gx, gy - 1 * u, sz, sz); ctx.globalAlpha = 0.9; ctx.drawImage(G0.lit, gx, gy + 1 * u, sz, sz); ctx.globalAlpha = 0.55; ctx.drawImage(G0.dark, gx, gy, sz, sz); ctx.restore(); } }
         ctx.restore(); hot(x - r, y - r, r * 2, r * 2, 'slotempty'); return; }
       if (a.dom) { this.journalAt = { x: (x + this.safeL) * kx, y: (y + this.safeT) * kx, r: r * kx }; this.journalR = r * kx; return; } // (5.6.9) the journal's HTML coin is placed here by main.js
       const down = pressFx(a.key, x, y, r);

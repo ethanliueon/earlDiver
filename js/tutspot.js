@@ -201,7 +201,12 @@ export class TutSpot {
       // (4.3.1) no words by it: the ring and the arrow are enough (the banner at the top says what the step is)
     } else if (spot.pt) { // (7.5.0) a place in the scene (the cabin door from the deck): the glove at it, nothing dimmed
       this.lastTarget = null; if (this.litEl) { this.litEl.classList.remove('ts-lit'); this.litEl = null; }
-      const [px, py, pw, ph] = spot.pt; this.hole.style.display = 'none'; this.aimArrow(null, px - pw / 2, py - ph / 2, pw, ph); return;
+      const [px, py, pw, ph] = spot.pt; this.hole.style.display = 'none';
+      // (7.6.79, owner) a thing to tap in the water (the tutorial's fish): the glove comes down onto it from above, presses,
+      // and fades, again and again, never a line from the diver (it swung round as he moved)
+      if (spot.tap) { const G = 71, ax = px - (0.451 - 0.5) * G, ay = py - 4 - (0.883 - 0.5) * G; this.arrow.style.display = 'block'; setClass(this.arrow, 'ts-arrow down aim tap');
+        Object.assign(this.arrow.style, { left: ax.toFixed(1) + 'px', top: ay.toFixed(1) + 'px', transform: 'translate(-50%, -50%)' }); return; }
+      this.aimArrow(null, px - pw / 2, py - ph / 2, pw, ph); return;
     } else {
       this.lastTarget = null; if (this.litEl) { this.litEl.classList.remove('ts-lit'); this.litEl = null; }
       // a key to press (or the tutorial's button: spot.button is its action, spot.key its key)

@@ -2433,3 +2433,9 @@ html body #store .st-tabs button[data-tab="test"]:not(#_a):not(#_b) { font-size:
    centred on the cross's own line */
 html body .store-panel .st-x:not(#_a):not(#_b):not(#_c):not(#_d):not(#_e) { top: -20px; }
 html body .store-panel .st-shopplate .pet-have:not(#_a):not(#_b) { top: -9px; }
+
+/* (7.6.79, owner) the tutorial's glove tapping a thing in the water: it comes down onto it, presses and lifts, then fades,
+   and again (no bobbing toward it from the diver) */
+html body #tut-spot .ts-arrow.aim.tap:not(#_a):not(#_b) { animation: ts-tap 1.5s ease-in-out infinite; }
+@keyframes ts-tap { 0% { opacity: 0; translate: 0 -14px; scale: 1.04; } 18% { opacity: 1; translate: 0 -6px; scale: 1.04; } 38% { opacity: 1; translate: 0 0; scale: 0.9; }
+  52% { opacity: 1; translate: 0 -4px; scale: 1; } 72% { opacity: 1; translate: 0 -6px; scale: 1; } 100% { opacity: 0; translate: 0 -10px; scale: 1; } }
