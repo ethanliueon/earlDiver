@@ -1050,18 +1050,14 @@ export function drawBoat(ctx, Lp, t, sub, mirrored = false, opts = {}) {
     ctx.strokeStyle = '#2a2824'; ctx.lineWidth = 0.35 * u; ctx.beginPath(); ctx.moveTo((L0 + 0.3) * u, (yE + 0.45) * u); ctx.quadraticCurveTo((L0 + L1) / 2 * u, (yE - camb + 0.1) * u, (L1 - 0.3) * u, (yE + 0.45) * u); ctx.stroke(); // the drip lip
     const ry = (xx) => { const tt = (xx - L0) / (L1 - L0); return yE - 0.3 - 2 * tt * (1 - tt) * (th + camb * 2) * 0.5 * 2; };
     ctx.strokeStyle = '#3a3834'; ctx.lineWidth = 0.22 * u; ctx.beginPath(); for (let xx = -8; xx <= 21; xx += 4.2) { ctx.moveTo(xx * u, ry(xx) * u); ctx.lineTo(xx * u, (ry(xx) - 1.6) * u); } ctx.moveTo(-8 * u, (ry(-8) - 1.6) * u); for (let xx = -8; xx <= 21; xx += 1) ctx.lineTo(xx * u, (ry(xx) - 1.6) * u); ctx.stroke(); } // the rail
-  // windows (positions shared with the night-lighting code): (7.6.62, owner) heavy frames raked a little forward under a
-  // long rain visor, the glass catching the sky, a weep of rust from each sill
-  ctx.fillStyle = '#3e3c36'; ctx.beginPath(); ctx.moveTo(-4.4 * u, -27.4 * u); ctx.lineTo(19.6 * u, -27.4 * u); ctx.lineTo(20.2 * u, -26.4 * u); ctx.lineTo(-5 * u, -26.4 * u); ctx.closePath(); ctx.fill(); // the visor
+  // windows (positions shared with the night-lighting code): frames, sky reflection
   for (let k = 0; k < 3; k++) {
-    const x = (-3 + k * 8) * u, y = -26 * u, w = 5 * u, h = 5 * u, rk = 0.5 * u;
-    const fr = new Path2D(); fr.moveTo(x - 0.6 * u + rk, y - 0.6 * u); fr.lineTo(x + w + 0.6 * u + rk, y - 0.6 * u); fr.lineTo(x + w + 0.6 * u, y + h + 0.6 * u); fr.lineTo(x - 0.6 * u, y + h + 0.6 * u); fr.closePath();
-    ctx.fillStyle = '#2a2e30'; ctx.fill(fr);
-    const gl = new Path2D(); gl.moveTo(x + rk, y); gl.lineTo(x + w + rk, y); gl.lineTo(x + w, y + h); gl.lineTo(x, y + h); gl.closePath();
-    const wg = ctx.createLinearGradient(x, y, x + w, y + h); wg.addColorStop(0, '#a8bcc4'); wg.addColorStop(0.5, '#62767e'); wg.addColorStop(1, '#3a4a50'); ctx.fillStyle = wg; ctx.fill(gl);
-    ctx.strokeStyle = 'rgba(255,255,255,0.35)'; ctx.lineWidth = 0.4 * u; ctx.beginPath(); ctx.moveTo(x + 0.9 * u, y + h - 0.8 * u); ctx.lineTo(x + w - 0.4 * u, y + 0.8 * u); ctx.stroke();
-    ctx.fillStyle = '#4a4740'; ctx.beginPath(); ctx.moveTo(x - 0.9 * u, y + h + 0.6 * u); ctx.lineTo(x + w + 0.9 * u, y + h + 0.6 * u); ctx.lineTo(x + w + 0.5 * u, y + h + 1.1 * u); ctx.lineTo(x - 0.5 * u, y + h + 1.1 * u); ctx.closePath(); ctx.fill(); // the sill
-    const wr = ctx.createLinearGradient(0, y + h + 1.1 * u, 0, y + h + 4 * u); wr.addColorStop(0, 'rgba(130,70,34,0.45)'); wr.addColorStop(1, 'rgba(130,70,34,0)'); ctx.fillStyle = wr; ctx.fillRect(x + (1 + k) * u, y + h + 1.1 * u, 0.45 * u, 3 * u); // a weep of rust
+    const x = (-3 + k * 8) * u, y = -26 * u, w = 5 * u, h = 5 * u;
+    ctx.fillStyle = '#2a2e30'; ctx.beginPath(); ctx.roundRect(x - 0.5 * u, y - 0.5 * u, w + u, h + u, 0.8 * u); ctx.fill();
+    const wg = ctx.createLinearGradient(x, y, x + w, y + h);
+    wg.addColorStop(0, '#a8bcc4'); wg.addColorStop(0.5, '#62767e'); wg.addColorStop(1, '#3a4a50');
+    ctx.fillStyle = wg; ctx.fillRect(x, y, w, h);
+    ctx.strokeStyle = 'rgba(255,255,255,0.35)'; ctx.lineWidth = 0.4 * u; ctx.beginPath(); ctx.moveTo(x + 0.8 * u, y + h - 0.8 * u); ctx.lineTo(x + w - 0.8 * u, y + 0.8 * u); ctx.stroke();
   }
   // door with a porthole, life ring on the wall. (5.9.3) A steel door painted deep olive in a dark frame, brass dogs
   // and handle, its porthole lamp-lit from the cabin: the one dark, warm thing on the white wheelhouse
