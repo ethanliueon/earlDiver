@@ -737,9 +737,9 @@ export class Renderer {
       const r = (f ? Math.max(16, ppm * (f.len * 0.8 + 0.45)) : Math.max(14, ppm * 0.5)) * (1 + 0.1 * Math.sin(g.time * 4));
       ctx.save(); if (guide.door) ctx.globalAlpha = 0; // (4.3.5) the door glows itself
       // (5.5.5) as every mark the tutorial makes: cream with a dark olive edge (no white glow), breathing out once a while
-      ctx.strokeStyle = 'rgba(18,22,12,0.7)'; ctx.lineWidth = 4; ctx.beginPath(); ctx.arc(cx, cy, r, 0, TAU); ctx.stroke();
-      ctx.strokeStyle = 'rgba(230,222,196,0.9)'; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(cx, cy, r, 0, TAU); ctx.stroke();
-      { const q = (g.time * 0.6) % 1; ctx.strokeStyle = `rgba(230,222,196,${(0.45 * (1 - q)).toFixed(3)})`; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.arc(cx, cy, r * (1 + 0.5 * q), 0, TAU); ctx.stroke(); }
+      // (7.6.81, owner) no outlined circle: a soft patch of lighter water round it, brightest in the middle and fading out, breathing slowly
+      { const rr = r * 1.15, lg = ctx.createRadialGradient(cx, cy, 0, cx, cy, rr); lg.addColorStop(0, 'rgba(230,222,196,0.2)'); lg.addColorStop(0.6, 'rgba(230,222,196,0.12)'); lg.addColorStop(1, 'rgba(230,222,196,0)');
+        ctx.fillStyle = lg; ctx.beginPath(); ctx.arc(cx, cy, rr, 0, TAU); ctx.fill(); }
       ctx.restore();
       // (4.3.2) a prompt beside the fish, only where the game's own prompts don't already say it (swinging the net,
       // "it got away"): a brass key-cap, or a mouse with its left button lit, and the words

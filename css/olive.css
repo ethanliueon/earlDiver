@@ -2434,16 +2434,10 @@ html body #store .st-tabs button[data-tab="test"]:not(#_a):not(#_b) { font-size:
 html body .store-panel .st-x:not(#_a):not(#_b):not(#_c):not(#_d):not(#_e) { top: -20px; }
 html body .store-panel .st-shopplate .pet-have:not(#_a):not(#_b) { top: -9px; }
 
-/* (7.6.79, owner) the tutorial's glove tapping a thing in the water: it comes down onto it, presses and lifts, then fades,
-   and again (no bobbing toward it from the diver) */
-html body #tut-spot .ts-arrow.aim.tap:not(#_a):not(#_b) { animation: ts-tap 1.5s ease-in-out infinite; }
-@keyframes ts-tap { 0% { opacity: 0; translate: 0 -14px; scale: 1.04; } 18% { opacity: 1; translate: 0 -6px; scale: 1.04; } 38% { opacity: 1; translate: 0 0; scale: 0.9; }
-  52% { opacity: 1; translate: 0 -4px; scale: 1; } 72% { opacity: 1; translate: 0 -6px; scale: 1; } 100% { opacity: 0; translate: 0 -10px; scale: 1; } }
-
-/* (7.6.80, owner) the tapping hand (its own picture, tutspot tapHandURL) in place of the pointing glove on a thing in the water:
-   it comes down, presses (three short strokes flick from the fingertip), lifts and fades, and again */
-html body #tut-spot .ts-arrow.aim.tap:not(#_a):not(#_b):not(#_c) { width: var(--tap-w, 46px) !important; height: var(--tap-h, 60px) !important; background: var(--tap-hand) center / contain no-repeat !important; border: 0 !important; animation: ts-tap2 1.6s ease-in-out infinite; filter: none !important; }
-html body #tut-spot .ts-arrow.aim.tap:not(#_a):not(#_b):not(#_c)::before, html body #tut-spot .ts-arrow.aim.tap:not(#_a):not(#_b):not(#_c)::after { content: none !important; display: none !important; }
-html body #tut-spot .ts-arrow.aim.tap:not(#_a):not(#_b):not(#_c)::after { content: '' !important; display: block !important; position: absolute; left: 50%; bottom: -16px; width: 34px; height: 17px; margin-left: -17px; background: var(--tap-fx) center / contain no-repeat; opacity: 0; animation: ts-tapfx 1.6s ease-out infinite; }
-@keyframes ts-tap2 { 0% { opacity: 0; translate: 0 -12px; } 20% { opacity: 1; translate: 0 -8px; } 38% { opacity: 1; translate: 0 6px; scale: 0.95; } 50% { opacity: 1; translate: 0 -2px; scale: 1; } 75% { opacity: 1; translate: 0 -6px; } 100% { opacity: 0; translate: 0 -10px; } }
-@keyframes ts-tapfx { 0%, 34% { opacity: 0; scale: 0.6; } 40% { opacity: 1; scale: 1; } 62% { opacity: 0; scale: 1.25; } 100% { opacity: 0; } }
+/* (7.6.81, owner) the tutorial's glove tapping a thing in the water, as a phone game shows it: it stays, comes down quickly,
+   squashes a little as it presses, and a soft bone dot swells and fades under its fingertip; it lifts, waits, and taps again */
+html body #tut-spot .ts-arrow.aim.tap:not(#_a):not(#_b) { animation: ts-press 1.2s ease-in-out infinite; transform-origin: 45% 88%; }
+html body #tut-spot .ts-arrow.aim.tap:not(#_a):not(#_b)::after { content: ''; position: absolute; left: 32px; top: 70px; width: 26px; height: 26px; margin: -13px 0 0 -13px; border-radius: 50%;
+  background: radial-gradient(circle, rgba(236,228,204,0.75), rgba(236,228,204,0.3) 55%, rgba(236,228,204,0) 72%); opacity: 0; animation: ts-touch 1.2s ease-out infinite; pointer-events: none; }
+@keyframes ts-press { 0% { translate: 0 -12px; scale: 1; } 18% { translate: 0 0; scale: 1; } 26% { translate: 0 1px; scale: 0.94; } 34% { translate: 0 0; scale: 1; } 52% { translate: 0 -12px; scale: 1; } 100% { translate: 0 -12px; scale: 1; } }
+@keyframes ts-touch { 0%, 20% { opacity: 0; scale: 0.4; } 26% { opacity: 1; scale: 0.8; } 58% { opacity: 0; scale: 1.5; } 100% { opacity: 0; scale: 1.5; } }

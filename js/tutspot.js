@@ -12,33 +12,6 @@
 // where); sprinting is the stick pushed to its rim.
 const TAP = { interact: 'f', use: ' ', net: '1', sprint: 'sprint', quests: 'o', inventory: 'b', journal: 'j', trawl: 'n', tank: 't', airtank: 'r' };
 
-// (7.6.80, owner) the tapping hand, its own picture (the pointing glove stays for buttons): the back of a bare hand seen
-// from above, the index finger straight down and the others curled under, painted bone with a soft shade across it and a
-// worn olive cuff; with it, three short strokes that flick out from the fingertip as it presses
-let TAP_HAND = null;
-export function tapHandURL() {
-  if (TAP_HAND || typeof document === 'undefined') return TAP_HAND; const W = 120, H = 156, c = document.createElement('canvas'); c.width = W; c.height = H; const x = c.getContext('2d');
-  const body = new Path2D(); // back of the hand with the thumb at its left, the index finger running down to the tip at (60, 150)
-  body.moveTo(34, 30); body.bezierCurveTo(30, 52, 28, 70, 32, 86); body.bezierCurveTo(24, 82, 14, 76, 12, 86); body.bezierCurveTo(10, 96, 24, 104, 38, 112);
-  body.bezierCurveTo(44, 116, 48, 118, 50, 120); body.lineTo(50, 142); body.bezierCurveTo(50, 152, 70, 152, 70, 142); body.lineTo(70, 112);
-  body.bezierCurveTo(78, 112, 84, 108, 86, 104); body.bezierCurveTo(94, 104, 98, 96, 96, 88); body.bezierCurveTo(100, 82, 98, 70, 92, 64); body.bezierCurveTo(92, 52, 90, 40, 88, 30); body.closePath();
-  x.save(); x.shadowColor = 'rgba(0,0,0,0.55)'; x.shadowBlur = 6; x.shadowOffsetY = 3; x.fillStyle = '#d9cfb4'; x.fill(body); x.restore();
-  x.save(); x.clip(body); const g = x.createLinearGradient(14, 0, 100, 0); g.addColorStop(0, 'rgba(255,250,232,0.55)'); g.addColorStop(0.45, 'rgba(255,250,232,0)'); g.addColorStop(1, 'rgba(70,58,36,0.42)'); x.fillStyle = g; x.fillRect(0, 0, W, H);
-  const g2 = x.createLinearGradient(0, 60, 0, 150); g2.addColorStop(0, 'rgba(0,0,0,0)'); g2.addColorStop(1, 'rgba(70,58,36,0.22)'); x.fillStyle = g2; x.fillRect(0, 0, W, H);
-  x.strokeStyle = 'rgba(96,80,52,0.5)'; x.lineWidth = 1.6; x.lineCap = 'round'; // the curled fingers' knuckles and the finger's crease
-  for (const [x0, y0, x1, y1] of [[70, 108, 84, 102], [72, 96, 92, 90], [74, 84, 94, 76]]) { x.beginPath(); x.moveTo(x0, y0); x.quadraticCurveTo((x0 + x1) / 2, y1 + 6, x1, y1); x.stroke(); }
-  x.beginPath(); x.moveTo(53, 128); x.quadraticCurveTo(60, 131, 67, 128); x.stroke(); x.beginPath(); x.moveTo(32, 88); x.quadraticCurveTo(40, 98, 48, 104); x.stroke();
-  x.restore(); x.strokeStyle = 'rgba(70,58,38,0.7)'; x.lineWidth = 1.2; x.stroke(body);
-  const cuff = new Path2D(); cuff.moveTo(31, 8); cuff.lineTo(91, 8); cuff.lineTo(89, 32); cuff.lineTo(33, 32); cuff.closePath(); // the cuff: worn olive cloth
-  const cg = x.createLinearGradient(31, 0, 91, 0); cg.addColorStop(0, '#5e6845'); cg.addColorStop(1, '#353d28'); x.fillStyle = cg; x.fill(cuff); x.strokeStyle = 'rgba(20,24,14,0.8)'; x.lineWidth = 1.2; x.stroke(cuff);
-  x.strokeStyle = 'rgba(214,206,170,0.25)'; x.beginPath(); x.moveTo(33, 13); x.lineTo(89, 13); x.stroke();
-  TAP_HAND = { url: c.toDataURL(), w: W, h: H, tipX: 60 / W, tipY: 150 / H };
-  // the press: three short bone strokes round the fingertip
-  const f = document.createElement('canvas'); f.width = 60; f.height = 30; const fx = f.getContext('2d'); fx.strokeStyle = 'rgba(236,228,204,0.9)'; fx.lineWidth = 3; fx.lineCap = 'round';
-  for (const [a, b, c2, d2] of [[8, 22, 16, 18], [30, 6, 30, 14], [52, 22, 44, 18]]) { fx.beginPath(); fx.moveTo(a, b); fx.lineTo(c2, d2); fx.stroke(); }
-  TAP_HAND.fx = f.toDataURL(); return TAP_HAND;
-}
-
 const PAD = 5;
 
 // (4.3.6) while the spotlight points at something on a screen (a panel, a shop, a confirm), nothing else can be
@@ -231,10 +204,9 @@ export class TutSpot {
       const [px, py, pw, ph] = spot.pt; this.hole.style.display = 'none';
       // (7.6.79, owner) a thing to tap in the water (the tutorial's fish): the glove comes down onto it from above, presses,
       // and fades, again and again, never a line from the diver (it swung round as he moved)
-      if (spot.tap) { const T = tapHandURL(), hw = 46, hh = hw * T.h / T.w, tipY = py - ph / 2 - 10; /* (7.6.80, owner) its fingertip a little above the fish, pressing down onto it */
-        const ax = px - (T.tipX - 0.5) * hw, ay = tipY - (T.tipY - 0.5) * hh; this.arrow.style.display = 'block'; setClass(this.arrow, 'ts-arrow aim tap');
-        if (!this.arrow.dataset.tap) { this.arrow.dataset.tap = 1; this.arrow.style.setProperty('--tap-hand', `url("${T.url}")`); this.arrow.style.setProperty('--tap-fx', `url("${T.fx}")`); }
-        this.arrow.style.setProperty('--tap-w', hw + 'px'); this.arrow.style.setProperty('--tap-h', hh.toFixed(1) + 'px'); Object.assign(this.arrow.style, { left: ax.toFixed(1) + 'px', top: ay.toFixed(1) + 'px', transform: 'translate(-50%, -50%)' }); return; }
+      if (spot.tap) { const G = 71, tipY = py - ph / 2 - 8; /* (7.6.81, owner) the one pointing glove, straight down, its fingertip a little above the fish; it taps (olive.css ts-press) */
+        const ax = px - (0.451 - 0.5) * G, ay = tipY - (0.883 - 0.5) * G; this.arrow.style.display = 'block'; setClass(this.arrow, 'ts-arrow down aim tap');
+        Object.assign(this.arrow.style, { left: ax.toFixed(1) + 'px', top: ay.toFixed(1) + 'px', transform: 'translate(-50%, -50%)' }); return; }
       this.aimArrow(null, px - pw / 2, py - ph / 2, pw, ph); return;
     } else {
       this.lastTarget = null; if (this.litEl) { this.litEl.classList.remove('ts-lit'); this.litEl = null; }
