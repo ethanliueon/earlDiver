@@ -1802,6 +1802,9 @@ function tapFish(x, y) {
   for (const c of g.fauna.list) if (!c.dead && !c.pet && !c.companion && c.sp) tryOne(c.sp, c.x, c.y, c);
   for (const st of g.world.statics || []) if (st.sp) tryOne(st.sp, st.x, st.y - Math.min(1, st.sp.len * 0.4), null);
   if (!best) return false;
+  // (7.6.85, owner) a name shows again only 5 s after it last showed on that animal: tapping it over and over does nothing more
+  { const T = g.tapNameT || (g.tapNameT = new Map()), key = best.c || best.sp.id + ':' + Math.round(best.x), last = T.get(key);
+    if (last != null && g.time - last < 5 && g.journal.has(best.sp.id)) return true; T.set(key, g.time); if (T.size > 200) T.clear(); }
   if (!g.journal.has(best.sp.id) || ((QUEST_MAIN[questsOf(profile).main] || {}).id === 'firstfish' && firstFishPart(profile) <= 1)) interact(best, false);
   else { const R = rarityOf(best.sp); (g.obsLabels || (g.obsLabels = [])).push({ c: best.c || null, x: best.x, y: best.y, text: best.sp.name, rar: null, nameCol: R ? R.col : null, t: 0 }); audio.ready && audio.uiSoft && audio.uiSoft(); }
   return true;

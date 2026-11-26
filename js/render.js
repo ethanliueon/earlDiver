@@ -635,6 +635,18 @@ export class Renderer {
     }
     ctx.setTransform(baseM);
     if (fl) { fl.setTransform(baseM); this.layerEnd(ctx, g, fl, null); } // (2.3.2: no rim-and-belly shading on the animals: it popped in and out around whatever was drawn live)
+    // (7.6.85, owner) the first fish waiting to be tapped: "tap  tap  tap" written into the water beside it, on the side away
+    // from the diver, each word coming up and sinking back in turn. Drawn here, in the world, so the snow, the bubbles,
+    // the front kelp and the water's own veil all pass in front of it: it reads as part of the sea, not as a label on the glass
+    if (g.tutFocus && g.tutFocus.kind === 'observe' && g.tutFocus.fish && !g.tutFocus.fish.dead) {
+      const f = g.tutFocus.fish, fx = S(f.x), fy = Sy(f.y), side = S(g.earl.inSub ? g.sub.x : g.earl.x) > fx ? -1 : 1, fs = clamp(ppm * 0.42, 14, 26), gapW = fs * 2.4, r0 = Math.max(18, ppm * (f.len * 0.8 + 0.6));
+      const t = g.time - (g.tutFocus.t0 || 0);
+      ctx.save(); ctx.font = `600 ${fs.toFixed(1)}px "Barlow Semi Condensed", "Arial Narrow", sans-serif`; ctx.textBaseline = 'middle'; ctx.textAlign = side > 0 ? 'left' : 'right';
+      for (let i = 0; i < 3; i++) { const ph = ((t * 0.9) - i * 0.33) % 1.6, k = ph < 0 ? 0 : ph < 0.25 ? ph / 0.25 : ph < 0.75 ? 1 : ph < 1.1 ? 1 - (ph - 0.75) / 0.35 : 0, a = 0.16 + 0.42 * k;
+        const x = fx + side * (r0 + i * gapW), y = fy - fs * 0.1 + Math.sin(g.time * 1.3 + i) * 1.5 - k * 2;
+        ctx.fillStyle = `rgba(6,10,10,${(a * 0.5).toFixed(3)})`; ctx.fillText('tap', x + 1, y + 1.5); // a soft dark under it, as ink in water
+        ctx.fillStyle = `rgba(226,220,196,${a.toFixed(3)})`; ctx.fillText('tap', x, y); }
+      ctx.restore(); }
     // ---- pickups + lanterns (over the veiled layer, so nothing valuable hides behind the coral) ----
     for (const p of g.world.pickups) if (!p.taken && inView(p.x, p.y)) {
       if (p.rot === undefined) p.rot = p.y > g.world.floorAt(p.x) - 0.6 ? seabedPose(g.world, p.x, 0.25, true).rot : 0; // lying on the slope

@@ -406,15 +406,17 @@ export class Hud {
         return { key: hu ? 'u' : 'f', icon: ctxIcon || 'hand', on: hon, lit: hon, why: 'Nothing in reach', inter: true }; };
     // (7.6.71, owner) the arc, top to bottom: the action button, skill 3, skill 2, the mythic slot (skill 1). The lamp (the
     // sub's lights in her) is a small coin above it; the glow sticks are used from the bag. At the wheel, as before
+    // (7.6.85, owner) the same four places everywhere (water, sub, deck, cabin, wheel), so nothing jumps when he goes in
+    // the water: the action button on top (at the wheel, the way back from it), then the three skills. The small coin
+    // above is the lamp (the sub's lights in her); at the wheel, the anchor
+    const anchorBtn = { key: 'g', icon: 'anchor', on: true, lit: !!(g.anchored && !g.anchorDir) };
     const A = atHelm ? [
-      { key: 'g', icon: 'anchor', on: true, lit: !!(g.anchored && !g.anchorDir) },
       { key: 'v', icon: 'door', on: true, lit: true, inter: true },
-      abil(),
-      light(),
+      skillN(3), skillN(2), skillN(1),
     ] : e.inSub ? [
       handSub ? { key: handSub, icon: 'hand', on: true, lit: true, inter: true } : { key: 'leavesub', icon: 'leave', on: true, inter: true, tutAlt: g.tutAction && g.tutAction.id === 'leavesub' ? 'f' : null },
       skillN(3), skillN(2), skillN(1),
-    ] : aboard ? [handBtn(), abil(), light()] /* on deck and in the cabin: the hand, the first skill, the lamp */ : [
+    ] : [
       handBtn(), skillN(3), skillN(2), skillN(1),
     ];
     // (5.6.1) under the radar, small and quiet: the journal and the bag, then what else is carried
@@ -604,9 +606,8 @@ e.inSub ? [
     { const kept = A.filter(Boolean); A.length = 0; A.push(...kept); } // (5.15.7) an empty place (the deck's old Dive in) leaves no gap
     A.forEach((a, i) => { const ang = mid + (A.length - 1) / 2 * stepA - i * stepA; btn(a, cx + Math.cos(ang) * rho0, cy + Math.sin(ang) * rho0, r); });
     // (7.6.71, owner) in the water the lamp is a smaller coin above the arc's top one (its old place is the second skill's)
-    if (!aboard && !atHelm && A.length) { const a0 = mid + (A.length - 1) / 2 * stepA, tx = cx + Math.cos(a0) * rho0, ty = cy + Math.sin(a0) * rho0, rl = r * 0.72, ly = ty - r - 7 * u - rl;
-      btn(light(), tx + r - rl, ly, rl); /* right-aligned with the coin under it */ this.arcTop = ly - rl; }
-    else if (A.length) this.arcTop = cy + Math.sin(mid + (A.length - 1) / 2 * stepA) * rho0 - r;
+    if (A.length) { const a0 = mid + (A.length - 1) / 2 * stepA, tx = cx + Math.cos(a0) * rho0, ty = cy + Math.sin(a0) * rho0, rl = r * 0.72, ly = ty - r - 7 * u - rl;
+      btn(atHelm ? anchorBtn : light(), tx + r - rl, ly, rl); /* right-aligned with the coin under it */ this.arcTop = ly - rl; }
     // (5.6.8) the top left is what is his: a painted stack of banknotes and the sum (no coin round it, as it is not a
     // button), the journal's coin beside it (HTML, placed by main.js at this.journalAt). The settings coin goes to the
     // top right corner, where a phone game keeps it; the depth moves left to make room (this.gearSpace)
