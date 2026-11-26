@@ -314,10 +314,13 @@ export function drawEarl(ctx, L, kick, moving, lampCol, rim, gear) {
   vg.addColorStop(0, '#3a5866'); vg.addColorStop(0.4, '#0c1a20'); vg.addColorStop(1, '#020507');
   ctx.fillStyle = vg;
   ctx.beginPath(); ctx.ellipse(hx + 2.2 * u, hy + 3.6 * u, 3.9 * u, 3.6 * u, 0.3, 0, Math.PI * 2); ctx.fill();
-  // (6.5.4) behind the glass, faintly: the bridge of his nose and his eye, so there is a man in there
+  // (7.6.51, owner) no face behind the glass: the suit's own mask is dark right through (a helmet, when there are helmets, may
+  // show one); only the water's light slides across the lens
+  if (gear && gear.faceShow) {
   ctx.fillStyle = (SKINS[DIVER_LOOK.skin] || SKINS[2])[1]; ctx.globalAlpha *= 0.4; ctx.beginPath(); ctx.ellipse(hx + 1.4 * u, hy + 4.4 * u, 2.4 * u, 2 * u, 0.3, 0, Math.PI * 2); ctx.fill(); ctx.globalAlpha /= 0.4;
   ctx.fillStyle = 'rgba(232,222,206,0.5)'; ctx.beginPath(); ctx.ellipse(hx + 2.6 * u, hy + 4.4 * u, 0.7 * u, 0.5 * u, 0, 0, Math.PI * 2); ctx.fill();
   ctx.fillStyle = 'rgba(30,24,20,0.75)'; ctx.beginPath(); ctx.arc(hx + 2.6 * u, hy + 4.6 * u, 0.38 * u, 0, Math.PI * 2); ctx.fill();
+  }
   ctx.strokeStyle = 'rgba(215,235,245,0.45)'; ctx.lineWidth = 0.7 * u;
   ctx.beginPath(); ctx.arc(hx + 2.4 * u, hy + 3.4 * u, 2.6 * u, 3.6, 4.6); ctx.stroke(); // reflection
   ctx.strokeStyle = 'rgba(160,176,186,0.28)'; ctx.lineWidth = 0.8 * u; ctx.beginPath(); ctx.arc(hx, hy, 6.8 * u, 4.2, 5.4); ctx.stroke(); // (6.5.4) the hood's rubber catching the light across the crown

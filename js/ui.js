@@ -1472,6 +1472,50 @@ export class UI {
         const v = fin ? f.to : f.from + (f.to - f.from) * (1 - Math.pow(1 - el / 700, 3)); f.cur = v; const b = document.querySelector(`#inventory .st-cell[data-st="${k}"] b`); if (b && this.statFmt[k]) b.textContent = this.statFmt[k](v); }
       if (more) this.statRaf = requestAnimationFrame(step); };
     this.statRaf = requestAnimationFrame(step); }
+  // (7.6.51, owner) behind the diver in the bag: a patch of the deep washed onto the plate, see-through and fading into it at
+  // an uneven edge (as the anglerfish's water in the quests): darker below, a low mound of seabed under his feet, a sea fan,
+  // a few sea whips leaning in the current, a clump of tube sponges, and a little sea snow. Drawn once
+  eqBackdrop(W, H) {
+    if (this.eqBd && this.eqBd.width === W && this.eqBd.height === H) return this.eqBd;
+    const c = document.createElement('canvas'); c.width = W; c.height = H; const x = c.getContext('2d');
+    let sd = 5; const rnd = () => ((sd = (sd * 16807) % 2147483647) / 2147483647);
+    const w = document.createElement('canvas'); w.width = W; w.height = H; const y = w.getContext('2d');
+    // the water: an uneven upright oval
+    const cx = W / 2, cy = H * 0.5, rx = W * 0.44, ry = H * 0.46, blob = new Path2D(), ph = [rnd() * 6, rnd() * 6];
+    for (let k = 0; k <= 72; k++) { const t = (k / 72) * Math.PI * 2, r = 1 + 0.06 * Math.sin(3 * t + ph[0]) + 0.035 * Math.sin(7 * t + ph[1]); const px = cx + Math.cos(t) * rx * r, py = cy + Math.sin(t) * ry * r; k ? blob.lineTo(px, py) : blob.moveTo(px, py); }
+    blob.closePath();
+    const gr = y.createLinearGradient(0, 0, 0, H); gr.addColorStop(0, '#1d3a44'); gr.addColorStop(0.6, '#0c1c23'); gr.addColorStop(1, '#060e12');
+    y.filter = 'blur(14px)'; y.fillStyle = gr; y.fill(blob); y.filter = 'none';
+    y.save(); y.clip(blob);
+    // seabed: a low mound with a softer one behind it
+    const bed = (top, col, a) => { y.fillStyle = col; y.globalAlpha = a; y.beginPath(); y.moveTo(0, H); for (let i = 0; i <= 24; i++) { const px = (i / 24) * W, py = top - Math.sin((i / 24) * Math.PI) * H * 0.05 + Math.sin(i * 1.7 + top) * 3; y.lineTo(px, py); } y.lineTo(W, H); y.closePath(); y.fill(); y.globalAlpha = 1; };
+    bed(H * 0.86, '#13262c', 0.8); bed(H * 0.92, '#081215', 1);
+    // a sea fan: a flat lace web held on branching ribs from one stem, behind on the left
+    { const bx = W * 0.2, by = H * 0.9, tips = [];
+      const br = (px, py, a, len, wdt, dpt) => { const ex = px + Math.cos(a) * len, ey = py + Math.sin(a) * len; y.lineWidth = wdt; y.beginPath(); y.moveTo(px, py); y.quadraticCurveTo((px + ex) / 2 + (rnd() - 0.5) * 5, (py + ey) / 2 + (rnd() - 0.5) * 3, ex, ey); y.stroke();
+        if (dpt >= 4 || len < 6) { tips.push([ex, ey]); return; } br(ex, ey, a - 0.28 - rnd() * 0.25, len * (0.72 + rnd() * 0.12), wdt * 0.7, dpt + 1); br(ex, ey, a + 0.28 + rnd() * 0.25, len * (0.72 + rnd() * 0.12), wdt * 0.7, dpt + 1); };
+      y.strokeStyle = 'rgba(70, 92, 86, 0.75)'; y.lineCap = 'round'; br(bx, by, -Math.PI / 2 + 0.08, 40, 3.6, 0);
+      tips.sort((p, q) => Math.atan2(p[1] - by, p[0] - bx) - Math.atan2(q[1] - by, q[0] - bx));
+      y.fillStyle = 'rgba(64, 88, 82, 0.28)'; y.beginPath(); y.moveTo(bx, by - 20); for (const [tx, ty] of tips) y.lineTo(tx, ty); y.closePath(); y.fill(); // the web between the ribs
+      y.strokeStyle = 'rgba(80, 104, 96, 0.18)'; y.lineWidth = 0.8; for (let i = 0; i < 14; i++) { const t = tips[Math.floor(rnd() * tips.length)], q2 = tips[Math.floor(rnd() * tips.length)]; y.beginPath(); y.moveTo(t[0], t[1]); y.lineTo((t[0] + q2[0]) / 2, (t[1] + q2[1]) / 2 + 6); y.stroke(); } }
+    // sea whips: long stalks leaning with the current, thick at the foot and thinning out
+    for (let i = 0; i < 4; i++) { const bx = W * (0.68 + i * 0.07), by = H * (0.9 + rnd() * 0.03), len = H * (0.2 + rnd() * 0.16), lean = 16 + rnd() * 24, n = 14;
+      for (let k = 0; k < n; k++) { const t0 = k / n, t1 = (k + 1) / n, P = (t) => [bx + lean * t * t, by - len * t]; const [x0, y0] = P(t0), [x1, y1] = P(t1);
+        y.strokeStyle = `rgba(${74 + i * 6}, ${96 + i * 4}, 86, ${0.8 - t0 * 0.35})`; y.lineWidth = 3.4 * (1 - t0 * 0.8); y.lineCap = 'round'; y.beginPath(); y.moveTo(x0, y0); y.lineTo(x1, y1); y.stroke(); } }
+    // barrel sponges: a few soft-sided vases, open at the top, each its own size and lean
+    for (let i = 0; i < 3; i++) { const bx = W * 0.4 + i * 15 + rnd() * 5, base = H * 0.905, h = 20 + rnd() * 24, wd = 10 + rnd() * 6, lean = (rnd() - 0.5) * 6, top = base - h;
+      y.fillStyle = `rgba(${54 + i * 6}, ${72 + i * 4}, 68, 0.9)`; y.beginPath(); y.moveTo(bx - wd * 0.3, base);
+      y.bezierCurveTo(bx - wd * 0.75, base - h * 0.4, bx - wd * 0.6 + lean, top + h * 0.2, bx - wd * 0.5 + lean, top);
+      y.lineTo(bx + wd * 0.5 + lean, top); y.bezierCurveTo(bx + wd * 0.6 + lean, top + h * 0.2, bx + wd * 0.75, base - h * 0.4, bx + wd * 0.3, base); y.closePath(); y.fill();
+      y.fillStyle = 'rgba(4, 10, 12, 0.85)'; y.beginPath(); y.ellipse(bx + lean, top + 1, wd * 0.42, 2, 0, 0, Math.PI * 2); y.fill();
+      y.strokeStyle = 'rgba(120, 140, 130, 0.25)'; y.lineWidth = 1; y.beginPath(); y.ellipse(bx + lean, top + 1, wd * 0.5, 2.4, 0, Math.PI, Math.PI * 2); y.stroke(); }
+    // sea snow: tiny sharp specks
+    for (let i = 0; i < 60; i++) { y.fillStyle = `rgba(200, 212, 204, ${0.15 + rnd() * 0.35})`; const px = rnd() * W, py = rnd() * H * 0.85; y.fillRect(px, py, rnd() < 0.3 ? 2 : 1, rnd() < 0.2 ? 2 : 1); }
+    y.restore();
+    // the whole patch see-through, so the plate shows through it
+    x.globalAlpha = 0.62; x.drawImage(w, 0, 0); x.globalAlpha = 1;
+    return (this.eqBd = c);
+  }
   // (3.0.35) the locker is laid out at one size, 1240 x 820, and scaled to fit whatever screen it is on: a
   // phone sees the same locker as a computer, only smaller
   fitInventory() {
@@ -1581,6 +1625,7 @@ export class UI {
       const draw = () => {
         const cv = this.spinCv, c = cv.getContext('2d'), W2 = cv.width, H2 = cv.height, t = performance.now() / 1000, k = Math.cos(sp.a);
         c.clearRect(0, 0, W2, H2);
+        c.drawImage(this.eqBackdrop(W2, H2), 0, 0); // (7.6.51, owner) a patch of the deep behind him
         // his shadow on the floor of the stand
         c.fillStyle = 'rgba(0,0,0,0.35)'; c.beginPath(); c.ellipse(W2 / 2, H2 * 0.93, W2 * 0.22, H2 * 0.03, 0, 0, Math.PI * 2); c.fill();
         c.save(); c.translate(W2 / 2, H2 * 0.5 + Math.sin(t * 1.2) * 2); c.scale(Math.sign(k || 1) * Math.max(0.12, Math.abs(k)), 1); c.rotate(-Math.PI / 2);
