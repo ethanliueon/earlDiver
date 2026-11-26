@@ -2723,6 +2723,7 @@ function update(dt) {
     const atBoat = (Math.abs(e.x - BOAT.x) < 14 && e.y < 4 && !e.inSub) || (e.inSub && g.sub.docked);
     if (pressed.has('b')) ui.toggleInventory();
     if (pressed.has('store')) ui.toggleStore(); // (6.4.0)
+    if (pressed.has('cashshop')) { ui.storeTab = 'coins'; ui.toggleStore(true); const st = document.getElementById('store'); if (st && ui.pearlPage) st.innerHTML = ui.pearlPage(); } // (7.6.72, owner) the + by the money: money for pearls
     if (pressed.has('pearlshop')) { ui.toggleStore(true); ui.storeTab = 'pearls'; const st = document.getElementById('store'); if (st && ui.pearlPage) st.innerHTML = ui.pearlPage(); } // (7.6.71, owner) the + by the pearls: the shop's pearls page
     if (pressed.has('events')) ui.toggleEvents();
     // (4.0.0) the shipyard: part of the Margaret, opened with P anywhere aboard her (deck, cabin, wheel) or
