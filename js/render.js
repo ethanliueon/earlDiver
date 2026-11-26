@@ -287,11 +287,10 @@ export class Renderer {
     const dv = clamp((e.y - 40) / 80, 0, 1), ds = clamp((e.y - 150) / 250, 0, 1);
     const targetView = g.debugView || (g.mode === 'menu' ? 40 : g.helm ? 36 : (e.inSub ? lerp(46, 38, ds) : lerp(22, 26, dv)) * (this.zoomMul || 1) * (this.aimZoom || 1) * (g.lookZoom || 1)); /* (7.6.5) Lookout draws the view out */ /* (5.16.0) Dash's aim opens the view by its tier */ // (3.0.0) only the wheel changes the view; on deck it is the same as in the water
     const lk = g.legendK || 0; // (4.9.0) the legendary moment: the view leans in on it, about a tenth, and back
-    // (7.6.65, owner) entering the game the view starts where it should be (it eased in from the menu's wide view over six
-    // seconds, a slow creeping zoom under everything: the boat jittered against the water all through it); a change of view
-    // in play still eases, and stops when it is there instead of creeping on for ever
-    const wantV = targetView * (1 - 0.1 * lk), fresh = g.mode === 'play' && this.camMode !== 'play'; this.camMode = g.mode;
-    if (fresh) { this.viewW = wantV; this.camSnap = 2; this.ppHeld = null; this.ppLast = null; this.ppMoved = null; } else this.viewW = lerp(this.viewW, wantV, 1 - Math.exp(-dt * 1.2));
+    // (7.6.66, owner) the view eases to where it should be (the zoom on entering, the skills' zooms: kept, the owner likes
+    // them); it stops when it arrives instead of creeping on, and the scale it is heading for is known (zoomTarget), so the
+    // pictures painted at the screen's scale are painted once at that and scaled smoothly while the camera gets there
+    const wantV = targetView * (1 - 0.1 * lk); this.viewW = lerp(this.viewW, wantV, 1 - Math.exp(-dt * 1.2)); this.zoomTarget = this.W / wantV;
     if (Math.abs(this.viewW - wantV) < 0.01) this.viewW = wantV;
     // (7.4.0, owner) home on the autopilot: the view eases in and back out once, over a second and a half
     const hf = g.homeFx, hk = hf && hf.t < 1.5 ? Math.sin(Math.PI * hf.t / 1.5) : 0;
@@ -313,7 +312,7 @@ export class Renderer {
     if (g.helm) { tx = BOAT.x + 3 * Math.cos(BOAT.yaw || 0) + clamp(g.boatV || 0, -5, 5) * 1.6; ty = -2.5; } // at the wheel: the whole Margaret and the sub in her cradle, looking a little ahead the way she goes
     if (lk > 0 && g.legend && g.legend.c) { const q = 0.35 * lk; tx = lerp(tx, g.legend.c.x, q); ty = lerp(ty, g.legend.c.y, q); this.legendAt = g.legend.c; }
     // a jump (new dive, respawn) cuts straight there instead of sweeping across the map
-    if (Math.hypot(cam.x - tx, cam.y - ty) > 80 || this.camSnap > 0) { cam.x = tx; cam.y = ty; if (this.camSnap > 0) this.camSnap--; } // (7.6.65) and on entering: there at once
+    if (Math.hypot(cam.x - tx, cam.y - ty) > 80) { cam.x = tx; cam.y = ty; }
     const k = 1 - Math.exp(-dt * (g.mode === 'menu' ? 0.6 : 3));
     cam.x = lerp(cam.x, tx, k); cam.y = lerp(cam.y, ty, k);
     if (g.mode === 'play' && !g.helm && !(lk > 0)) { const mX = cam.w * 0.25, mY = cam.h * 0.25; cam.x = clamp(cam.x, e.x - mX, e.x + mX); cam.y = clamp(cam.y, Math.max(e.y, -1e9) - mY, e.y + mY); } // (7.6.26)
@@ -2885,9 +2884,11 @@ export class Renderer {
   // zoom is moving it holds the last settled value, and catches up 0.35 s after the zoom stops, so they are repainted once
   // when it settles instead of every frame of the zoom (on entering the game the boat jittered as it was)
   ppMoving() { return this.ppMoved != null && performance.now() / 1000 - this.ppMoved < 0.35; }
+  // (7.6.66, owner) the scale to paint the boat and the barge at: while a zoom moves, the scale it is heading for (painted
+  // once, scaled smoothly on the way, nothing repainted mid-zoom and no pop when it lands); otherwise the screen's own
   steadyPpm(ppm) { const now = performance.now() / 1000;
     if (this.ppLast == null || Math.abs(ppm - this.ppLast) > 0.0005) { this.ppLast = ppm; this.ppMoved = now; }
-    if (this.ppHeld == null || now - this.ppMoved > 0.35) this.ppHeld = ppm; return this.ppHeld; }
+    const tgt = this.zoomTarget; return tgt && Math.abs(tgt - ppm) > 0.02 ? tgt : ppm; }
   // (7.6.62, owner) the boat's weathering is a fixed picture (assets/textures/boat_wear.png, baked by tools/bake_pngs.cjs from
   // boatWearProc below), only scaled to the size she is painted at: it was generated afresh for every size, so while the
   // camera settled on entering the game her rust and grime reshuffled from frame to frame
