@@ -1480,7 +1480,7 @@ function tutor() {
       if (!e.inSub) toSub();
       else if (!tankO) { if (P.tutTankCard) set(7); else { g.tutVig = 1; text = 'Put your catch in the sub\'s tank'; offer('tank', 'Open the tank room', 'T'); } }
       else if (!inTank) { text = 'Drag a fish from your bag into the tank'; g.tutDrag = 1; spot = null; /* only the ghost hand: no second pointer */ }
-      else if (!P.tutTankCard && !cardOpen) { text = 'Tap the fish in the tank'; spot = { sel: ['#tankroom .tr-zone[data-z="tank"]'], light: true }; }
+      else if (!P.tutTankCard && !cardOpen) { text = 'Tap the fish in the tank'; { const fp = ui.tankRoom && ui.tankRoom.fishPoint(g); spot = fp ? { pt: fp, inPanel: true } : { sel: ['#tankroom .tr-zone[data-z="tank"]'], light: true }; } } /* (7.6.68, owner) the glove at the fish itself, following it as it swims (it pointed at the tank's corner) */
       else if (!P.tutTankCard) { text = 'Its card'; spot = { sel: ['#tankroom .tr-card'], card: { id: 'tankcard', side: 'left', text: 'Its card: what it is, where you caught it, how deep it lives and how it is doing. Animals from the shallows live happily in this tank. An animal from deep water dies at the surface unless it goes into a pressure chamber; its card says so.' } }; }
       else { text = 'Close the tank room'; spot = { sel: ['#tankroom .tr-close'] }; }
     }
@@ -3547,7 +3547,7 @@ function frame(now) {
   if (g.says && g.says.length) { for (const m of g.says) m.t += dt; g.says = g.says.filter((m) => m.t < 4); }
   beacon.update(g, dt, !!(ui.tankOpen && ui.tankOpen())); // (4.0.2) always: the alarm keeps going whatever panel is open // (3.3.0) the alarm beacon (not over the locker)
   ui.update(g, dt);
-  { const on = g.mode === 'play' && !g.paused && !g.kill && !!profile && (profile.tut === 'on' || !!g.lesson) && !!g.tut; const sp = on ? g.tut.spot : null, coverd = sp && !sp.sel && !sp.card && ui.anyOpen && ui.anyOpen('cabin davetalk'); /* (7.2.4) the cabin keeps the HUD, so its buttons can still be lit there */ tutSpot.update(on, coverd ? null : sp, on ? g.tut.text : null); } // (4.3.0) (5.4: a key or button step waits while a panel is open over the game)
+  { const on = g.mode === 'play' && !g.paused && !g.kill && !!profile && (profile.tut === 'on' || !!g.lesson) && !!g.tut; const sp = on ? g.tut.spot : null, coverd = sp && !sp.sel && !sp.card && !sp.inPanel && ui.anyOpen && ui.anyOpen('cabin davetalk'); /* (7.2.4) the cabin keeps the HUD, so its buttons can still be lit there */ tutSpot.update(on, coverd ? null : sp, on ? g.tut.text : null); } // (4.3.0) (5.4: a key or button step waits while a panel is open over the game)
   // dread colour grading on the scene canvas only
   const fx = g.fx;
   // no steady blur: it comes in slow pulses, a swell of fog every few seconds that clears again

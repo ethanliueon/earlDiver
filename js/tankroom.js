@@ -1047,6 +1047,11 @@ export class TankRoom {
     ctx.restore();
   }
 
+  // (7.6.68, owner) where the first live animal in the open tank is on the screen (for the tutorial's glove): [x, y, w, h]
+  fishPoint(g) { if (!g || this.room !== 'tank') return null; const G = this.geometry(), r = this.c.getBoundingClientRect();
+    const k = r.width / (this.c.offsetWidth || r.width); /* the room is laid out at one size and scaled to the screen */
+    for (const s of g.subTank || []) { if (s.pressed || s.pile) continue; const a = this.anim.get(s); if (!a) continue; return [r.left + (G.tank.x + a.x) * k, r.top + (G.tank.y + a.y) * k, 60 * k, 40 * k]; }
+    return null; }
   // ---------------- a fish, swimming as well as it can ----------------
   swim(g, s, inBag, box, L, dt, slow = 1) {
     let a = this.anim.get(s);

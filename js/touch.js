@@ -5,8 +5,8 @@ import { act } from './input.js';
 // Every finger is followed on its own. One that lands on a HUD button sends that button's action (input.js: held
 // while the finger stays, a short one a tap); one that lands
 // anywhere else in the left part of the screen grows a joystick where it landed. The stick is analogue: a small push
-// swims slowly, the rim is full speed, and pushed to the very edge he sprints. The base follows the thumb if it
-// drifts too far, so the stick never "runs out". The emulated mouse events a browser makes after a touch are
+// swims slowly, the rim is full speed, and pushed to the very edge he sprints. The base stays where the thumb landed
+// and the knob stops at its rim (7.6.68, owner). The emulated mouse events a browser makes after a touch are
 // suppressed, so a tap never also counts as a click.
 export class Touch {
   constructor(canvas, { buttonAt, active, onMessage, onTap, aim, onPress }) {
@@ -66,7 +66,7 @@ export class Touch {
   update(x, y) {
     const S = this.stick, R = this.radius();
     let dx = x - S.x, dy = y - S.y, d = Math.hypot(dx, dy);
-    if (d > R * 1.25) { const k = (d - R * 1.25) / d; S.x += dx * k; S.y += dy * k; dx = x - S.x; dy = y - S.y; d = Math.hypot(dx, dy); } // the base follows the thumb
+    // (7.6.68, owner) the base stays where the thumb first landed; the knob stops at its rim however far the thumb goes (it used to drag the base after it)
     const m = Math.min(1, d / R), dead = 0.12, mag = m < dead ? 0 : (m - dead) / (1 - dead);
     this.vec = { x: d ? dx / d * mag : 0, y: d ? dy / d * mag : 0, mag, on: true, sprint: d > R * (this.vec && this.vec.sprint ? 0.96 : 1.08) }; // (7.4.10) a margin: a thumb resting at the rim no longer flips walk and run several times a second
     this.paint(S.x, S.y, S.x + (d ? dx / d : 0) * Math.min(d, R), S.y + (d ? dy / d : 0) * Math.min(d, R), R);
