@@ -32,7 +32,7 @@ import { DAVE_FINDS, DAVE_RATE } from './dave.js';
 import { STATION_COLLAR } from './station_draw.js';
 import { oldStock, overTable, leftOf, nearLure } from './oldone.js';
 import { CHESTS } from './chests.js';
-import { giveRolled, wornInst, putOn2 } from './items.js';
+import { giveRolled, wornInst, putOn2, equipScroll, slotKey, bagSlotOf, fixMythSlot } from './items.js';
 import { abilityOf, abilityState, whyNot, ALL_ABILITIES, cooldownLeft, minLeft, MIN_CD, skipCost, fmtLeft, MYTH, NEXT_TIER, maxLoad, chargePrice, growCharges } from './abilities.js';
 import { startLegendFx } from './legendfx.js';
 import { SKILLS, RARITY, skillCol } from './item_data.js';
@@ -138,7 +138,20 @@ let profile = loadProfile();
 
 // what his suit does: pressure, air, speed (see SUITS)
 // what he has on (2.6.0): the tank's air, the fins (and a heavy tank's drag), the camera's card
+// (7.6.48, owner) the diver's own figures, everything he wears counted in: [key, label, value, text, 1 when higher is better]
+function statRows(P) { if (!P) return []; const S = suitOf(P), tk = worn(P, 'tank') || {}, nt = worn(P, 'net'), res = Math.max(0.4, 1 - 0.15 * skillLv(P, 'resilience'));
+  return [
+    ['air', 'Air', airMax(P), (v) => `${Math.round(v)} s`, 1],
+    ['press', 'Pressure from', S.press || 0, (v) => `${Math.round(v)} m`, 1],
+    ['resist', 'Pressure resist', Math.round((1 - res) * 100), (v) => `${Math.round(v)} %`, 1],
+    ['airuse', 'Air use', S.air || 1, (v) => `×${v.toFixed(2)}`, -1],
+    ['swim', 'Swim speed', statValue(P, 'swim') * (S.speed || 1) * (tk.speed || 1), (v) => v.toFixed(2), 1],
+    ['sprint', 'Sprint', statValue(P, 'sprint'), (v) => `×${v.toFixed(2)}`, 1],
+    ['bag', 'Bag', Math.round(statValue(P, 'bag')), (v) => `${Math.round(v)} spaces`, 1],
+    ['reach', 'Net reach', nt ? nt.range || 0 : 0, (v) => `${v.toFixed(1)} m`, 1],
+  ]; }
 function applyKit(e, P) {
+  fixMythSlot(P); // (7.6.48) a Heart in the bag's second slot (an older save) moves to the first
   kit(P); applySuit(e, P);
   // (6.0.0) the air he has is kept as it is when he changes tanks: a bigger tank holds more, it does not add any; a
   // smaller one keeps only what fits (said once). At the start of a run (nothing yet) he starts full
@@ -407,7 +420,8 @@ const ui = new UI({
     if (on && (k === 'necklace' || k === 'glowAdv') && glowKind() !== k) { const cur = glowKind(); P.spare[cur] = (P.spare[cur] || 0) + (g.items[cur] || 0); g.items[cur] = 0; P.glowKind = k; hud.toast(`${SUPPLIES[k].name}s on the belt`); } /* (6.0.1) one kind on the belt: the other goes back to the locker */ if (on) { const m = Math.min(supplyMax(P, k) - (g.items[k] || 0), P.spare[k] || 0); if (m > 0) { g.items[k] = (g.items[k] || 0) + m; P.spare[k] -= m; } } else { P.spare[k] = (P.spare[k] || 0) + (g.items[k] || 0); g.items[k] = 0; } syncProfile(); saveProfile(P); audio.ready && audio.click(); },
   onMessage: (m) => hud.toast(m),
   moneyAt: () => (hud.moneyAt), // (5.7.5) where the money is on the HUD, for the quest's sum
-  onEquip: (k) => { const ok = buy(k); return ok; },
+  onEquip: (k) => { const ok = buy(k); normAbil(); return ok; },
+  playerStats: () => statRows(profile), // (7.6.48, owner) the diver's figures, all his gear counted, under the locker
   canSellGear: () => !!(g && g.mode === 'play'), // (7.5.5, owner) sold from the bag anywhere (once only aboard, at the station or Dave's)
 });
 // (4.10.0) the chart (K, or the chart button under the journal): the whole sea, and the player's own markers
@@ -996,14 +1010,14 @@ function buy(kind) {
       ui.showGains([{ kind: 'item', id: it.id, how: 'Bought' }]); tipEquip();
       if (P.wish === it.id) P.wish = null;
     }
-  } else if (kind.startsWith('moveslot:')) { // (7.6.36, owner) a worn scroll to the other slot: the two swap (each keeping its own cooldown), or it moves across when the other is empty
-    const K = kitOf(P); if (K.on.ability && K.on.ability2) { abilSwap(); ok = true; }
-    else if (K.on.ability) { K.on.ability2 = K.on.ability; K.on.ability = null; P.abilReadyAt2 = P.abilReadyAt || 0; P.abilReadyAt = 0; [g.abil, g.abil2] = [{ activeT: 0, maxT: 0, def: null, charges: null, fx: 0 }, g.abil]; ok = true; }
-    else if (K.on.ability2) { K.on.ability = K.on.ability2; K.on.ability2 = null; P.abilReadyAt = P.abilReadyAt2 || 0; P.abilReadyAt2 = 0; [g.abil, g.abil2] = [g.abil2 || { activeT: 0, maxT: 0, def: null, charges: null, fx: 0 }, null]; ok = true; }
-    if (ok) { applyKit(e, P); saveProfile(P); }
+  } else if (kind.startsWith('moveslot:')) { // (7.6.36, owner) a worn scroll to the bag's other slot. (7.6.48, owner) slot 1 alone takes a Heart
+    const u = kind.slice(9), K = kitOf(P), n = bagSlotOf(K, u); if (!n) return false;
+    const r = equipScroll(P, u, n === 1 ? 2 : 1);
+    if (r === 'mythic') { hud.toast("Can't put it there: a mythical skill only goes in the first slot", 'warn'); return false; }
+    if (r !== 'ok') return false; ok = true; applyKit(e, P); saveProfile(P);
   } else if (kind.startsWith('on2:')) { // (7.6.4, owner) the second scroll slot
     const r = putOn2(P, kind.slice(4));
-    if (r === 'heart') { hud.toast('One Heart (mythical skill) at a time', 'warn'); return false; }
+    if (r === 'mythic') { hud.toast("Can't put it there: a mythical skill only goes in the first slot", 'warn'); return false; }
     if (r === 'family') { hud.toast('Not two scrolls of one family', 'warn'); return false; }
     if (r !== 'ok') return false; ok = true;
   } else if (kind.startsWith('off:')) {
@@ -2259,9 +2273,15 @@ function atSurface() { const e = g && g.earl; if (!e) return false; return !!(g.
 // (7.6.4, owner) the swap chip: the second scroll comes onto the button, with its own cooldown and run; the other keeps
 // running beside it
 function abilSwap() { const P = profile, K = kitOf(P); if (!K.on.ability2) { hud.toast('No second scroll: put one in its slot in the bag'); return; }
-  [K.on.ability, K.on.ability2] = [K.on.ability2, K.on.ability || null]; [P.abilReadyAt, P.abilReadyAt2] = [P.abilReadyAt2 || 0, P.abilReadyAt || 0]; [P.abilMinAt, P.abilMinAt2] = [P.abilMinAt2 || 0, P.abilMinAt || 0];
+  [K.on.ability, K.on.ability2] = [K.on.ability2, K.on.ability || null]; K.bag1 = slotKey(K, 2); /* (7.6.48) the bag's slots stay put */ [P.abilReadyAt, P.abilReadyAt2] = [P.abilReadyAt2 || 0, P.abilReadyAt || 0]; [P.abilMinAt, P.abilMinAt2] = [P.abilMinAt2 || 0, P.abilMinAt || 0];
   const S1 = abilityState(g); g.abil = g.abil2 || { activeT: 0, maxT: 0, def: null, charges: null, fx: 0 }; g.abil2 = S1; g.dashAim = null; renderer.aimZoom = 1;
   saveProfile(P); audio.ready && audio.click && audio.click(); }
+// (7.6.48, owner) after any change in the bag: a Heart sits in the bag's first slot, and a lone scroll is always the one on the
+// button (in the kit's own 'ability' key), wherever the bag shows it
+function normAbil() { const P = profile; if (!P) return; fixMythSlot(P); const K = kitOf(P);
+  if (!K.on.ability && K.on.ability2) { K.on.ability = K.on.ability2; K.on.ability2 = null; K.bag1 = slotKey(K, 2); P.abilReadyAt = P.abilReadyAt2 || 0; P.abilReadyAt2 = 0; P.abilMinAt = P.abilMinAt2 || 0; P.abilMinAt2 = 0;
+    if (g) { g.abil = g.abil2 || { activeT: 0, maxT: 0, def: null, charges: null, fx: 0 }; g.abil2 = null; } K.rev = (K.rev || 0) + 1; }
+  if (g && g.earl) applyKit(g.earl, P); }
 function secondAbility() { const q = profile && wornInst(profile, 'ability2'); const A = q ? abilityOf(q.id) : null; if (A) A.loaded = q.load || 0; return A; }
 function currentAbility() { const q = profile && wornInst(profile, 'ability'); const A = q ? abilityOf(q.id) : null; if (A) { A.loaded = q.load || 0; A.inst = q; } return A; } // (7.6.3) with its loaded charges
 // (7.6.26, owner) a use's cooldown: with a charge loaded on the worn scroll, the charge is spent and there is no cooldown
@@ -2492,7 +2512,7 @@ function tickAbility(dt) {
     else { g.abilOutK = Math.max(0, (g.abilOutK ?? 1) - dt / 1.5); g.abilLight = g.abilLightHold; if (g.abilOutK <= 0) { g.abilLightHold = L0; g.abilLight = L0; g.abilOutK = 1; } } }
   { const lh = !!(((on && A.light >= 2) || (on2 && A2.light >= 2)) && (g.lightFade ?? 1) > 0.5); if (document.documentElement.classList.contains('lighthouse') !== lh) document.documentElement.classList.toggle('lighthouse', lh); } /* (5.16.0) Lighthouse: the HUD comes to life */
   g.netRange = gear(profile, 'net').range || 1.2; g.wardOn = !!((on && A.ward && !A.tide) || (on2 && A2.ward && !A2.tide)); // (7.3.0) these two had slipped into the comment above: the Lighthouse never kept hunters off
-  { g.chargeTick = (g.chargeTick || 0) - (g.realDt || dt); if (g.chargeTick <= 0 && profile) { g.chargeTick = 1; if (growCharges(kitOf(profile).items)) { saveProfile(profile); ui.inventoryOpen && ui.inventoryOpen() && ui.renderInventory(); } } } // (7.6.30, owner) charges grow by themselves
+  { g.chargeTick = (g.chargeTick || 0) - (g.realDt || dt); if (g.chargeTick <= 0 && profile) { g.chargeTick = 1; if (growCharges(kitOf(profile).items, Date.now(), new Set([kitOf(profile).on.ability, kitOf(profile).on.ability2].filter(Boolean)))) { saveProfile(profile); ui.inventoryOpen && ui.inventoryOpen() && ui.renderInventory(); } } } // (7.6.30, owner) charges grow by themselves
   if (g.echoT > 0) g.echoT = Math.max(0, g.echoT - dt);
   // (7.6.30) a far contact becomes the real animal once he comes near it (just past the view), swimming where it was found
   if (g.echoC && g.echoC.length) { const cm = renderer.cam; for (const C of g.echoC) { if (C.fish || !cm) continue; if (Math.abs(C.x - cm.x) < cm.w * 0.9 && Math.abs(C.y - cm.y) < cm.h * 1.2) { const f = g.fauna.makeFish(C.sp, C.x, C.y, Math.random() < 0.5 ? -1 : 1, g.fauna.groupId++, true); if (f) { f.devKeep = false; g.fauna.list.push(f); C.fish = f; } } }

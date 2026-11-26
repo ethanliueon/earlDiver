@@ -264,15 +264,29 @@ export const isOn = (P, q) => { const K = kitOf(P), k = ITEMS[q.id].kind; return
 const bump = (P) => { kitOf(P).rev = (kitOf(P).rev || 0) + 1; };
 // a new thing into the locker (null if it is full)
 export function giveItem(P, id, rnd) { if (!ITEMS[id] || lockerFree(P) <= 0) return null; const q = mk(id, rnd); q.isNew = true; kitOf(P).items.push(q); P.bagGot = (P.bagGot || 0) + 1; /* (5.9.6) */ bump(P); return q; }
-export function putOn(P, u) { const q = instOf(P, u); if (!q) return false; const K = kitOf(P), it = ITEMS[q.id]; K.on[it.kind] = u;
-  // (7.6.4, owner) a scroll in the first slot: the second never holds the same scroll, its family, or a second Heart
-  if (it.kind === 'ability' && K.on.ability2) { const o = instOf(P, K.on.ability2), oi = o && ITEMS[o.id]; if (!oi || K.on.ability2 === u || oi.fam === it.fam || (oi.rarity === 'mythical' && it.rarity === 'mythical')) K.on.ability2 = null; }
-  bump(P); return true; }
-// (7.6.4, owner) the second scroll slot: never the first slot's family, and only one Heart (mythical) worn at a time
-export function putOn2(P, u) { const q = instOf(P, u), K = kitOf(P); if (!q) return 'none'; const it = ITEMS[q.id]; if (it.kind !== 'ability') return 'none';
-  const f = K.on.ability && instOf(P, K.on.ability), fi = f && ITEMS[f.id];
-  if (fi && K.on.ability === u) return 'same'; if (fi && fi.fam === it.fam) return 'family'; if (fi && fi.rarity === 'mythical' && it.rarity === 'mythical') return 'heart';
-  K.on.ability2 = u; bump(P); return 'ok'; }
+export function putOn(P, u) { const q = instOf(P, u); if (!q) return false; const K = kitOf(P), it = ITEMS[q.id];
+  if (it.kind === 'ability') return equipScroll(P, u, 1) === 'ok'; // (7.6.48) a scroll: into the bag's first slot
+  K.on[it.kind] = u; bump(P); return true; }
+// (7.6.48, owner) the bag's two scroll slots. The kit's own keys (ability: the one on the button, ability2: the swap) keep
+// moving with the swap chip; the bag shows them in two fixed places, slot 1 the mythic slot (only it takes a Heart) and
+// slot 2 the secondary. K.bag1 is the kit key slot 1 shows, so the chip's swap never moves a scroll between the bag's slots
+export const slotKey = (K, n) => { const a = K.bag1 === 'ability2' ? 'ability2' : 'ability'; return n === 1 ? a : a === 'ability' ? 'ability2' : 'ability'; };
+export const bagSlotOf = (K, u) => (u && K.on[slotKey(K, 1)] === u ? 1 : u && K.on[slotKey(K, 2)] === u ? 2 : 0);
+// a Heart left in slot 2 by an older save goes to slot 1 (the two trade places)
+export function fixMythSlot(P) { const K = kitOf(P), q = K.on[slotKey(K, 2)] && instOf(P, K.on[slotKey(K, 2)]); if (q && ITEMS[q.id] && ITEMS[q.id].rarity === 'mythical') { K.bag1 = slotKey(K, 2); bump(P); } }
+// a scroll into bag slot n (1 or 2): 'ok', 'mythic' (a Heart only goes in slot 1), 'family' (not two of one family), 'none'
+export function equipScroll(P, u, n) { const K = kitOf(P), q = instOf(P, u); if (!q) return 'none'; const it = ITEMS[q.id]; if (!it || it.kind !== 'ability') return 'none';
+  const k = slotKey(K, n), ko = slotKey(K, n === 1 ? 2 : 1), myth = (id) => ITEMS[id] && ITEMS[id].rarity === 'mythical';
+  if (n === 2 && myth(q.id)) return 'mythic';
+  if (K.on[k] === u) return 'ok';
+  if (K.on[ko] === u) { // worn in the other slot: the two trade places (or it moves across to an empty one)
+    const there = K.on[k] && instOf(P, K.on[k]); if (n === 1 && there && myth(there.id)) return 'mythic';
+    K.bag1 = slotKey(K, 2); bump(P); return 'ok'; }
+  const o = K.on[ko] && instOf(P, K.on[ko]), oi = o && ITEMS[o.id];
+  if (oi && oi.fam === it.fam) { if (n === 1) K.on[ko] = null; else return 'family'; }
+  K.on[k] = u; bump(P); return 'ok'; }
+// (7.6.4, owner) the second scroll slot
+export function putOn2(P, u) { return equipScroll(P, u, 2); }
 // take a thing off, back into the locker. Net, fins, tank, bag and suit always have one on: taking one off puts his
 // starter one back on (3.0.31). Not when the locker has no room for it; not the starter itself.
 export function takeOff(P, kind) {

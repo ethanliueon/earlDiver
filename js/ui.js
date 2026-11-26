@@ -35,7 +35,7 @@ import { Gallery } from './gallery.js';
 import { DaveShop } from './dave.js';
 import { Cabin } from './cabin.js';
 import { Catalog, pictureOf, drawGoldCoins, MEASURES, measureHtml, crossBoosts, boostOf } from './catalog.js';
-import { ITEMS, kitOf, RARITY, LEGEND, SETS, LOCKER, totals, sellValue, FREE as FREE_IDS } from './items.js';
+import { ITEMS, kitOf, RARITY, LEGEND, SETS, LOCKER, totals, sellValue, FREE as FREE_IDS, slotKey, bagSlotOf } from './items.js';
 const SIDE_TOOLS = new Set(['cam']);
 import { kit as ensureKit } from './economy.js';
 import { drawEarl } from './earl_draw.js';
@@ -1380,11 +1380,12 @@ export class UI {
     // (7.6.26, owner) a scroll's tile shows its charges: its emblem from half its colour (none) to twice it (full)
     const satOf = (q, it) => { const A = abilityOf(q.id), mx = A ? maxLoad(A) : 0; return Math.round((0.5 + 1.5 * (mx ? Math.min(1, (q.load || 0) / mx) : 0)) * 10) / 10; };
     const pic = (q) => { const it = ITEMS[q.id]; return pictureOf(it.kind, it.kind === 'ability' ? { ...it, sat: satOf(q, it) } : it, 120, 72, true); };
-    const slot = ([kind, label]) => { const q = K.on[kind] && K.items.find((x) => x.u === K.on[kind]); const it = q && ITEMS[q.id], nm = label.replace(/^\d\s+/, '');
+    const slot = ([kind0, label]) => { const bs = kind0 === 'ability' ? 1 : kind0 === 'ability2' ? 2 : 0, kind = bs ? slotKey(K, bs) : kind0; // (7.6.48) the bag's two scroll slots stay put; slot 1 takes a Heart
+      const q = K.on[kind] && K.items.find((x) => x.u === K.on[kind]); const it = q && ITEMS[q.id], nm = label.replace(/^\d\s+/, '');
       // (5.11.7) the name inside the box, under the picture (it no longer hangs below and gets cut off); no key numbers (touch
       // only); an empty slot is just its name; a slot for something he does not own yet (the camera) carries a padlock
       const lockedSlot = !q && kind === 'cam' && !K.items.some((x2) => ITEMS[x2.id] && ITEMS[x2.id].kind === 'cam');
-      return `<div class="eq-slot sq${q ? ' r-' + it.rarity : ' empty'}${lockedSlot ? ' locked' : ''}" data-slot="${kind}" title="${q ? it.name : nm + (lockedSlot ? ': not bought yet' : ': nothing on')}">${q ? `<img src="${pic(q)}" alt="" draggable="${free}" data-kind="${kind}" data-u="${q.u}">` : lockedSlot ? '<i class="lock"></i>' : ''}<small class="slot-nm">${nm}</small></div>`; };
+      return `<div class="eq-slot sq${q ? ' r-' + it.rarity : ' empty'}${lockedSlot ? ' locked' : ''}${bs === 1 ? ' myth-slot' : ''}" data-slot="${bs ? 'ability' : kind}"${bs ? ` data-bs="${bs}"` : ''} title="${q ? it.name : nm + (lockedSlot ? ': not bought yet' : bs === 1 ? ': any skill, mythical too' : bs === 2 ? ': any skill but a mythical one' : ': nothing on')}">${bs === 1 ? '<i class="ms-c a"></i><i class="ms-c b"></i><i class="ms-c c"></i><i class="ms-c d"></i>' : ''}${q ? `<img src="${pic(q)}" alt="" draggable="${free}" data-kind="${kind}" data-u="${q.u}">` : lockedSlot ? '<i class="lock"></i>' : ''}<small class="slot-nm">${nm}</small></div>`; };
     const order = ['net', 'cam', 'suit', 'fins', 'tank', 'bag'], rk = (q) => RARITY[ITEMS[q.id].rarity].k;
     const list = K.items.filter((q) => !onSet.has(q.u)).sort((a2, b2) => rk(a2) - rk(b2) || order.indexOf(ITEMS[a2.id].kind) - order.indexOf(ITEMS[b2.id].kind) || ITEMS[a2.id].name.localeCompare(ITEMS[b2.id].name));
     const tiles = list.map((q) => { const it = ITEMS[q.id];
@@ -1446,8 +1447,28 @@ export class UI {
       /* (7.6.26, owner) Ability 2 at the foot of its column, level with Ability: the two scrolls on one row; the pet moved up */ + `</div>`
       /* (6.0.0) no lock note: gear changes anywhere */
       /* (5.11.7) no tank panel under him: the tank's slot already shows it */
-      + `</div><div class="inv-right"><div class="lk-head"><h4>Locker</h4><small>by rarity</small><span class="${list.length + Math.ceil(nGold / 10) >= LOCKER ? 'full' : ''}">(${list.length + Math.ceil(nGold / 10)}/${LOCKER})</span></div><div class="lk-grid">${spare}${airTiles}${trapTiles}${goldTiles}${tiles}${'<div class="lk-tile empty"></div>'.repeat(Math.max(0, LOCKER - list.length - nSpare))}</div></div></div>${pop}${trapPop}${airPop}${glowPop}${goldPop}${petPick}${this.petSel ? this.petPop(P) : ''}`;
+      + `</div><div class="inv-right"><div class="lk-head"><h4>Locker</h4><small>by rarity</small><span class="${list.length + Math.ceil(nGold / 10) >= LOCKER ? 'full' : ''}">(${list.length + Math.ceil(nGold / 10)}/${LOCKER})</span></div><div class="lk-grid">${spare}${airTiles}${trapTiles}${goldTiles}${tiles}${'<div class="lk-tile empty"></div>'.repeat(Math.max(0, LOCKER - list.length - nSpare))}</div>${this.statsHtml()}</div></div>${pop}${trapPop}${airPop}${glowPop}${goldPop}${petPick}${this.petSel ? this.petPop(P) : ''}`;
   }
+  // (7.6.48, owner) the diver's figures under the locker, everything he wears counted in. A figure that changes (gear put
+  // on or taken off) counts to its new value, swelling a little and tinted moss for better or rust for worse, then
+  // settles back; the change itself rises beside it and fades
+  statsHtml() {
+    const rows = (this.h.playerStats && this.h.playerStats()) || []; if (!rows.length) return '';
+    const now = performance.now(), prev = this.statPrev || {}; this.statFx = this.statFx || {};
+    for (const [k, , v, , hi] of rows) { if (prev[k] != null && Math.abs(prev[k] - v) > 1e-6) { const shown = this.statFx[k] && now - this.statFx[k].t0 < 700 ? this.statFx[k].cur : prev[k]; this.statFx[k] = { from: shown, to: v, t0: now, up: (v - prev[k]) * hi > 0, d: v - prev[k], done: false }; } prev[k] = v; }
+    this.statPrev = prev;
+    const cells = rows.map(([k, label, v, fmt]) => { const fx = this.statFx[k], el = fx ? now - fx.t0 : 1e9, live = el < 1800;
+      const dTxt = live ? (() => { const t = fmt(Math.abs(fx.d)).replace(/^×/, ''); return (fx.d > 0 ? '+' : '−') + t; })() : '';
+      return `<div class="st-cell${live ? (fx.up ? ' fx-up' : ' fx-down') : ''}" data-st="${k}" style="--el:-${Math.round(Math.min(el, 1800))}ms"><span>${label}</span><b>${fmt(live && el < 700 ? fx.from + (fx.to - fx.from) * (1 - Math.pow(1 - el / 700, 3)) : v)}</b>${live ? `<i class="st-d">${dTxt}</i>` : ''}</div>`; }).join('');
+    this.statFmt = Object.fromEntries(rows.map((r) => [r[0], r[3]]));
+    if (Object.values(this.statFx).some((f) => now - f.t0 < 700)) this.statTick();
+    return `<div class="inv-stats"><h5>Your diver</h5><div class="st-grid">${cells}</div></div>`;
+  }
+  statTick() { if (this.statRaf) return; const step = () => { this.statRaf = null; const now = performance.now(); let more = false;
+      for (const [k, f] of Object.entries(this.statFx || {})) { const el = now - f.t0; if (f.done) continue; const fin = el >= 700; if (!fin) more = true; else f.done = true;
+        const v = fin ? f.to : f.from + (f.to - f.from) * (1 - Math.pow(1 - el / 700, 3)); f.cur = v; const b = document.querySelector(`#inventory .st-cell[data-st="${k}"] b`); if (b && this.statFmt[k]) b.textContent = this.statFmt[k](v); }
+      if (more) this.statRaf = requestAnimationFrame(step); };
+    this.statRaf = requestAnimationFrame(step); }
   // (3.0.35) the locker is laid out at one size, 1240 x 820, and scaled to fit whatever screen it is on: a
   // phone sees the same locker as a computer, only smaller
   fitInventory() {
@@ -1493,7 +1514,7 @@ export class UI {
     const A = abilityOf(q.id); if (!A) return ''; const mx = maxLoad(A), n = q.load || 0, pr = chargePrice(A), top = this.h.atSurface && this.h.atSurface(), pl = '<img class="st-pearl" src="assets/ui/icons/pearl.png" alt="">';
     const fresh = this.freshLoad && this.freshLoad.u === q.u && Date.now() - this.freshLoad.at < 1500 ? this.freshLoad.from : n, full = n / mx;
     const btn = (k, label) => top && n < mx ? `<button data-lk="${k}:${q.u}">${label}</button>` : `<button class="ld-off" data-lk="${n < mx ? 'loadlock' : 'loadfull-done'}:${q.u}">${n < mx ? '<i class="ld-pad"></i>' : ''}${label}</button>`;
-    return `<div class="ld-box${n >= mx ? ' ld-full' : ''}" style="--full:${full.toFixed(2)}"><div class="ld-head"><span>Charges</span>${n < mx ? `<small class="ld-next">Next ${fmtLeft(Math.ceil(nextCharge(q) / 1000))}</small>` : ''}<b>${n} / ${mx}</b></div><div class="ld-notches" style="grid-template-columns:repeat(${mx}, 1fr)">${Array.from({ length: mx }, (_, i) => `<i class="${i < n ? 'on' : ''}${i < n && i >= fresh ? ' fresh' : ''}" style="--i:${i - fresh}"></i>`).join('')}</div><div class="ld-btns lk-acts">${btn('load', `Load ${pl}${pr}`)}${btn('loadfull', `Fill ${pl}${pr * Math.max(1, mx - n)}`)}</div></div>`;
+    return `<div class="ld-box${n >= mx ? ' ld-full' : ''}" style="--full:${full.toFixed(2)}"><div class="ld-head"><span>Charges</span>${n < mx ? (this.h.getProfile && bagSlotOf(kitOf(this.h.getProfile()), q.u) ? `<small class="ld-next">Next ${fmtLeft(Math.ceil(nextCharge(q) / 1000))}</small>` : '<small class="ld-next">Recharges only when equipped</small>') : ''}<b>${n} / ${mx}</b></div><div class="ld-notches" style="grid-template-columns:repeat(${mx}, 1fr)">${Array.from({ length: mx }, (_, i) => `<i class="${i < n ? 'on' : ''}${i < n && i >= fresh ? ' fresh' : ''}" style="--i:${i - fresh}"></i>`).join('')}</div><div class="ld-btns lk-acts">${btn('load', `Load ${pl}${pr}`)}${btn('loadfull', `Fill ${pl}${pr * Math.max(1, mx - n)}`)}</div></div>`;
   }
   chargeCol(P, q, head) { let c = this.itemCol(P, q, head); const it = ITEMS[q.id]; if (it && it.kind === 'ability') { const cut = c.lastIndexOf('</div>'); c = c.slice(0, cut) + this.chargeBox(q) + c.slice(cut); } return c; }
   // the pop-up: the thing on its own (if he has it on), or side by side with what he has on of that kind
@@ -1501,8 +1522,9 @@ export class UI {
     const K = kitOf(P), q = K.items.find((x) => x.u === this.lkSel); if (!q) { this.lkSel = null; return ''; }
     const K0 = K; // (7.4.11) for the scrolls' Combine
     if (q.isNew) { delete q.isNew; this.h.onSaveProfile && this.h.onSaveProfile(); }
-    const it = ITEMS[q.id], on2 = it.kind === 'ability' && K.on.ability2 === q.u, on = K.on[it.kind] === q.u || on2, seller = this.h.canSellGear && this.h.canSellGear();
-    const curQ = !on && K.on[it.kind] ? K.items.find((x) => x.u === K.on[it.kind]) : null, cur = curQ ? ITEMS[curQ.id] : null, M = MEASURES[it.kind];
+    const it = ITEMS[q.id], scr = it.kind === 'ability', bsl = scr ? bagSlotOf(K, q.u) : 0, on2 = bsl === 2, on = scr ? bsl > 0 : K.on[it.kind] === q.u, seller = this.h.canSellGear && this.h.canSellGear();
+    const curKey = scr ? slotKey(K, 1) : it.kind, myth = it.rarity === 'mythical';
+    const curQ = !on && K.on[curKey] ? K.items.find((x) => x.u === K.on[curKey]) : null, cur = curQ ? ITEMS[curQ.id] : null, M = MEASURES[it.kind];
     let body, acts = '';
     if (it.kind === 'chest') { // (6.4.0) a chest in the locker: its card, and Open (with room in the locker for all it can give)
       { const col = this.itemCol(P, q, 'Chest'), odds = chestOddsHtml(String(it.id).replace(/^chest_/, '')), cut = col.lastIndexOf('</div>'); body = `<div class="ip-cols one">${cut > 0 ? col.slice(0, cut) + odds + col.slice(cut) : col + odds}</div>`; } acts += `<button data-lk="open:${q.u}">Open</button>`; // (7.4.1, owner) its odds in the card's empty space
@@ -1512,8 +1534,8 @@ export class UI {
     if (on) {
       body = `<div class="ip-cols one">${this.chargeCol(P, q, 'You have it on')}</div>`;
       const starter = it.kind === 'net' ? null : FREE_IDS[it.kind]; // (6.9.1) a net unequipped leaves the hands empty, the hand net too
-      if (free && it.kind === 'ability') acts += `<button data-lk="moveslot:${q.u}">${on2 ? 'Put it on' : 'Second slot'}</button>`; // (7.6.36, owner) a worn scroll (a Heart too) moves to the other slot
-      if (free && !(starter && q.id === starter)) acts += `<button data-lk="off:${on2 ? 'ability2' : it.kind}">Unequip${starter ? ` <small>(${ITEMS[starter].name} back on)</small>` : ''}</button>`;
+      if (free && scr && !(myth && !on2)) acts += `<button data-lk="moveslot:${q.u}">${on2 ? 'Equip' : 'Secondary'}</button>`; // (7.6.36, owner) a worn scroll moves to the other slot. (7.6.48, owner) a Heart only to slot 1
+      if (free && !(starter && q.id === starter)) acts += `<button data-lk="off:${scr ? (K.on.ability === q.u ? 'ability' : 'ability2') : it.kind}">Unequip${starter ? ` <small>(${ITEMS[starter].name} back on)</small>` : ''}</button>`;
     } else {
       // the numbers, a row each: his now, this one, which is better
       let rows = '';
@@ -1525,8 +1547,8 @@ export class UI {
       }).join('');
       body = `<div class="ip-cols">${cur ? this.chargeCol(P, curQ, 'Equipped') : `<div class="ip-col empty"><h5>Equipped</h5><p>Nothing in that slot.</p></div>`}<div class="ip-arrow">→</div>${this.chargeCol(P, q, 'Selected')}</div>`
         + (rows ? `<table class="ip-vs"><thead><tr><th></th><td>${cur ? cur.name : '—'}</td><td>${it.name}</td></tr></thead><tbody>${rows}</tbody></table>` : '');
-      if (free) acts += `<button data-lk="on:${q.u}">Put it on</button>`;
-      if (free && it.kind === 'ability') acts += `<button data-lk="on2:${q.u}">Second slot</button>`; // (7.6.4, owner)
+      if (free) acts += `<button data-lk="on:${q.u}">${scr ? 'Equip' : 'Put it on'}</button>`;
+      if (free && scr && !myth) acts += `<button data-lk="on2:${q.u}">Secondary</button>`; // (7.6.4, owner). (7.6.48, owner) slot 2 never takes a Heart
       // (7.4.11, owner) three of the same scroll at the same rarity, none of them on: they combine into one of the next rarity
       if (seller) acts += it.kind === 'ability' ? `<button class="sell" data-lk="sellscroll:${q.u}">Sell, <img class="st-pearl" src="assets/ui/icons/pearl.png" alt="">${scrollSellPearls(q.id).toLocaleString('en-US')}</button>` /* (7.6.2, owner) scrolls sell for pearls */ : `<button class="sell" data-lk="sellgear:${q.u}">Sell, ${money(sellValue(q), false)}</button>`;
       else acts += '<small>Sell it on the Margaret, at the station, or to Dave.</small>';
@@ -1582,7 +1604,7 @@ export class UI {
       if (ev.target.closest('[data-petfeed]')) { this.petPick = false; this.toggleInventory(false); this.h.onPetFeed && this.h.onPetFeed(); return; } // (7.4.14) the aquarium alone on the screen
       if (ev.target.closest('[data-petshop]')) { this.petPick = false; this.toggleInventory && this.toggleInventory(false); this.toggleStore(true); const st = $('store'); if (st) st.innerHTML = this.petsPage(); return; }
       if (ev.target === pk || ev.target.closest('.ip-close')) { this.petPick = false; this.renderInventory(); } }, true); }
-    root.querySelectorAll('.lk-tile:not(.empty):not(.sup), .eq-slot [data-u]').forEach((el) => el.addEventListener('click', () => { this.lkSel = el.dataset.u; this.renderInventory(); }));
+    root.querySelectorAll('.lk-tile:not(.empty):not(.sup), .eq-slot [data-u]').forEach((el) => el.addEventListener('click', () => { if (this.dragEnded && performance.now() - this.dragEnded < 500) return; this.lkSel = el.dataset.u; this.renderInventory(); }));
     // (5.6.9) the belt: a tap on a slot takes it off (into the locker), a tap on a locker stack puts it on
     const beltMsg = () => this.h.onMessage && this.h.onMessage('Not now'); // (6.0.0) gear changes anywhere but in its jaws
     root.querySelectorAll('[data-gold]').forEach((el) => el.addEventListener('click', () => { this.goldSel = true; this.renderInventory(); }));
@@ -1616,7 +1638,22 @@ export class UI {
     root.querySelectorAll('.eq-slot img').forEach((el) => el.addEventListener('dragstart', (ev) => { this.dragKind = 'off:' + el.dataset.kind; ev.dataTransfer.setData('text/plain', 'off:' + el.dataset.kind); }));
     root.querySelectorAll('.eq-slot').forEach((s2) => {
       s2.addEventListener('dragover', (ev) => { if (this.dragKind === s2.dataset.slot) ev.preventDefault(); });
-      s2.addEventListener('drop', (ev) => { ev.preventDefault(); const [k, u] = ev.dataTransfer.getData('text/plain').split(':'); if (k === s2.dataset.slot) put(u); });
+      s2.addEventListener('drop', (ev) => { ev.preventDefault(); const [k, u] = ev.dataTransfer.getData('text/plain').split(':'); if (k === s2.dataset.slot) { if (s2.dataset.bs === '2') { this.h.onEquip('on2:' + u); this.renderInventory(); } else put(u); } });
+    });
+    // (7.6.48, owner) on a phone: press and hold a locker tile to lift it, drag it onto a slot (or onto him) and let go
+    root.querySelectorAll('.lk-tile[data-u]').forEach((el) => {
+      let tm = null, ghost = null, x0 = 0, y0 = 0;
+      const clear = () => { clearTimeout(tm); tm = null; if (ghost) { ghost.remove(); ghost = null; root.querySelectorAll('.hot').forEach((s3) => s3.classList.remove('hot')); } };
+      el.addEventListener('touchstart', (ev) => { const t = ev.touches[0]; x0 = t.clientX; y0 = t.clientY;
+        tm = setTimeout(() => { tm = null; const im = el.querySelector('img'); if (!im) return; ghost = im.cloneNode(); ghost.className = 'lk-ghost'; ghost.style.left = x0 + 'px'; ghost.style.top = y0 + 'px'; document.body.appendChild(ghost);
+          root.querySelectorAll(`[data-slot="${el.dataset.kind}"]`).forEach((s3) => s3.classList.add('hot')); navigator.vibrate && navigator.vibrate(12); }, 260); }, { passive: true });
+      el.addEventListener('touchmove', (ev) => { const t = ev.touches[0]; if (!ghost) { if (Math.hypot(t.clientX - x0, t.clientY - y0) > 8) clearTimeout(tm); return; } ev.preventDefault(); ghost.style.left = t.clientX + 'px'; ghost.style.top = t.clientY + 'px'; }, { passive: false });
+      el.addEventListener('touchend', (ev) => { if (!ghost) { clearTimeout(tm); return; } const t = ev.changedTouches[0], moved = Math.hypot(t.clientX - x0, t.clientY - y0) > 10; clear(); if (!moved) return; ev.preventDefault(); this.dragEnded = performance.now();
+        const hit = document.elementFromPoint(t.clientX, t.clientY), sl = hit && hit.closest('.eq-slot[data-slot]');
+        if (sl && sl.dataset.slot === el.dataset.kind) { if (sl.dataset.bs === '2') { this.h.onEquip('on2:' + el.dataset.u); this.renderInventory(); } else put(el.dataset.u); }
+        else if (hit && hit.closest('.eq-earl')) put(el.dataset.u);
+        else if (sl && sl.dataset.slot) this.h.onMessage && this.h.onMessage("Can't put that there"); });
+      el.addEventListener('touchcancel', clear);
     });
     const earl = root.querySelector('.eq-earl');
     earl.addEventListener('dragover', (ev) => { if (this.dragKind && !this.dragKind.startsWith('off:')) ev.preventDefault(); });

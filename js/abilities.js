@@ -151,12 +151,16 @@ export function skipCost(sec) { return 3 * Math.max(1, Math.ceil(Math.max(0, sec
 // (7.6.3, owner) charges, loaded onto a scroll at the surface: 1 pearl for every 5 minutes of its cooldown each; up to 5 on
 // a rare or exotic scroll, 10 on a legendary or mythical one, or the scroll's own maxLoad (Tidewarden 1)
 export const chargePrice = (A) => Math.max(1, Math.ceil(((A && A.cd) || 300) / 300));
-// (7.6.30, owner) charges grow by themselves on every scroll he owns (worn or in the locker), in real time, the game open or
+// (7.6.30, owner) charges grow by themselves on the scrolls he wears (7.6.48: no longer in the locker), in real time, the game open or
 // closed: the next charge takes the scroll's cooldown times one more than it holds (1x at none, 2x at one ... at most 5x),
 // until it is full. Returns how many grew. nextCharge says how long the next one has left (ms), or 0 when full
 export function chargeWait(A, n) { return (A.cd || 600) * Math.min(5, n + 1) * 1000; }
-export function growCharges(items, now = Date.now()) { let grew = 0;
+// (7.6.48, owner) only a scroll in one of the two skill slots recharges: one in the locker holds where it was (its clock
+// is moved on by the time it spends there). worn: the set of uids on
+export function growCharges(items, now = Date.now(), worn = null) { let grew = 0;
   for (const q of items || []) { const A = abilityOf(q.id); if (!A) continue; const mx = maxLoad(A); let n = q.load || 0;
+    if (worn && !worn.has(q.u)) { if (q.loadAt && q.tickAt && n < mx) q.loadAt += Math.max(0, now - q.tickAt); q.tickAt = now; continue; }
+    q.tickAt = now;
     if (n >= mx || !q.loadAt) { q.loadAt = now; continue; }
     while (n < mx && now - q.loadAt >= chargeWait(A, n)) { q.loadAt += chargeWait(A, n); n++; grew++; }
     if (n >= mx) q.loadAt = now; q.load = n; }
