@@ -1837,7 +1837,7 @@ function promptFor(t) {
     else if (!e.inSub && !g.sub.imploded && (g.sub.patches || []).length && dist(e.x, e.y, g.sub.x, g.sub.y) < 9) p = (p ? p + '   ·   ' : '') + 'The sub needs repairs: swim to a hole'; }
   if (canPlant(t)) p = g.plant ? (g.promptBar = g.plant / PLANT_TIME, 'Planting coral') : 'Hold F  Plant a coral fragment';
   if (e.inSub) p = (p ? `${p}   ·   hold F  Leave sub` : 'F  Leave the submersible') + '   ·   T  Tank room';
-  if ((nearBoat || (e.inSub && g.sub.docked)) && !g.aboard && !g.helm) p = (p ? p + '   ·   ' : '') + 'U  Sell'; // (the helm, the shops and the radio are aboard)
+  if (nearBoat && !e.inSub && !g.aboard && !g.helm) p = (p ? p + '   ·   ' : '') + 'U  Sell'; /* (7.6.69, owner) docked in the sub: nothing but getting out */ // (the helm, the shops and the radio are aboard)
   return p;
 }
 
@@ -2676,7 +2676,7 @@ function update(dt) {
       else { const was = e.lampOn || (e.y <= 1 && !e.lampAuto && e.lampWanted); e.lampAuto = false; e.lampWanted = !was; }
       hud.toast(e.inSub ? (g.sub.lightsOn ? 'Lights on' : 'Lights off') : (e.lampWanted ? 'Headlamp on' : 'Headlamp off'));
     }
-    if (pressed.has('u') && !g.aboard && ((e.inSub && g.sub.docked) || (Math.abs(e.x - BOAT.x) < 14 && e.y < 4))) { if (ui.anyOpen()) ui.closeAll(); else ui.openShop('sell', e.inSub ? ['sell', 'sub'] : ['sell']); } // (4.11.1) the Margaret: Sell (U) and the yard (P); supplies and the aquarium are online
+    if (pressed.has('u') && !g.aboard && !e.inSub && Math.abs(e.x - BOAT.x) < 14 && e.y < 4) { if (ui.anyOpen()) ui.closeAll(); else ui.openShop('sell', e.inSub ? ['sell', 'sub'] : ['sell']); } // (4.11.1) the Margaret: Sell (U) and the yard (P); supplies and the aquarium are online
     if (pressed.has('t')) { if (e.inSub && !g.sub.imploded) ui.toggleTank(); else hud.toast('The tank room is in the sub', 'warn'); }
     // the helm: drive the Margaret along the surface (the docked sub rides in its cradle)
     const atBoat = (Math.abs(e.x - BOAT.x) < 14 && e.y < 4 && !e.inSub) || (e.inSub && g.sub.docked);
@@ -2927,7 +2927,7 @@ function update(dt) {
         const at = /Station stores/.test(g.prompt) && St ? { x: St.x + STATION_COLLAR.dx + 1.5, y: St.y + STATION_COLLAR.dy, r: 2 } : /Dave's Haul/.test(g.prompt) && D ? { x: D.x + 6.5, y: D.y - 3.1, r: 2.4 } : { x: e2.x, y: e2.y, r: 0.9 };
         g.tapMarks.push({ key: 'f', w: [at.x - at.r, at.y - at.r, at.x + at.r, at.y + at.r], what: 'other' });
       }
-      const winchX = BOAT.x + 4.5 * Math.sign(Math.cos(BOAT.yaw || 0) || 1), nearB = !g.aboard && ((Math.abs(e2.x - winchX) < 1.6 && e2.y < 3 && !e2.inSub) /* (7.5.0, owner) at the Sell door, not at the ladder beside it */ || (e2.inSub && g.sub.docked)); // (7.1.0) only by the winch itself, not anywhere near the boat
+      const winchX = BOAT.x + 4.5 * Math.sign(Math.cos(BOAT.yaw || 0) || 1), nearB = !g.aboard && ((Math.abs(e2.x - winchX) < 1.6 && e2.y < 3 && !e2.inSub) /* (7.5.0, owner) at the Sell door, not at the ladder beside it; (7.6.69, owner) not from the docked sub: there only getting out */); // (7.1.0) only by the winch itself, not anywhere near the boat
       if (nearB && (bagN || e2.inSub || (g.tutAction && String(g.tutAction.key).toLowerCase() === 'u'))) g.tapMarks.push({ key: 'u', boat: [28.9, -10.2, 35.1, -2.2], what: 'winch' }); // (7.4.26, owner) the sell door in her side by the stern
       // (5.6.9) during the tutorial only the step's own thing is marked (the door on the first step, the hatch on the
       // swim down and the ladder while the winch is wanted all pulled the eye the wrong way)
