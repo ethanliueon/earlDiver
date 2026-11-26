@@ -37,7 +37,7 @@ import { Cabin } from './cabin.js';
 import { Catalog, pictureOf, drawGoldCoins, MEASURES, measureHtml, crossBoosts, boostOf } from './catalog.js';
 import { BAG_SCENES, BAG_SCENE_IDS } from './bag_scenes.js';
 import { ITEMS, kitOf, RARITY, LEGEND, SETS, LOCKER, totals, sellValue, FREE as FREE_IDS, slotKey, bagSlotOf } from './items.js';
-const SLOT_NAME = { 1: 'Mythic slot', 2: 'Skill 2', 3: 'Skill 3' }; // (7.6.71, owner) the three skill slots, as the bag names them
+const SLOT_NAME = { 1: 'Ability 1', 2: 'Ability 2', 3: 'Ability 3' }; // (7.6.71, owner) the three skill slots, as the bag names them
 const SIDE_TOOLS = new Set(['cam']);
 import { kit as ensureKit } from './economy.js';
 import { drawEarl } from './earl_draw.js';
@@ -1388,7 +1388,7 @@ export class UI {
   // it, new things marked NEW. Click anything for a pop-up: what it is, and side by side with what he has on.
   equipHtml(P, g, extra = '') {
     ensureKit(P); const K = kitOf(P), free = !!this.h.canChangeGear(), onSet = new Set(Object.values(K.on));
-    const SLOTS = [['suit', 'Suit'], ['fins', 'Fins'], ['tank', 'Tank'], ['bag', 'Bag'], ['ability', 'Mythic'], ['net', '1  Net'], ['cam', '2  Camera'], ['ability2', 'Skill 2'], ['ability3', 'Skill 3']]; // (7.6.71, owner) three skill slots: the mythic slot (left) and two on the right // (5.9.0) the Ability slot: the scroll he carries. (7.6.4, owner) and the second, its swap on the skill button
+    const SLOTS = [['suit', 'Suit'], ['fins', 'Fins'], ['tank', 'Tank'], ['bag', 'Bag'], ['ability', 'Ability 1'], ['net', '1  Net'], ['cam', '2  Camera'], ['ability2', 'Ability 2'], ['ability3', 'Ability 3']]; // (7.6.71, owner) three skill slots: the mythic slot (left) and two on the right // (5.9.0) the Ability slot: the scroll he carries. (7.6.4, owner) and the second, its swap on the skill button
     // (7.6.26, owner) a scroll's tile shows its charges: its emblem from half its colour (none) to twice it (full)
     const satOf = (q, it) => { const A = abilityOf(q.id), mx = A ? maxLoad(A) : 0; return Math.round((0.5 + 1.5 * (mx ? Math.min(1, (q.load || 0) / mx) : 0)) * 10) / 10; };
     const pic = (q) => { const it = ITEMS[q.id]; return pictureOf(it.kind, it.kind === 'ability' ? { ...it, sat: satOf(q, it) } : it, 120, 72, true); };
@@ -1397,7 +1397,7 @@ export class UI {
       // (5.11.7) the name inside the box, under the picture (it no longer hangs below and gets cut off); no key numbers (touch
       // only); an empty slot is just its name; a slot for something he does not own yet (the camera) carries a padlock
       const lockedSlot = false; // (7.6.71, owner) no padlock on the camera's slot: nothing is locked, it is only empty until one is bought
-      return `<div class="eq-slot sq${q ? ' r-' + it.rarity : ' empty'}${lockedSlot ? ' locked' : ''}${bs === 1 ? ' myth-slot' : ''}" data-slot="${bs ? 'ability' : kind}"${bs ? ` data-bs="${bs}"` : ''} title="${q ? it.name : nm + (lockedSlot ? ': not bought yet' : bs === 1 ? ': any skill, mythical too' : bs >= 2 ? ': any skill but a mythical one' : ': nothing on')}">${q ? `<img src="${pic(q)}" alt="" draggable="${free}" data-kind="${kind}" data-u="${q.u}">` : lockedSlot ? '<i class="lock"></i>' : ''}<small class="slot-nm">${nm}</small></div>`; };
+      return `<div class="eq-slot sq${q ? ' r-' + it.rarity : ' empty'}${lockedSlot ? ' locked' : ''}${bs === 1 ? ' myth-slot' : ''}" data-slot="${bs ? 'ability' : kind}"${bs ? ` data-bs="${bs}"` : ''} title="${q ? it.name : nm + (lockedSlot ? ': not bought yet' : bs === 1 ? ': any skill, a mythical one too' : bs >= 2 ? ': any skill but a mythical one' : ': nothing on')}">${q ? `<img src="${pic(q)}" alt="" draggable="${free}" data-kind="${kind}" data-u="${q.u}">` : lockedSlot ? '<i class="lock"></i>' : ''}<small class="slot-nm">${nm}</small></div>`; };
     const order = ['net', 'cam', 'suit', 'fins', 'tank', 'bag'], rk = (q) => RARITY[ITEMS[q.id].rarity].k;
     const list = K.items.filter((q) => !onSet.has(q.u)).sort((a2, b2) => rk(a2) - rk(b2) || order.indexOf(ITEMS[a2.id].kind) - order.indexOf(ITEMS[b2.id].kind) || ITEMS[a2.id].name.localeCompare(ITEMS[b2.id].name));
     const tiles = list.map((q) => { const it = ITEMS[q.id];

@@ -1020,16 +1020,16 @@ function buy(kind) {
     }
   } else if (kind.startsWith('slot:')) { // (7.6.71, owner) a scroll into skill slot n (1 the mythic slot, 2, 3); worn elsewhere, it moves
     const [, n, u] = kind.split(':'), r = equipScroll(P, u, +n);
-    if (r === 'mythic') { hud.toast("Can't put it there: a mythical skill only goes in the mythic slot", 'warn'); return false; }
+    if (r === 'mythic') { hud.toast("Can't put it there: a mythical skill only goes in Ability 1", 'warn'); return false; }
     if (r !== 'ok') return false; ok = true; normAbil(); saveProfile(P);
   } else if (kind.startsWith('moveslot:')) { // (7.6.36, owner) a worn scroll to the bag's other slot. (7.6.48, owner) slot 1 alone takes a Heart
     const u = kind.slice(9), K = kitOf(P), n = bagSlotOf(K, u); if (!n) return false;
     const r = equipScroll(P, u, n === 1 ? 2 : 1);
-    if (r === 'mythic') { hud.toast("Can't put it there: a mythical skill only goes in the first slot", 'warn'); return false; }
+    if (r === 'mythic') { hud.toast("Can't put it there: a mythical skill only goes in Ability 1", 'warn'); return false; }
     if (r !== 'ok') return false; ok = true; applyKit(e, P); saveProfile(P);
   } else if (kind.startsWith('on2:')) { // (7.6.4, owner) the second scroll slot
     const r = putOn2(P, kind.slice(4));
-    if (r === 'mythic') { hud.toast("Can't put it there: a mythical skill only goes in the first slot", 'warn'); return false; }
+    if (r === 'mythic') { hud.toast("Can't put it there: a mythical skill only goes in Ability 1", 'warn'); return false; }
     if (r === 'family') { hud.toast('Not two scrolls of one family', 'warn'); return false; }
     if (r !== 'ok') return false; ok = true;
   } else if (kind.startsWith('off:')) {
