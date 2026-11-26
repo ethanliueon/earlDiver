@@ -727,32 +727,29 @@ export class UI {
   }
   // (6.9.0) what a Log step gives, shown, not named: an item as its picture with its name in its rarity's colour, money as
   // the sum, both when both (never "a gift")
-  // (7.6.44, owner) an achievement's picture: a patch of deep water washed onto the page, solid in its middle and fading
-  // out into the paper at its uneven edges, wider to the right; sea snow, the lure's soft light, and the game's own
-  // triplewart seadevil in it. Drawn once, kept as an image
+  // (7.6.46, owner) an achievement's picture: a see-through wash of deep water in exactly the outline the owner drew
+  // (traced from his drawing), the paper showing through it and its edge soft; sea snow, the lure's soft light, and the
+  // game's own triplewart seadevil, solid, at its left. Drawn once, kept as an image; laid over the card by percentages
   achArt(a) {
     this.achPics = this.achPics || {}; if (this.achPics[a.id]) return this.achPics[a.id];
-    const W = 640, H = 230, c = document.createElement('canvas'); c.width = W; c.height = H; const x = c.getContext('2d');
+    const W = 680, H = 262, m = 8, c = document.createElement('canvas'); c.width = W; c.height = H; const x = c.getContext('2d');
     let sd = 11; const rnd = () => ((sd = (sd * 16807) % 2147483647) / 2147483647);
-    // (7.6.45, owner) the owner's outline: blunt and round at the left, the top rising and running down to a rounded
-    // point at the lower right, the bottom fuller under the fish; smoothed through the midpoints
-    const m = 12, cx = W * 0.45, cy = H / 2, ry = H * 0.4, U = (u) => m + u * (W - 2 * m), V = (v) => m + v * (H - 2 * m), blob = new Path2D();
-    const pts = [[0.16, 0], [0.38, 0], [0.52, 0.08], [0.66, 0.17], [0.79, 0.32], [0.9, 0.55], [0.97, 0.74], [0.87, 0.82], [0.71, 0.86], [0.6, 0.97], [0.38, 1], [0.16, 0.9], [0.05, 0.8], [0, 0.57], [0, 0.3], [0.04, 0.11]].map(([u, v]) => [U(u), V(v)]);
-    { const n = pts.length, mid = (a, b) => [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2], s0 = mid(pts[n - 1], pts[0]); blob.moveTo(s0[0], s0[1]);
+    const U = (u) => m + u * (W - 2 * m), V = (v) => m + v * (H - 2 * m), blob = new Path2D();
+    const pts = [[0,0.354],[0.007,0.331],[0.087,0.208],[0.14,0.112],[0.185,0.023],[0.251,0],[0.309,0],[0.353,0],[0.39,0],[0.422,0.008],[0.452,0.031],[0.479,0.05],[0.508,0.062],[0.526,0.073],[0.563,0.104],[0.583,0.115],[0.61,0.123],[0.644,0.123],[0.685,0.127],[0.727,0.158],[0.774,0.204],[0.814,0.277],[0.87,0.369],[0.959,0.496],[1,0.662],[1,0.823],[0.973,0.831],[0.799,0.823],[0.734,0.854],[0.705,0.912],[0.675,0.965],[0.645,0.996],[0.61,1],[0.579,1],[0.551,1],[0.524,0.996],[0.499,0.996],[0.458,0.985],[0.425,0.973],[0.399,0.962],[0.369,0.946],[0.334,0.935],[0.287,0.927],[0.235,0.9],[0.136,0.896],[0.071,0.8],[0.012,0.673],[0,0.585]].map(([u, v]) => [U(u), V(v)]);
+    { const n = pts.length, mid = (p, q) => [(p[0] + q[0]) / 2, (p[1] + q[1]) / 2], s0 = mid(pts[n - 1], pts[0]); blob.moveTo(s0[0], s0[1]);
       for (let k = 0; k < n; k++) { const p = pts[k], q = mid(p, pts[(k + 1) % n]); blob.quadraticCurveTo(p[0], p[1], q[0], q[1]); } }
-    // the water: an uneven shape blurred so its edge melts into the paper, darker below
+    // the water, see-through: the paper shows through it; a little darker below; its edge softened
     const w = document.createElement('canvas'); w.width = W; w.height = H; const y = w.getContext('2d');
-    const gr = y.createLinearGradient(0, cy - ry, 0, cy + ry); gr.addColorStop(0, '#24434e'); gr.addColorStop(1, '#0d1e26');
-    y.filter = 'blur(4px)'; y.fillStyle = gr; y.fill(blob); y.filter = 'none';
-    x.drawImage(w, 0, 0);
-    const sp = SPECIES_BY_ID[323] || SPECIES_BY_ID[100], fw = 250, fh = 165, fx = U(0.25) - fw / 2, fy = V(0.52) - fh / 2;
-    let f = null, lx = fx + 60, ly = fy + 20;
+    const gr = y.createLinearGradient(0, 0, 0, H); gr.addColorStop(0, '#2a4a54'); gr.addColorStop(1, '#0f222b');
+    y.filter = 'blur(5px)'; y.fillStyle = gr; y.fill(blob); y.filter = 'none';
+    x.globalAlpha = 0.42; x.drawImage(w, 0, 0); x.globalAlpha = 1;
+    const sp = SPECIES_BY_ID[323] || SPECIES_BY_ID[100], fw = 210, fh = 150, fx = U(0.26) - fw / 2, fy = V(0.53) - fh / 2;
+    let f = null, lx = fx + 50, ly = fy + 20;
     if (sp) { f = fittedIcon(sp, fw, fh, 0.05); const d = f.getContext('2d').getImageData(0, 0, fw, fh).data; let best = -1;
       for (let k = 0; k < fw * fh; k++) { if (d[k * 4 + 3] < 200) continue; const v = d[k * 4] + d[k * 4 + 1] * 1.2 + d[k * 4 + 2]; if (v > best) { best = v; lx = fx + (k % fw); ly = fy + Math.floor(k / fw); } } }
-    // sea snow and the lure's light, kept inside the water
-    x.save(); x.globalCompositeOperation = 'source-atop';
-    for (let k = 0; k < 30; k++) { x.fillStyle = `rgba(216,212,192,${0.25 + rnd() * 0.4})`; x.beginPath(); x.arc(U(0.05 + rnd() * 0.8), V(0.1 + rnd() * 0.75), 0.8 + rnd() * 1.4, 0, Math.PI * 2); x.fill(); }
-    const gl = x.createRadialGradient(lx, ly, 0, lx, ly, 50); gl.addColorStop(0, 'rgba(170,220,200,0.55)'); gl.addColorStop(0.3, 'rgba(110,170,150,0.2)'); gl.addColorStop(1, 'rgba(110,170,150,0)'); x.fillStyle = gl; x.fillRect(0, 0, W, H);
+    x.save(); x.clip(blob);
+    for (let k = 0; k < 30; k++) { x.fillStyle = `rgba(240,236,220,${0.3 + rnd() * 0.4})`; x.beginPath(); x.arc(U(0.05 + rnd() * 0.85), V(0.12 + rnd() * 0.75), 0.9 + rnd() * 1.5, 0, Math.PI * 2); x.fill(); }
+    const gl = x.createRadialGradient(lx, ly, 0, lx, ly, 48); gl.addColorStop(0, 'rgba(170,220,200,0.5)'); gl.addColorStop(0.3, 'rgba(110,170,150,0.16)'); gl.addColorStop(1, 'rgba(110,170,150,0)'); x.fillStyle = gl; x.fillRect(0, 0, W, H);
     x.restore();
     if (f) x.drawImage(f, fx, fy);
     return (this.achPics[a.id] = c.toDataURL());
