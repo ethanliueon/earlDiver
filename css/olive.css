@@ -2393,3 +2393,18 @@ html body #inventory .eq-pouch .eq-slot .belt-n:not(#_a):not(#_b) { top: 4px !im
 /* (7.6.53, owner) the scene behind the diver, changed by a small olive plate at the top of the stage */
 html body #inventory .eq-stage > .eq-scene:not(#_a) { position: absolute; top: 8px; left: 50%; transform: translateX(-50%); z-index: 3; padding: 2px 12px !important; min-height: 0 !important; border: 6px solid transparent !important; border-image: var(--o-btn, url("../assets/ui/olive/btn-olive.png")) 28 fill / 6px stretch !important; background: none !important; box-shadow: none !important; font: 600 13px var(--o-text) !important; letter-spacing: 0.06em; color: var(--o-cream, #e6dec4) !important; opacity: 0.85; }
 html body #inventory .eq-stage > .eq-scene::before { content: 'Scene: '; color: rgba(230, 222, 196, 0.55); }
+/* (7.6.54, owner) the scenes panel: a grid of small pictures, each with its name and price */
+html body #inventory .scene-pick .ip-box:not(#_a):not(#_b) { max-width: 760px; }
+html body #inventory .scene-pick .sc-grid { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 10px; max-height: 420px; overflow-y: auto; scrollbar-width: none; }
+html body #inventory .scene-pick .sc-card:not(#_a) { position: relative; display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 6px !important; border: 0 !important; border-radius: 3px; background: rgba(8, 12, 10, 0.45) !important; box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.6) !important; }
+html body #inventory .scene-pick .sc-card img { width: 100%; aspect-ratio: 300 / 340; object-fit: cover; border-radius: 2px; background: #3a4232; }
+html body #inventory .scene-pick .sc-card b { font: 600 15px var(--o-text); color: var(--o-cream, #e6dec4); }
+html body #inventory .scene-pick .sc-card small { display: inline-flex; align-items: center; gap: 3px; font: 600 13px var(--o-num, var(--o-text)); color: rgba(226, 220, 200, 0.6); }
+html body #inventory .scene-pick .sc-card .st-pearl { width: 15px; height: 15px; }
+html body #inventory .scene-pick .sc-card.on:not(#_a) { box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.6), 0 0 0 2px rgba(236, 232, 216, 0.85) !important; }
+html body #inventory .scene-pick .sc-card.locked img { filter: saturate(0.6) brightness(0.8); }
+html body #inventory .item-pop.scene-pick:not(#_a):not(#_b) { z-index: 80 !important; }
+html body #inventory .scene-pick .ip-box:not(#_a):not(#_b) { padding: 20px 24px 22px !important; }
+html body #inventory .scene-pick .ip-box h4:not(#_a):not(#_b) { font: 600 22px/1.1 'Barlow Semi Condensed', sans-serif !important; color: #efe8d2 !important; margin: 2px 44px 6px 0 !important; }
+html body #inventory .scene-pick .pp-note:not(#_a):not(#_b) { display: flex; align-items: center; gap: 4px; font: 500 15px 'Barlow Semi Condensed', sans-serif !important; opacity: 0.72; margin: 0 0 14px !important; }
+html body #inventory .scene-pick .pp-note .st-pearl { width: 16px; height: 16px; }

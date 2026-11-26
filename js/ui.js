@@ -35,6 +35,7 @@ import { Gallery } from './gallery.js';
 import { DaveShop } from './dave.js';
 import { Cabin } from './cabin.js';
 import { Catalog, pictureOf, drawGoldCoins, MEASURES, measureHtml, crossBoosts, boostOf } from './catalog.js';
+import { BAG_SCENES, BAG_SCENE_IDS } from './bag_scenes.js';
 import { ITEMS, kitOf, RARITY, LEGEND, SETS, LOCKER, totals, sellValue, FREE as FREE_IDS, slotKey, bagSlotOf } from './items.js';
 const SIDE_TOOLS = new Set(['cam']);
 import { kit as ensureKit } from './economy.js';
@@ -212,41 +213,6 @@ function rewardHtml(m) {
   const items = ids.map((it) => `<span class="qs-gift"><img src="${pictureOf(it.kind, it, 150, 90, true)}" alt=""><em style="color:${REWARD_INK[it.rarity] || REWARD_INK.common}">${it.name}</em></span>`).join('');
   return items + (m.pay ? `<span class="qs-cash">${cashIc()}${money(m.pay, false)}</span>` : '');
 }
-// (7.6.53, owner) the scenes behind the diver in the bag: water colours top to bottom, light, seabed, and what grows there
-const BAG_SCENES = {
-  reef: { name: 'Reef', water: ['#1d3a44', '#0c1c23', '#060e12'], light: 'rgba(60, 96, 100, 0.25)', bed: ['#13262c', '#081215'], draw(y, rnd, PW, PH) {
-    { const bx = PW * 0.2, by = PH * 0.9, tips = []; // a sea fan: a lace web on branching ribs
-      const br = (px, py, a, len, wdt, dpt) => { const ex = px + Math.cos(a) * len, ey = py + Math.sin(a) * len; y.lineWidth = wdt; y.beginPath(); y.moveTo(px, py); y.quadraticCurveTo((px + ex) / 2 + (rnd() - 0.5) * 5, (py + ey) / 2 + (rnd() - 0.5) * 3, ex, ey); y.stroke();
-        if (dpt >= 4 || len < 6) { tips.push([ex, ey]); return; } br(ex, ey, a - 0.28 - rnd() * 0.25, len * (0.72 + rnd() * 0.12), wdt * 0.7, dpt + 1); br(ex, ey, a + 0.28 + rnd() * 0.25, len * (0.72 + rnd() * 0.12), wdt * 0.7, dpt + 1); };
-      y.strokeStyle = 'rgba(70, 92, 86, 0.75)'; y.lineCap = 'round'; br(bx, by, -Math.PI / 2 + 0.08, 40, 3.6, 0);
-      tips.sort((p, q) => Math.atan2(p[1] - by, p[0] - bx) - Math.atan2(q[1] - by, q[0] - bx));
-      y.fillStyle = 'rgba(64, 88, 82, 0.28)'; y.beginPath(); y.moveTo(bx, by - 20); for (const [tx, ty] of tips) y.lineTo(tx, ty); y.closePath(); y.fill(); }
-    for (let i = 0; i < 4; i++) { const bx = PW * (0.68 + i * 0.07), by = PH * (0.9 + rnd() * 0.03), len = PH * (0.2 + rnd() * 0.16), lean = 16 + rnd() * 24, n = 14; // sea whips
-      for (let k = 0; k < n; k++) { const t0 = k / n, t1 = (k + 1) / n, P = (t) => [bx + lean * t * t, by - len * t]; const [x0, y0] = P(t0), [x1, y1] = P(t1);
-        y.strokeStyle = `rgba(${74 + i * 6}, ${96 + i * 4}, 86, ${0.8 - t0 * 0.35})`; y.lineWidth = 3.4 * (1 - t0 * 0.8); y.lineCap = 'round'; y.beginPath(); y.moveTo(x0, y0); y.lineTo(x1, y1); y.stroke(); } }
-    for (let i = 0; i < 3; i++) { const bx = PW * 0.4 + i * 15 + rnd() * 5, base = PH * 0.905, h = 20 + rnd() * 24, wd = 10 + rnd() * 6, lean = (rnd() - 0.5) * 6, top = base - h; // barrel sponges
-      y.fillStyle = `rgba(${54 + i * 6}, ${72 + i * 4}, 68, 0.9)`; y.beginPath(); y.moveTo(bx - wd * 0.3, base); y.bezierCurveTo(bx - wd * 0.75, base - h * 0.4, bx - wd * 0.6 + lean, top + h * 0.2, bx - wd * 0.5 + lean, top);
-      y.lineTo(bx + wd * 0.5 + lean, top); y.bezierCurveTo(bx + wd * 0.6 + lean, top + h * 0.2, bx + wd * 0.75, base - h * 0.4, bx + wd * 0.3, base); y.closePath(); y.fill();
-      y.fillStyle = 'rgba(4, 10, 12, 0.85)'; y.beginPath(); y.ellipse(bx + lean, top + 1, wd * 0.42, 2, 0, 0, Math.PI * 2); y.fill(); } } },
-  kelp: { name: 'Kelp', water: ['#2b4e4a', '#163330', '#0b1d1b'], light: 'rgba(120, 150, 110, 0.22)', bed: ['#2a3a30', '#141f19'], draw(y, rnd, PW, PH) {
-    for (let i = 0; i < 5; i++) { const bx = PW * (0.08 + i * 0.21 + (rnd() - 0.5) * 0.06), by = PH * 0.92, len = PH * (0.6 + rnd() * 0.35), sway = (rnd() - 0.5) * 50, col = `rgba(${78 + i * 5}, ${92 + i * 3}, 52, ${0.55 + rnd() * 0.25})`; // kelp: a stipe and its blades
-      const P = (t) => [bx + sway * Math.sin(t * 2.2) * t, by - len * t]; y.strokeStyle = col; y.lineWidth = 3.4; y.lineCap = 'round'; y.beginPath(); for (let k = 0; k <= 20; k++) { const [px, py] = P(k / 20); k ? y.lineTo(px, py) : y.moveTo(px, py); } y.stroke();
-      y.fillStyle = col; for (let t = 0.12; t < 0.96; t += 0.05 + rnd() * 0.07) { const [px, py] = P(t), sd2 = rnd() < 0.5 ? 1 : -1, bl = 22 + rnd() * 22, rise = 6 + rnd() * 14, wv = (rnd() - 0.5) * 6; // long, ruffled blades, each its own
-        y.beginPath(); y.moveTo(px, py); y.bezierCurveTo(px + sd2 * bl * 0.3, py - rise * 0.2 - 5, px + sd2 * bl * 0.7, py - rise + wv, px + sd2 * bl, py - rise - 2); y.bezierCurveTo(px + sd2 * bl * 0.65, py - rise * 0.5 + 3, px + sd2 * bl * 0.3, py + 3, px, py + 1); y.fill(); } } } },
-  midnight: { name: 'Midnight', water: ['#0c1820', '#060c11', '#020507'], light: 'rgba(40, 60, 70, 0.12)', bed: null, snow: 90, draw(y, rnd, PW, PH) {
-    for (let i = 0; i < 26; i++) { const px = rnd() * PW, py = rnd() * PH, r = 0.8 + rnd() * 1.6, g2 = y.createRadialGradient(px, py, 0, px, py, r * 5); g2.addColorStop(0, 'rgba(150, 200, 180, 0.5)'); g2.addColorStop(1, 'rgba(150, 200, 180, 0)'); y.fillStyle = g2; y.fillRect(px - r * 5, py - r * 5, r * 10, r * 10); } // a few lights of animals far off
-    { const jx = PW * 0.78, jy = PH * 0.22; y.fillStyle = 'rgba(120, 140, 150, 0.16)'; y.beginPath(); y.ellipse(jx, jy, 20, 13, 0, Math.PI, Math.PI * 2); y.fill(); // a jelly drifting, far off
-      y.strokeStyle = 'rgba(120, 140, 150, 0.12)'; y.lineWidth = 1; for (let k = 0; k < 6; k++) { y.beginPath(); y.moveTo(jx - 14 + k * 5.6, jy); y.bezierCurveTo(jx - 16 + k * 6, jy + 20, jx - 10 + k * 5, jy + 34, jx - 14 + k * 5.6 + (rnd() - 0.5) * 8, jy + 50 + rnd() * 20); y.stroke(); } }
-    { y.strokeStyle = 'rgba(110, 130, 120, 0.14)'; y.lineWidth = 1.4; y.beginPath(); const sx = PW * 0.12; for (let k = 0; k <= 30; k++) { const t = k / 30, px = sx + Math.sin(t * 5) * 10, py = PH * (0.1 + t * 0.6); k ? y.lineTo(px, py) : y.moveTo(px, py); } y.stroke(); } } }, // a siphonophore's long thread
-  vents: { name: 'Vents', water: ['#1a2226', '#0e1315', '#07090a'], light: 'rgba(90, 80, 70, 0.12)', bed: ['#1b1c1b', '#0b0c0b'], draw(y, rnd, PW, PH) {
-    const chimney = (bx, h, wd) => { y.fillStyle = 'rgba(28, 28, 27, 0.95)'; y.beginPath(); y.moveTo(bx - wd, PH * 0.92); for (let k = 0; k <= 8; k++) { const t = k / 8; y.lineTo(bx - wd * (1 - t * 0.55) + (rnd() - 0.5) * 4, PH * 0.92 - h * t); } for (let k = 8; k >= 0; k--) { const t = k / 8; y.lineTo(bx + wd * (1 - t * 0.55) + (rnd() - 0.5) * 4, PH * 0.92 - h * t); } y.closePath(); y.fill();
-      const g2 = y.createRadialGradient(bx, PH * 0.92 - h, 0, bx, PH * 0.92 - h, 30); g2.addColorStop(0, 'rgba(150, 80, 50, 0.25)'); g2.addColorStop(1, 'rgba(150, 80, 50, 0)'); y.fillStyle = g2; y.fillRect(bx - 30, PH * 0.92 - h - 30, 60, 60);
-      y.save(); y.filter = 'blur(5px)'; y.fillStyle = 'rgba(70, 74, 76, 0.16)'; let sx = bx; for (let k = 0; k < 9; k++) { sx += (rnd() - 0.35) * 7; y.beginPath(); y.ellipse(sx, PH * 0.92 - h - 6 - k * 11, 5 + k * 2.6, 4 + k * 1.6, (rnd() - 0.5) * 0.6, 0, Math.PI * 2); y.fill(); } y.restore(); }; // the smoke rising off it, soft and drifting
-    chimney(PW * 0.16, 120, 18); chimney(PW * 0.84, 160, 22); chimney(PW * 0.7, 70, 12);
-    for (let i = 0; i < 9; i++) { const bx = PW * 0.3 + i * 6 + rnd() * 4, h = 14 + rnd() * 18; y.strokeStyle = 'rgba(200, 196, 180, 0.4)'; y.lineWidth = 2; y.beginPath(); y.moveTo(bx, PH * 0.92); y.lineTo(bx + (rnd() - 0.5) * 4, PH * 0.92 - h); y.stroke(); // tube worms, their plumes rust
-      y.fillStyle = 'rgba(150, 62, 44, 0.7)'; y.beginPath(); y.ellipse(bx, PH * 0.92 - h - 2, 2.4, 3.2, 0, 0, Math.PI * 2); y.fill(); } } },
-};
-export const BAG_SCENE_IDS = Object.keys(BAG_SCENES);
 export class UI {
   constructor(h) {
     this.h = h;
@@ -1098,6 +1064,14 @@ export class UI {
 
   // (7.4.14, owner) the pets he owns: a card each (picture, name in its rarity's colour, tier and price, stars a level, a
   // tick on the one out); a tap takes it out, or sends the one out home. Feed: at the surface, for the one out, once a day
+  // (7.6.54, owner) the scenes behind the diver: each a small picture of itself, its name, Free / its price in pearls / In use
+  scenesPanel(P) {
+    this.sceneThumbs = this.sceneThumbs || {}; const pearl = '<img class="st-pearl" src="assets/ui/icons/pearl.png" alt="">', cur = P.bagScene || 'reef';
+    const cards = BAG_SCENE_IDS.map((id) => { const S = BAG_SCENES[id], own = !S.price || (P.bagScenes || []).includes(id);
+      if (!this.sceneThumbs[id]) this.sceneThumbs[id] = this.eqBackdrop(300, 340, id).toDataURL();
+      return `<button class="sc-card${id === cur ? ' on' : ''}${own ? '' : ' locked'}" data-pickscene="${id}"><img src="${this.sceneThumbs[id]}" alt=""><b>${S.name}</b><small>${id === cur ? 'In use' : own ? (S.price ? 'Owned' : 'Free') : `${pearl}${S.price}`}</small></button>`; }).join('');
+    return `<div class="item-pop scene-pick"><div class="ip-box"><button class="ip-close" aria-label="Close">×</button><h4>Scene</h4><p class="pp-note">What lies behind your diver here. You have ${pearl}${Math.floor(P.pearls || 0)}.</p><div class="sc-grid">${cards}</div></div></div>`;
+  }
   petsPanel(P, g, fit) {
     const owned = PETS.filter((q) => (P.petsOwned || []).includes(q.id)), cur = P.pet && P.pet.id;
     const pearl = '<img class="st-pearl" src="assets/ui/icons/pearl.png" alt="">';
@@ -1474,7 +1448,7 @@ export class UI {
     const fit = (sp3) => { const k = 'pet' + sp3.id; if (!this.fitPics.has(k)) this.fitPics.set(k, petIcon(sp3, 300, 180).toDataURL()); return this.fitPics.get(k); };
     const pTier = psp && PET_BY_ID.get(psp.id) ? PET_BY_ID.get(psp.id).tier : 'common';
     const petGear = `<div class="eq-slot sq petg${pet ? ` r-${pTier}` : ' empty'}" data-petslot title="${pet ? psp.name : 'Pet: empty'}">${pet ? `<img src="${fit(psp)}" alt="">` : ''}${!pet && nOwned ? '<i class="badge-x">!</i>' : ''}<small class="slot-nm">Pet</small></div>`;
-    const petPick = this.petPick ? this.petsPanel(P, g, fit) : '';
+    const petPick = (this.petPick ? this.petsPanel(P, g, fit) : '') + (this.scenePick ? this.scenesPanel(P) : '');
     const helmetSlot = `<div class="eq-slot sq empty helmet" data-helmet title="Helmet: none yet"><small class="slot-nm">Helmet</small></div>`;
     const nSpare = ['necklace', 'glowAdv'].filter((k) => (SP[k] || 0) > 0).length + trapKinds.length + Math.ceil(nGold / 10);
     const pop = this.lkSel ? this.itemPop(P, g, free) : '';
@@ -1519,9 +1493,7 @@ export class UI {
     S.water.forEach((col, i) => gr.addColorStop(i / (S.water.length - 1), col)); y.fillStyle = gr; y.fillRect(0, 0, W, H);
     // light from above, uneven: a few broad soft patches
     for (let i = 0; i < 5; i++) { const px = W * (0.15 + rnd() * 0.7), py = H * rnd() * 0.3, r = W * (0.25 + rnd() * 0.25), g2 = y.createRadialGradient(px, py, 0, px, py, r); g2.addColorStop(0, S.light); g2.addColorStop(1, 'rgba(0,0,0,0)'); y.fillStyle = g2; y.fillRect(0, 0, W, H); }
-    const bed = (top, col, a, amp = 0.05) => { y.fillStyle = col; y.globalAlpha = a; y.beginPath(); y.moveTo(0, H); for (let i = 0; i <= 32; i++) { const px = (i / 32) * W, py = top - Math.sin((i / 32) * Math.PI) * H * amp + Math.sin(i * 1.7 + top) * H * 0.006; y.lineTo(px, py); } y.lineTo(W, H); y.closePath(); y.fill(); y.globalAlpha = 1; };
-    if (S.bed) { bed(H * 0.86, S.bed[0], 0.85); bed(H * 0.92, S.bed[1], 1); }
-    const PS = H / 520, PW = 360, PH = 520; y.save(); y.translate((W - PW * PS) / 2, 0); y.scale(PS, PS); S.draw(y, rnd, PW, PH); y.restore();
+    const PS = H / 520, FW = W / PS; y.save(); y.scale(PS, PS); S.draw(y, rnd, FW, 520); y.restore(); // the scene, in the turntable's units across the whole stage
     // sea snow: tiny sharp specks
     const d0 = Math.max(1, Math.round(W / 600));
     for (let i = 0; i < (S.snow || 140); i++) { y.fillStyle = `rgba(${S.snowCol || '200, 212, 204'}, ${0.15 + rnd() * 0.35})`; const px = rnd() * W, py = rnd() * H * 0.88; y.fillRect(px, py, rnd() < 0.3 ? d0 * 2 : d0, rnd() < 0.2 ? d0 * 2 : d0); }
@@ -1695,7 +1667,14 @@ export class UI {
       requestAnimationFrame(chk); c.addEventListener('scroll', chk, { passive: true }); });
     const pop = box.querySelector('.item-pop:not(.trap-pop)');
     if (pop) { pop.addEventListener('click', (ev) => { if (ev.target === pop || ev.target.closest('.ip-close')) { this.lkSel = null; this.renderInventory(); } }); }
-    { const sb = root.querySelector('[data-scene]'); if (sb) sb.addEventListener('click', () => { const ids = BAG_SCENE_IDS, i = ids.indexOf(P.bagScene || 'reef'); P.bagScene = ids[(i + 1) % ids.length]; this.h.onSaveProfile && this.h.onSaveProfile(); this.renderInventory(); }); } // (7.6.53, owner)
+    { const sb = root.querySelector('[data-scene]'); if (sb) sb.addEventListener('click', () => { this.scenePick = true; this.lkSel = null; this.renderInventory(); }); } // (7.6.53-54, owner) the scenes, to choose or buy
+    { const sp = box.querySelector('.scene-pick'); if (sp) sp.addEventListener('click', (ev) => { const b = ev.target.closest('[data-pickscene]');
+      if (b) { const id = b.dataset.pickscene, S = BAG_SCENES[id], own = !S.price || (P.bagScenes || []).includes(id);
+        if (own) { P.bagScene = id; this.h.onSaveProfile && this.h.onSaveProfile(); this.scenePick = false; this.renderInventory(); return; }
+        const pl = Math.floor(P.pearls || 0); if (pl < S.price) { this.h.onMessage && this.h.onMessage(`${S.name}: ${S.price} pearls (you have ${pl})`); return; }
+        this.confirm(`${S.name}`, `${S.line}\nBuy it for ${S.price} pearls? You have ${pl}.`, `Buy, ${S.price} pearls`, 'Not now', () => { P.pearls -= S.price; P.bagScenes = [...(P.bagScenes || []), id]; P.bagScene = id; this.h.onSaveProfile && this.h.onSaveProfile(); this.scenePick = false; this.renderInventory(); });
+        return; }
+      if (ev.target === sp || ev.target.closest('.ip-close')) { this.scenePick = false; this.renderInventory(); } }); }
     if (!this.h.canChangeGear()) return;
     const put = (u) => { this.h.onEquip('on:' + u); this.renderInventory(); };
     const off = (kind) => { this.h.onEquip('off:' + kind); this.renderInventory(); };
