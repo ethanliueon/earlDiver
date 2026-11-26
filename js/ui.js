@@ -724,25 +724,10 @@ export class UI {
   }
   // (6.9.0) what a Log step gives, shown, not named: an item as its picture with its name in its rarity's colour, money as
   // the sum, both when both (never "a gift")
-  // (7.6.38, owner) an achievement's picture: a window on the deep, blue-black water with sea snow and a faint shaft of
-  // light from far above, the triplewart seadevil in it with its lure glowing. Drawn once, kept as an image
+  // (7.6.40, owner) an achievement's picture: the game's own triplewart seadevil, on the page itself, no window round it
   achArt(a) {
     this.achPics = this.achPics || {}; if (this.achPics[a.id]) return this.achPics[a.id];
-    const W = 152, H = 240, c = document.createElement('canvas'); c.width = W; c.height = H; const x = c.getContext('2d');
-    const bg = x.createLinearGradient(0, 0, 0, H); bg.addColorStop(0, '#163644'); bg.addColorStop(0.5, '#0a1a24'); bg.addColorStop(1, '#03080d'); x.fillStyle = bg; x.fillRect(0, 0, W, H);
-    const sh = x.createLinearGradient(30, 0, 90, H); sh.addColorStop(0, 'rgba(150,200,210,0.18)'); sh.addColorStop(1, 'rgba(150,200,210,0)'); x.fillStyle = sh; x.beginPath(); x.moveTo(30, 0); x.lineTo(70, 0); x.lineTo(120, H); x.lineTo(50, H); x.fill();
-    let sd = 7; const rnd = () => ((sd = (sd * 16807) % 2147483647) / 2147483647);
-    for (let i = 0; i < 50; i++) { x.fillStyle = `rgba(220,232,236,${0.12 + rnd() * 0.35})`; x.beginPath(); x.arc(rnd() * W, rnd() * H, 0.6 + rnd() * 1.3, 0, Math.PI * 2); x.fill(); }
-    const sp = SPECIES_BY_ID[323] || SPECIES_BY_ID[100];
-    if (sp) { const fw = 144, fh = 130, f = fittedIcon(sp, fw, fh, 0.04), fx = (W - fw) / 2, fy = H * 0.34;
-      x.drawImage(f, fx, fy);
-      // the lure: the brightest point of the drawing; its light thrown on the water round it
-      const d = f.getContext('2d').getImageData(0, 0, fw, fh).data; let best = -1, lx = fw * 0.7, ly = fh * 0.2;
-      for (let k = 0; k < fw * fh; k++) { if (d[k * 4 + 3] < 200) continue; const v = d[k * 4] + d[k * 4 + 1] * 1.2 + d[k * 4 + 2]; if (v > best) { best = v; lx = k % fw; ly = Math.floor(k / fw); } }
-      lx += fx; ly += fy; const gl = x.createRadialGradient(lx, ly, 0, lx, ly, 52); gl.addColorStop(0, 'rgba(200,255,240,0.75)'); gl.addColorStop(0.18, 'rgba(120,230,210,0.28)'); gl.addColorStop(1, 'rgba(110,220,200,0)');
-      x.globalCompositeOperation = 'lighter'; x.fillStyle = gl; x.fillRect(0, 0, W, H); x.globalCompositeOperation = 'source-over'; }
-    const vg = x.createRadialGradient(W / 2, H / 2, W * 0.35, W / 2, H / 2, H * 0.62); vg.addColorStop(0, 'rgba(0,0,0,0)'); vg.addColorStop(1, 'rgba(0,0,0,0.6)'); x.fillStyle = vg; x.fillRect(0, 0, W, H);
-    return (this.achPics[a.id] = c.toDataURL());
+    const sp = SPECIES_BY_ID[323] || SPECIES_BY_ID[100]; return (this.achPics[a.id] = sp ? fittedIcon(sp, 240, 140, 0.04).toDataURL() : '');
   }
   renderQuests() {
     const P = this.h.getProfile(); if (!P || this.qFreeze) return;
@@ -763,8 +748,8 @@ export class UI {
       const pearl = '<img class="qs-pearl" src="assets/ui/icons/pearl.png" alt="">';
       for (const a of ACH) { const st = achStars(P, a), done = st >= a.tiers.length, ready = achReady(P, a), [mark, pay] = done ? a.tiers[a.tiers.length - 1] : a.tiers[st], v = achValue(P, a), f = (n) => n.toLocaleString('en-US');
         const stars = Array.from({ length: STARS }, (_, i) => `<i class="${i < st ? 'on' : i === st && ready ? 'ready' : ''}">★</i>`).join('');
-        // (7.6.38, owner) a small window on the deep beside it: one of the game's own anglerfish, its lure lit
-        html += `<div class="qs-q ach${ready ? ' ready' : ''}${done ? ' claimed' : ''}"><div class="ach-art" style="background-image:url(${this.achArt(a)})"></div>
+        // (7.6.40, owner) the game's own anglerfish beside the stars, in the card's empty middle
+        html += `<div class="qs-q ach${ready ? ' ready' : ''}${done ? ' claimed' : ''}"><img class="ach-art" src="${this.achArt(a)}" alt="">
           <b class="ach-name">${a.name}</b><span class="ach-pay">${done ? '' : `${pearl}${f(pay)}`}</span>
           <span class="ach-stars">${stars}</span>
           <span class="ach-goal">${done ? 'Every star earned' : a.goal(mark)}</span>
