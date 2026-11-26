@@ -159,16 +159,19 @@ export const BAG_SCENES = {
         glowDot(y, ax + d * 22 * s, ay - 20 * s, 2.2 * s, rnd() < 0.7 ? '190, 220, 200' : '220, 170, 120', 0.85); };
       for (let i = 0; i < 9; i++) { const s = 0.35 + rnd() * 0.3; angler(c + (rnd() - 0.5) * 240, PH * (0.1 + rnd() * 0.7), s, rnd() < 0.5 ? 1 : -1); } // far off
       angler(c - 80, PH * 0.6, 1.2, 1); angler(c + 82, PH * 0.42, 1.0, -1); angler(c + 60, PH * 0.82, 0.75, -1); angler(c - 60, PH * 0.2, 0.6, 1); } },
-  watcher: { name: 'It Watches', price: 300, water: ['#120c0c', '#080506', '#030202'], light: 'rgba(60, 20, 16, 0.12)', snow: 100, snowCol: '190, 170, 160', line: 'Something in the deep has noticed you.',
-    draw(y, rnd, FW, PH) { const ex = FW / 2 + 6, ey = PH * 0.36, R = 105; // the eye vast behind him: he stands against it
-      const halo = y.createRadialGradient(ex, ey, 0, ex, ey, R * 3); halo.addColorStop(0, 'rgba(120, 30, 20, 0.35)'); halo.addColorStop(1, 'rgba(120, 30, 20, 0)'); y.fillStyle = halo; y.fillRect(0, 0, FW, PH); // the water red round it
-      y.save(); y.beginPath(); y.moveTo(ex - R * 1.6, ey); y.quadraticCurveTo(ex, ey - R * 1.05, ex + R * 1.6, ey); y.quadraticCurveTo(ex, ey + R * 1.05, ex - R * 1.6, ey); y.clip(); // the lids
-      const iris = y.createRadialGradient(ex, ey, R * 0.1, ex, ey, R); iris.addColorStop(0, 'rgba(230, 120, 60, 0.95)'); iris.addColorStop(0.55, 'rgba(170, 50, 30, 0.9)'); iris.addColorStop(1, 'rgba(50, 10, 8, 0.95)'); y.fillStyle = iris; y.fillRect(ex - R * 2, ey - R * 2, R * 4, R * 4);
-      y.strokeStyle = 'rgba(40, 8, 6, 0.4)'; y.lineWidth = 1; for (let k = 0; k < 40; k++) { const a = rnd() * TAU; y.beginPath(); y.moveTo(ex + Math.cos(a) * R * 0.25, ey + Math.sin(a) * R * 0.25); y.lineTo(ex + Math.cos(a) * R * (0.7 + rnd() * 0.3), ey + Math.sin(a) * R * (0.7 + rnd() * 0.3)); y.stroke(); } // the iris's fibres
-      y.fillStyle = 'rgba(4, 2, 2, 0.98)'; y.beginPath(); y.ellipse(ex, ey, R * 0.12, R * 0.78, 0, 0, TAU); y.fill(); // the slit
-      y.fillStyle = 'rgba(255, 220, 190, 0.35)'; y.beginPath(); y.ellipse(ex - R * 0.4, ey - R * 0.35, R * 0.1, R * 0.06, -0.5, 0, TAU); y.fill(); y.restore();
-      y.strokeStyle = 'rgba(20, 10, 8, 0.9)'; y.lineWidth = 6; y.beginPath(); y.moveTo(ex - R * 1.6, ey); y.quadraticCurveTo(ex, ey - R * 1.05, ex + R * 1.6, ey); y.stroke(); y.beginPath(); y.moveTo(ex - R * 1.6, ey); y.quadraticCurveTo(ex, ey + R * 1.05, ex + R * 1.6, ey); y.stroke();
-      y.fillStyle = 'rgba(14, 8, 8, 0.85)'; for (let k = 0; k < 30; k++) { const a = rnd() * TAU, r = R * (1.7 + rnd() * 1.2); y.beginPath(); y.ellipse(ex + Math.cos(a) * r, ey + Math.sin(a) * r * 0.6, 4 + rnd() * 8, 3 + rnd() * 5, a, 0, TAU); y.fill(); } // scarred hide round it
-      seabed(y, rnd, FW, PH, PH * 0.92, '#1a1312', '#070404'); } },
+  watcher: { name: 'It Watches', price: 300, water: ['#0b0a0b', '#060506', '#020202'], light: 'rgba(40, 20, 18, 0.06)', snow: 90, snowCol: '180, 166, 160', line: 'Something in the deep has noticed you.',
+    // (7.6.56, owner) from the dark, not overhead: far off beside him, low, one eye half shut and dim, the rest of it lost in black
+    draw(y, rnd, FW, PH) { const c = FW / 2, ex = c + 86, ey = PH * 0.5, R = 24;
+      const halo = y.createRadialGradient(ex, ey, 0, ex, ey, R * 5); halo.addColorStop(0, 'rgba(110, 28, 18, 0.22)'); halo.addColorStop(1, 'rgba(110, 28, 18, 0)'); y.fillStyle = halo; y.fillRect(ex - R * 5, ey - R * 5, R * 10, R * 10); // a faint red where it is
+      y.fillStyle = 'rgba(8, 5, 5, 0.85)'; y.beginPath(); y.ellipse(ex + 18, ey + 6, R * 4.2, R * 2.6, -0.15, 0, TAU); y.fill(); // the bulk of its head, barely darker than the dark
+      y.save(); y.beginPath(); y.moveTo(ex - R * 1.5, ey); y.quadraticCurveTo(ex, ey - R * 0.55, ex + R * 1.5, ey); y.quadraticCurveTo(ex, ey + R * 0.65, ex - R * 1.5, ey); y.clip(); // the lids, half shut
+      const iris = y.createRadialGradient(ex, ey, R * 0.1, ex, ey, R); iris.addColorStop(0, 'rgba(210, 110, 56, 0.85)'); iris.addColorStop(0.6, 'rgba(140, 40, 24, 0.8)'); iris.addColorStop(1, 'rgba(40, 8, 6, 0.9)'); y.fillStyle = iris; y.fillRect(ex - R * 2, ey - R * 2, R * 4, R * 4);
+      y.strokeStyle = 'rgba(40, 8, 6, 0.45)'; y.lineWidth = 0.6; for (let k = 0; k < 22; k++) { const a = rnd() * TAU; y.beginPath(); y.moveTo(ex + Math.cos(a) * R * 0.25, ey + Math.sin(a) * R * 0.25); y.lineTo(ex + Math.cos(a) * R * 0.9, ey + Math.sin(a) * R * 0.9); y.stroke(); }
+      y.fillStyle = 'rgba(3, 2, 2, 0.98)'; y.beginPath(); y.ellipse(ex - 2, ey, R * 0.1, R * 0.7, 0, 0, TAU); y.fill(); // the slit, turned toward him
+      y.fillStyle = 'rgba(255, 220, 190, 0.3)'; y.beginPath(); y.ellipse(ex - R * 0.45, ey - R * 0.15, R * 0.09, R * 0.05, -0.3, 0, TAU); y.fill(); y.restore();
+      y.strokeStyle = 'rgba(14, 8, 7, 0.95)'; y.lineWidth = 3; y.beginPath(); y.moveTo(ex - R * 1.5, ey); y.quadraticCurveTo(ex, ey - R * 0.55, ex + R * 1.5, ey); y.stroke(); y.beginPath(); y.moveTo(ex - R * 1.5, ey); y.quadraticCurveTo(ex, ey + R * 0.65, ex + R * 1.5, ey); y.stroke();
+      y.strokeStyle = 'rgba(30, 14, 12, 0.5)'; y.lineWidth = 1; for (let k = 0; k < 7; k++) { const sx = ex - 30 + rnd() * 90, sy = ey - 26 + rnd() * 50; y.beginPath(); y.moveTo(sx, sy); y.quadraticCurveTo(sx + 8, sy + (rnd() - 0.5) * 6, sx + 16 + rnd() * 10, sy + (rnd() - 0.5) * 8); y.stroke(); } // old scars on the hide, just seen
+      seabed(y, rnd, FW, PH, PH * 0.92, '#141010', '#060404');
+      rock(y, rnd, c + 120, PH * 0.93, 46, 40, [20, 16, 16]); } }, // a rock between it and him, so it is half behind something
 };
 export const BAG_SCENE_IDS = Object.keys(BAG_SCENES);
