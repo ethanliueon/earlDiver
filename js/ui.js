@@ -51,6 +51,7 @@ import { ChestReveal, chestsOf, oddsText, chestPicture, chestOddsHtml } from './
 import { petsHtml, petStars, storeHtml, eventsHtml, calWeek, untilTomorrow, testHtml, giftWait, hms, shopTabs } from './store.js';
 import { scrollsHtml, coinsHtml, packsHtml, shelfOf, restock, shelfPrice, COIN_OFFERS, COIN_DEAL, takeDeal, dealTaken, RESTOCK_PEARLS, scrollSellPearls } from './shelf.js'; // (7.6.2)
 import { isTestStore } from './purchases.js';
+import { ACH, STARS, achStars, achReady, achValue, achReadyCount } from './achievements.js';
 import { startTitleArt } from './title_art.js'; // (7.0.0) the name as artwork // (6.9.0) the Test tab, behind ?dev
 import { tankPicture, tankZoom } from './journal_tank.js';
 // (7.2.8) the name plate's pencil: a turned, lit object like every item (hexagonal barrel, one face lit, one in shade,
@@ -636,7 +637,9 @@ export class UI {
         const a = ev.target.closest('[data-q]'); if (!a || a.disabled) return;
         const [act, arg] = a.dataset.q.split('|');
         if (act === 'info') { this.questInfo(arg); return; } // (4.8.1)
-        if (act === 'claim') this.h.onQuestClaim(arg); else if (act === 'refresh') this.h.onQuestRefresh(arg === 'paid');
+        if (act === 'tab') { this.qTab = arg; this.h.audio && this.h.audio.click && this.h.audio.click(); } // (7.6.38)
+        else if (act === 'ach') this.h.onAchClaim && this.h.onAchClaim(arg);
+        else if (act === 'claim') this.h.onQuestClaim(arg); else if (act === 'refresh') this.h.onQuestRefresh(arg === 'paid');
         this.renderQuests();
       });
     }
@@ -721,6 +724,26 @@ export class UI {
   }
   // (6.9.0) what a Log step gives, shown, not named: an item as its picture with its name in its rarity's colour, money as
   // the sum, both when both (never "a gift")
+  // (7.6.38, owner) an achievement's picture: a window on the deep, blue-black water with sea snow and a faint shaft of
+  // light from far above, the triplewart seadevil in it with its lure glowing. Drawn once, kept as an image
+  achArt(a) {
+    this.achPics = this.achPics || {}; if (this.achPics[a.id]) return this.achPics[a.id];
+    const W = 152, H = 240, c = document.createElement('canvas'); c.width = W; c.height = H; const x = c.getContext('2d');
+    const bg = x.createLinearGradient(0, 0, 0, H); bg.addColorStop(0, '#163644'); bg.addColorStop(0.5, '#0a1a24'); bg.addColorStop(1, '#03080d'); x.fillStyle = bg; x.fillRect(0, 0, W, H);
+    const sh = x.createLinearGradient(30, 0, 90, H); sh.addColorStop(0, 'rgba(150,200,210,0.18)'); sh.addColorStop(1, 'rgba(150,200,210,0)'); x.fillStyle = sh; x.beginPath(); x.moveTo(30, 0); x.lineTo(70, 0); x.lineTo(120, H); x.lineTo(50, H); x.fill();
+    let sd = 7; const rnd = () => ((sd = (sd * 16807) % 2147483647) / 2147483647);
+    for (let i = 0; i < 50; i++) { x.fillStyle = `rgba(220,232,236,${0.12 + rnd() * 0.35})`; x.beginPath(); x.arc(rnd() * W, rnd() * H, 0.6 + rnd() * 1.3, 0, Math.PI * 2); x.fill(); }
+    const sp = SPECIES_BY_ID[323] || SPECIES_BY_ID[100];
+    if (sp) { const fw = 144, fh = 130, f = fittedIcon(sp, fw, fh, 0.04), fx = (W - fw) / 2, fy = H * 0.34;
+      x.drawImage(f, fx, fy);
+      // the lure: the brightest point of the drawing; its light thrown on the water round it
+      const d = f.getContext('2d').getImageData(0, 0, fw, fh).data; let best = -1, lx = fw * 0.7, ly = fh * 0.2;
+      for (let k = 0; k < fw * fh; k++) { if (d[k * 4 + 3] < 200) continue; const v = d[k * 4] + d[k * 4 + 1] * 1.2 + d[k * 4 + 2]; if (v > best) { best = v; lx = k % fw; ly = Math.floor(k / fw); } }
+      lx += fx; ly += fy; const gl = x.createRadialGradient(lx, ly, 0, lx, ly, 52); gl.addColorStop(0, 'rgba(200,255,240,0.75)'); gl.addColorStop(0.18, 'rgba(120,230,210,0.28)'); gl.addColorStop(1, 'rgba(110,220,200,0)');
+      x.globalCompositeOperation = 'lighter'; x.fillStyle = gl; x.fillRect(0, 0, W, H); x.globalCompositeOperation = 'source-over'; }
+    const vg = x.createRadialGradient(W / 2, H / 2, W * 0.35, W / 2, H / 2, H * 0.62); vg.addColorStop(0, 'rgba(0,0,0,0)'); vg.addColorStop(1, 'rgba(0,0,0,0.6)'); x.fillStyle = vg; x.fillRect(0, 0, W, H);
+    return (this.achPics[a.id] = c.toDataURL());
+  }
   renderQuests() {
     const P = this.h.getProfile(); if (!P || this.qFreeze) return;
     if (this.boardWait && Date.now() < this.boardWait) { // the new board is being posted
@@ -730,13 +753,28 @@ export class UI {
     }
     fillQuests(P); const S = questsOf(P), m = QUEST_MAIN[S.main];
     const bar = (a, b) => `<div class="qs-bar"><i style="width:${Math.round(Math.min(1, b ? a / b : 1) * 100)}%"></i></div>`;
+    // (7.6.38, owner) a progress bar that carries its own numbers, written across it
+    const nbar = (a, b, label) => `<div class="qs-nbar"><i style="width:${Math.round(Math.min(1, b ? a / b : 1) * 100)}%"></i><em>${label}</em></div>`;
     let html = '<div class="qs-pg l">'; // (5.9.6) two pages: the log (and the refresh) on the left, the board on the right
-    if (m) {
+    // (7.6.38, owner) the left page holds the Log or the Achievements, chosen by a pair of tabs at its top
+    const qt = this.qTab === 'ach' ? 'ach' : 'log', nA = achReadyCount(P);
+    html += `<div class="qs-sw"><button data-q="tab|log"${qt === 'log' ? ' class="on"' : ''}>Log</button><button data-q="tab|ach"${qt === 'ach' ? ' class="on"' : ''}>Achievements${nA ? '<i class="qs-dot"></i>' : ''}</button></div>`;
+    if (qt === 'ach') {
+      const pearl = '<img class="qs-pearl" src="assets/ui/icons/pearl.png" alt="">';
+      for (const a of ACH) { const st = achStars(P, a), done = st >= a.tiers.length, ready = achReady(P, a), [mark, pay] = done ? a.tiers[a.tiers.length - 1] : a.tiers[st], v = achValue(P, a), f = (n) => n.toLocaleString('en-US');
+        const stars = Array.from({ length: STARS }, (_, i) => `<i class="${i < st ? 'on' : i === st && ready ? 'ready' : ''}">★</i>`).join('');
+        // (7.6.38, owner) a small window on the deep beside it: one of the game's own anglerfish, its lure lit
+        html += `<div class="qs-q ach${ready ? ' ready' : ''}${done ? ' claimed' : ''}"><div class="ach-art" style="background-image:url(${this.achArt(a)})"></div>
+          <b class="ach-name">${a.name}</b><span class="ach-pay">${done ? '' : `${pearl}${f(pay)}`}</span>
+          <span class="ach-stars">${stars}</span>
+          <span class="ach-goal">${done ? 'Every star earned' : a.goal(mark)}</span>
+          ${nbar(Math.min(v, mark), mark, `${f(Math.min(v, mark))} / ${f(mark)} ${a.unit}`)}${ready ? `<button data-q="ach|${a.id}">Claim</button>` : ''}</div>`; }
+    } else if (m) {
       const ok = S.mainProg >= m.need;
       html += `<h3>Log</h3><div class="qs-q main${ok ? ' ready' : ''}"><div class="qs-t"><b>${m.text}</b><span>${m.help}</span>${m.need > 1 ? bar(S.mainProg, m.need) : ''}</div>
         <div class="qs-pay">${rewardHtml(m)}${ok ? `<button data-q="claim|main">Claim</button>` : ''}</div></div>`;
     }
-    const footAt = html.length; html += `</div><div class="qs-pg r"><h3>The board</h3>`;
+    const footAt = qt === 'ach' ? -1 : html.length; html += `</div><div class="qs-pg r"><h3>The board</h3>`;
     // (4.3.0) during the tutorial the board waits, so one step at a time is all there is to claim
     if (tutorialOn(P)) { $('quests').querySelector('.qs-body').innerHTML = html + `<p class="qs-locked">The board opens when the tutorial is done. Finish the Margaret's log steps first.</p></div>`; return; }
     const hm = (ms) => { const totM = Math.ceil(ms / 60000), h = Math.floor(totM / 60), mi = totM % 60; return h ? `${h} h ${mi} min` : `${mi} min`; };
@@ -744,15 +782,16 @@ export class UI {
       // (4.0.0) a claimed quest stays, dimmed, until its time runs out; a new one is marked NEW until the board is seen
       const ok = q.prog >= q.n, left = questLeft(q);
       const timer = q.claimed ? `done, a new quest in ${hm(left)}` : ok ? 'done: claim it' : `${hm(left)} left`;
-      html += `<div class="qs-q r-${q.rarity}${ok && !q.claimed ? ' ready' : ''}${q.claimed ? ' claimed' : ''}"><div class="qs-t"><b>${q.text}${q.fresh ? '<i class="qs-new">New</i>' : ''}</b><small class="qs-time">${timer}</small>${q.n > 1 && !q.claimed ? bar(q.prog, q.n) + `<span>(${q.kind === 'sell' ? money(q.prog, false) + '/' + money(q.n, false) : q.prog + '/' + q.n})</span>` : ''}</div>
-        <div class="qs-pay">${q.claimed ? '<span class="qs-paid">paid</span>' : money(q.pay, false)}${ok && !q.claimed ? `<button data-q="claim|${q.key}">Claim</button>` : ''}</div><button class="qs-info" data-q="info|${q.key}" title="About this quest">i</button></div>`;
+      const pr = q.n > 1 && !q.claimed ? nbar(q.prog, q.n, q.kind === 'sell' ? money(q.prog, false) + ' / ' + money(q.n, false) : q.prog + ' / ' + q.n) : '';
+      html += `<div class="qs-q bd r-${q.rarity}${ok && !q.claimed ? ' ready' : ''}${q.claimed ? ' claimed' : ''}"><div class="qs-t"><b>${q.text}${q.fresh ? '<i class="qs-new">New</i>' : ''}</b>${pr}</div>
+        <div class="qs-row"><small class="qs-time">${timer}</small><div class="qs-pay">${q.claimed ? '<span class="qs-paid">paid</span>' : `<span class="qs-amt">${money(q.pay, false)}</span>`}${ok && !q.claimed ? `<button data-q="claim|${q.key}">Claim</button>` : ''}</div></div><button class="qs-info" data-q="info|${q.key}" title="About this quest">i</button></div>`;
     }
     // (4.0.0) the free refresh, or the next price on the ladder for this three-hour window
     const wait = boardIn(P), price = refreshPrice(P);
     // (4.0.1) the countdown is plain words under the board with a ticking green clock; only the button is brass
     const clock = (ms) => { const t = Math.ceil(ms / 1000), h = Math.floor(t / 3600), m = Math.floor((t % 3600) / 60), sc = t % 60; return `${h}:${String(m).padStart(2, '0')}:${String(sc).padStart(2, '0')}`; };
     html += `<div class="qs-foot">${wait > 0 ? `<span class="qs-wait">Free refresh in <b class="qs-clock">${clock(wait)}</b></span><button class="qs-buy" data-q="refresh|paid" ${P.cash < price ? 'disabled' : ''}>New quests now, ${money(price, false)}</button>` : '<span class="qs-wait">A free refresh is ready</span><button class="qs-buy" data-q="refresh|free">New quests (free)</button>'}</div>`;
-    { const fi = html.lastIndexOf('<div class="qs-foot">'); const foot = html.slice(fi); html = html.slice(0, footAt) + foot + html.slice(footAt, fi) + '</div>'; } // the refresh goes under the log, on the left page
+    if (footAt >= 0) { const fi = html.lastIndexOf('<div class="qs-foot">'); const foot = html.slice(fi); html = html.slice(0, footAt) + foot + html.slice(footAt, fi) + '</div>'; } else html += '</div>'; // the refresh goes under the log, on the left page (under the board while the achievements show)
     $('quests').querySelector('.qs-body').innerHTML = html;
     if (!$('quests').hidden) { clearTimeout(this.qSeenT); this.qSeenT = setTimeout(() => { for (const q of S.board) q.fresh = false; }, 4000); } // (seen: no longer new)
   }
