@@ -1071,7 +1071,7 @@ export class UI {
     this.sceneThumbs = this.sceneThumbs || {}; const pearl = '<img class="st-pearl" src="assets/ui/icons/pearl.png" alt="">', cur = P.bagScene || 'reef';
     const cards = BAG_SCENE_IDS.map((id) => { const S = BAG_SCENES[id], own = !S.price || (P.bagScenes || []).includes(id);
       if (!this.sceneThumbs[id]) this.sceneThumbs[id] = this.eqBackdrop(300, 340, id).toDataURL();
-      return `<button class="sc-card${id === cur ? ' on' : ''}${own ? '' : ' locked'}" data-pickscene="${id}"><img src="${this.sceneThumbs[id]}" alt=""><b style="color:${(RARITY[S.rarity] || RARITY.common).col}">${S.name}</b><small>${id === cur ? 'In use' : own ? (S.price ? 'Owned' : 'Free') : `${pearl}${S.price}`}</small></button>`; }).join('');
+      return `<button class="sc-card${id === cur ? ' on' : ''}${own ? '' : ' locked'}" data-pickscene="${id}"><img src="${this.sceneThumbs[id]}" alt=""><b${S.red ? ' class="red"' : ''}>${S.name}</b><small>${id === cur ? 'In use' : own ? (S.price ? 'Owned' : 'Free') : `${pearl}${S.price}`}</small></button>`; }).join('');
     return `<div class="item-pop scene-pick"><div class="ip-box"><button class="ip-close" aria-label="Close">×</button><h4>Scene</h4><p class="pp-note">What lies behind your diver here. You have ${pearl}${Math.floor(P.pearls || 0)}.</p><div class="sc-grid">${cards}</div></div></div>`;
   }
   petsPanel(P, g, fit) {
@@ -1455,7 +1455,7 @@ export class UI {
     const nSpare = ['necklace', 'glowAdv'].filter((k) => (SP[k] || 0) > 0).length + trapKinds.length + Math.ceil(nGold / 10);
     const pop = this.lkSel ? this.itemPop(P, g, free) : '';
     return `<div class="inv-sec wide eq inv-split${free ? '' : ' locked'}"><div class="inv-left"><div class="cash-plate"><span>CASH</span><b>${moneyExact(P.cash)}</b></div>`
-      + `<div class="eq-stage"><div class="eq-deep"></div>${(() => { const S = BAG_SCENES[P.bagScene] || BAG_SCENES.reef, R = RARITY[S.rarity] || RARITY.common; return `<button class="eq-scene r-${S.rarity}" data-scene style="--rc:${R.col}" title="Change the scene behind your diver"><span>Scene:</span> <b style="color:${R.col}">${S.name}</b></button>`; })()}<div class="eq-col">${SLOTS.slice(0, 5).map(slot).join('')}</div><canvas class="eq-earl" width="360" height="520"></canvas><div class="eq-pouch">${beltSlot()}</div><div class="eq-col">${helmetSlot}${SLOTS.slice(5, 7).map(slot).join('')}${petGear}${SLOTS.slice(7).map(slot).join('')}</div>`
+      + `<div class="eq-stage"><div class="eq-deep"></div>${(() => { const S = BAG_SCENES[P.bagScene] || BAG_SCENES.reef; return `<button class="eq-scene${S.red ? ' red' : ''}" data-scene title="Change the scene behind your diver"><span>Scene:</span> <b>${S.name}</b></button>`; })()}<div class="eq-col">${SLOTS.slice(0, 5).map(slot).join('')}</div><canvas class="eq-earl" width="360" height="520"></canvas><div class="eq-pouch">${beltSlot()}</div><div class="eq-col">${helmetSlot}${SLOTS.slice(5, 7).map(slot).join('')}${petGear}${SLOTS.slice(7).map(slot).join('')}</div>`
       /* (7.6.49, owner) a helmet slot at the top right, ready for helmets to come; the glow sticks (used up, not worn) moved to a pouch at his feet */
       /* (7.6.26, owner) Ability 2 at the foot of its column, level with Ability: the two scrolls on one row; the pet moved up */ + `</div>`
       /* (6.0.0) no lock note: gear changes anywhere */
