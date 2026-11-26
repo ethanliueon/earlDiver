@@ -635,23 +635,6 @@ export class Renderer {
     }
     ctx.setTransform(baseM);
     if (fl) { fl.setTransform(baseM); this.layerEnd(ctx, g, fl, null); } // (2.3.2: no rim-and-belly shading on the animals: it popped in and out around whatever was drawn live)
-    // (7.6.85, owner) the first fish waiting to be tapped: "tap  tap  tap" written into the water beside it, on the side away
-    // from the diver, each word coming up and sinking back in turn. Drawn here, in the world, so the snow, the bubbles,
-    // the front kelp and the water's own veil all pass in front of it: it reads as part of the sea, not as a label on the glass
-    if (g.tutFocus && g.tutFocus.kind === 'observe' && g.tutFocus.fish && !g.tutFocus.fish.dead) {
-      const f = g.tutFocus.fish, fx = S(f.x), fy = Sy(f.y), side = S(g.earl.inSub ? g.sub.x : g.earl.x) > fx ? -1 : 1, fs = clamp(ppm * 0.42, 14, 26), gapW = fs * 2.4, r0 = Math.max(18, ppm * (f.len * 0.8 + 0.6));
-      // (7.6.86, owner) as a phone game's tap cue: small, medium, big, each popping in a beat after the last, held a moment,
-      // all gone together, a breath of nothing, then again
-      const t = g.time - (g.tutFocus.t0 || 0), C = 2.6, ph = t % C, out = ph < 1.5 ? 1 : ph < 1.9 ? 1 - (ph - 1.5) / 0.4 : 0;
-      ctx.save(); ctx.textBaseline = 'middle'; ctx.textAlign = side > 0 ? 'left' : 'right';
-      let x = fx + side * r0;
-      for (let i = 0; i < 3; i++) { const sz = fs * [0.78, 1.0, 1.32][i], q = ph - i * 0.28, pop = q <= 0 ? 0 : q < 0.12 ? (q / 0.12) * 1.15 : q < 0.24 ? 1.15 - 0.15 * ((q - 0.12) / 0.12) : 1, a = (q > 0 ? 0.62 : 0) * out;
-        ctx.font = `600 ${(sz * Math.max(0.01, pop)).toFixed(1)}px "Barlow Semi Condensed", "Arial Narrow", sans-serif`;
-        const w = ctx.measureText('tap').width / Math.max(0.01, pop), y = fy - fs * 0.1 + Math.sin(g.time * 1.3 + i) * 1.2;
-        if (a > 0.01) { ctx.fillStyle = `rgba(6,10,10,${(a * 0.5).toFixed(3)})`; ctx.fillText('tap', x + 1, y + 1.5); // a soft dark under it, as ink in water
-          ctx.fillStyle = `rgba(226,220,196,${a.toFixed(3)})`; ctx.fillText('tap', x, y); }
-        x += side * (w + sz * 0.45); }
-      ctx.restore(); }
     // ---- pickups + lanterns (over the veiled layer, so nothing valuable hides behind the coral) ----
     for (const p of g.world.pickups) if (!p.taken && inView(p.x, p.y)) {
       if (p.rot === undefined) p.rot = p.y > g.world.floorAt(p.x) - 0.6 ? seabedPose(g.world, p.x, 0.25, true).rot : 0; // lying on the slope
@@ -761,7 +744,7 @@ export class Renderer {
       { const rr = r * 1.15, lg = ctx.createRadialGradient(cx, cy, 0, cx, cy, rr); lg.addColorStop(0, 'rgba(230,222,196,0.2)'); lg.addColorStop(0.6, 'rgba(230,222,196,0.12)'); lg.addColorStop(1, 'rgba(230,222,196,0)');
         ctx.fillStyle = lg; ctx.beginPath(); ctx.arc(cx, cy, rr, 0, TAU); ctx.fill(); }
       // (7.6.82, owner) waiting to be tapped: soft pulses of light grow out of the fish one after another, small, middle, large
-      if (g.tutFocus && g.tutFocus.kind === 'observe' && f === g.tutFocus.fish) { const base = Math.max(14, ppm * (f.len * 0.8 + 0.45));
+      if (false && g.tutFocus && g.tutFocus.kind === 'observe' && f === g.tutFocus.fish) { /* (7.6.87, owner) off: the tap cue's own ripple is the one signal */ const base = Math.max(14, ppm * (f.len * 0.8 + 0.45));
         for (let i = 0; i < 3; i++) { const q = ((g.time - g.tutFocus.t0) * 0.8 + i / 3) % 1, rr = base * (0.5 + 1.6 * q), a = 0.32 * (1 - q) * Math.min(1, q * 6);
           const pg = ctx.createRadialGradient(cx, cy, rr * 0.55, cx, cy, rr); pg.addColorStop(0, 'rgba(236,228,204,0)'); pg.addColorStop(0.8, `rgba(236,228,204,${a.toFixed(3)})`); pg.addColorStop(1, 'rgba(236,228,204,0)');
           ctx.fillStyle = pg; ctx.beginPath(); ctx.arc(cx, cy, rr, 0, TAU); ctx.fill(); } }

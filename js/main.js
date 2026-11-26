@@ -1368,8 +1368,8 @@ function tutor() {
   const ladderZone = () => zone('ladder', !e.inSub && !g.aboard && e.y < 2.6 && e.y > -0.6 && Math.abs(e.x - BOAT.x - LADDER_M) < 1.6);
   // the steps that need a fish: the fish to go to, and what to do at it
   // (7.6.71) where a fish is on the page, for the glove to point at it
-  const fishSpot = (f) => { const cm = renderer.cam; if (!f || !cm) return null; const kk = innerWidth / renderer.c.width, px = ((f.x - cm.x) * cm.ppm + renderer.c.width / 2) * kk, py = ((f.y - cm.y) * cm.ppm + renderer.c.height / 2) * kk, w = Math.max(40, (f.len || f.sp && f.sp.len || 0.4) * cm.ppm * kk);
-    return { pt: [px, py, w, w * 0.6], inPanel: true, say: 'Observe', tap: true }; }; // (7.6.79, owner) tap: the glove taps the fish itself
+  const fishSpot = (f) => { const cm = renderer.cam; if (!f || !cm) return null; const kk = innerWidth / renderer.c.width, S0 = (wx) => ((wx - cm.x) * cm.ppm + renderer.c.width / 2) * kk, px = ((f.x - cm.x) * cm.ppm + renderer.c.width / 2) * kk, py = ((f.y - cm.y) * cm.ppm + renderer.c.height / 2) * kk, w = Math.max(40, (f.len || f.sp && f.sp.len || 0.4) * cm.ppm * kk);
+    return { pt: [px, py, w, w * 0.6], inPanel: true, say: 'Observe', tap: true, side: S0(g.earl.inSub ? g.sub.x : g.earl.x) > px ? -1 : 1 }; }; // (7.6.79, owner) tap: the glove taps the fish itself
   const fishStep = (doWhat) => {
     const tf = tutorFish(dir), bd = dist(e.x, e.y, tf.x, tf.y); to = { x: tf.x, y: tf.y }; fish = tf;
     if (inCabin) { text = 'Leave the cabin: walk to the door'; cabinTo('door', 'outdoor', 'Out on deck'); return; } // (4.3.3) arrows to the door
@@ -1405,7 +1405,7 @@ function tutor() {
       fishStep(() => {
         const kind = part <= 1 ? 'observe' : 'net', t0 = focus0 && focus0.kind === kind && focus0.fish === fish ? focus0.t0 : g.time;
         if (!gap && !(kind === 'net' && (g.capture || g.bag.length))) { g.tutFocus = { kind, fish, t0 }; g.tutVig = 1; } // (7.6.82) the swing itself runs in moving time, so the catch can play out
-        if (part <= 1) { text = 'Tap the fish'; offer('observe', 'Observe', 'obs'); spot = g.time - t0 > 3 ? fishSpot(fish) : null; } // (7.6.71, owner) no eye button: a tap on the fish observes it
+        if (part <= 1) { text = 'Tap the fish'; offer('observe', 'Observe', 'obs'); spot = g.time - t0 > 0.5 ? fishSpot(fish) : null; /* (7.6.87, owner) the tap cue almost at once, as phone games do */ } // (7.6.71, owner) no eye button: a tap on the fish observes it
         else if (g.tutOops && g.time - g.tutOops < 3.5) { text = 'It got away. Try again'; prompt = { text: 'It got away. Try again', col: '#f2c7a0' }; }
         else if (gap) { text = 'Now catch it'; }
         else { text = g.toolSel !== 'net' ? 'Take out your net' : 'Swing your net'; prompt = netPrompt(); spot = spot || netSpot(true); if (spot) prompt = null; /* (5.5.3) the ringed button and its words say it already */ }

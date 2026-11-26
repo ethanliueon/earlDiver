@@ -60,6 +60,8 @@ export class TutSpot {
     for (const n of el.querySelectorAll('*')) quietStyle(n);
     quietStyle(el);
     this.say = el.querySelector('.ts-say'); this.keyBox = el.querySelector('.ts-key');
+    // (7.6.87, owner) the tap cue's ripple: fixed where the fingertip touches, two soft rings spreading per double tap
+    this.ripple = document.createElement('div'); this.ripple.className = 'ts-ripple'; this.ripple.style.display = 'none'; el.appendChild(this.ripple); quietStyle(this.ripple);
     this.keyText = this.keyBox.querySelector('span');
     this.lastTarget = null;
     this.line = el.querySelector('.ts-line'); this.lineText = null;
@@ -137,7 +139,7 @@ export class TutSpot {
     Object.assign(this.arrow.style, { left: ax + 'px', top: ay + 'px', transform: `translate(-50%, -50%) rotate(${deg.toFixed(1)}deg)` });
     this.arrow.style.setProperty('--bx', (dx * 6).toFixed(1) + 'px'); this.arrow.style.setProperty('--by', (dy * 6).toFixed(1) + 'px');
   }
-  hideParts() { LOCK = null; if (this.el.classList.contains('vig')) this.el.classList.remove('vig'); for (const b of this.blocks) b.style.display = 'none'; this.hole.style.display = 'none'; this.arrow.style.display = 'none'; this.say.style.display = 'none'; this.keyBox.style.display = 'none'; if (this.card) this.card.style.display = 'none'; }
+  hideParts() { LOCK = null; if (this.el.classList.contains('vig')) this.el.classList.remove('vig'); for (const b of this.blocks) b.style.display = 'none'; this.hole.style.display = 'none'; this.arrow.style.display = 'none'; this.ripple.style.display = 'none'; this.say.style.display = 'none'; this.keyBox.style.display = 'none'; if (this.card) this.card.style.display = 'none'; }
   // on: the tutorial is guiding (the frame shows); spot: what to point at, if anything
   update(on, spot, text = null) { this.update0(on, spot, text); this.keyBox.style.display = 'none'; flushStyles(); } // (5.6.7) a phone: the line at the top says it, once
   update0(on, spot, text = null) {
@@ -204,9 +206,14 @@ export class TutSpot {
       const [px, py, pw, ph] = spot.pt; this.hole.style.display = 'none';
       // (7.6.79, owner) a thing to tap in the water (the tutorial's fish): the glove comes down onto it from above, presses,
       // and fades, again and again, never a line from the diver (it swung round as he moved)
-      if (spot.tap) { const G = 71, tipY = py - ph / 2 - 8; /* (7.6.81, owner) the one pointing glove, straight down, its fingertip a little above the fish; it taps (olive.css ts-press) */
-        const ax = px - (0.451 - 0.5) * G, ay = tipY - (0.883 - 0.5) * G; this.arrow.style.display = 'block'; setClass(this.arrow, 'ts-arrow down aim tap');
-        Object.assign(this.arrow.style, { left: ax.toFixed(1) + 'px', top: ay.toFixed(1) + 'px', transform: 'translate(-50%, -50%)' }); return; }
+      // (7.6.87, owner) as a real phone game's tap cue: the fingertip on the fish itself, the hand leaning in 30 degrees from the
+      // side away from the diver, a double tap (press, lift, press, lift, rest); each press leaves a soft ring spreading from
+      // the touch, fixed there while the hand moves (olive.css ts-tap2, ts-rip)
+      if (spot.tap) { const G = 71, tilt = (spot.side || 1) * 30;
+        const ax = px - (0.451 - 0.5) * G, ay = py - (0.883 - 0.5) * G; this.arrow.style.display = 'block'; setClass(this.arrow, 'ts-arrow down aim tap');
+        Object.assign(this.arrow.style, { left: ax.toFixed(1) + 'px', top: ay.toFixed(1) + 'px', transform: `translate(-50%, -50%) rotate(${tilt}deg)` });
+        this.ripple.style.display = 'block'; Object.assign(this.ripple.style, { left: px.toFixed(1) + 'px', top: py.toFixed(1) + 'px' }); return; }
+      this.ripple.style.display = 'none';
       this.aimArrow(null, px - pw / 2, py - ph / 2, pw, ph); return;
     } else {
       this.lastTarget = null; if (this.litEl) { this.litEl.classList.remove('ts-lit'); this.litEl = null; }
