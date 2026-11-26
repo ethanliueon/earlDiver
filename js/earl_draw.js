@@ -1111,17 +1111,8 @@ export function drawBoat(ctx, Lp, t, sub, mirrored = false, opts = {}) {
   const hx = 56, hy = -40.5;
   const fF = footB(43), fN = footB(35.5);
   leg(fF, hx + 0.8, hy + 0.4, 2.2, 1.5, '#3c3832', '#26231f'); // the far leg, in shadow
-  let ramTop = null;
-  // the hydraulic ram: a clevis on the deck, the barrel, the polished rod into a clevis on the near leg
-  { const r0 = [29.6, deckY(29.6) - 1.1], r1 = [fN[0] + (hx - fN[0]) * 0.46, fN[1] + (hy - fN[1]) * 0.46]; // its top pinned into a lug on the near leg's centreline ctx.fillStyle = '#3a3630'; ctx.beginPath(); ctx.moveTo((r0[0] - 1.2) * u, deckY(29.6) * u); ctx.lineTo((r0[0] + 1.2) * u, deckY(29.6) * u); ctx.lineTo(r0[0] * u, (r0[1] - 0.6) * u); ctx.closePath(); ctx.fill();
-    const mid = [r0[0] + (r1[0] - r0[0]) * 0.58, r0[1] + (r1[1] - r0[1]) * 0.58];
-    ctx.lineCap = 'butt'; ctx.strokeStyle = '#5e5a50'; ctx.lineWidth = 1.3 * u; ctx.beginPath(); ctx.moveTo(r0[0] * u, r0[1] * u); ctx.lineTo(mid[0] * u, mid[1] * u); ctx.stroke(); // the barrel
-    ctx.strokeStyle = 'rgba(220,214,196,0.35)'; ctx.lineWidth = 0.25 * u; ctx.beginPath(); ctx.moveTo((r0[0] + 0.3) * u, (r0[1] - 0.5) * u); ctx.lineTo((mid[0] + 0.3) * u, (mid[1] - 0.5) * u); ctx.stroke();
-    ctx.strokeStyle = '#c8c4b8'; ctx.lineWidth = 0.6 * u; ctx.beginPath(); ctx.moveTo(mid[0] * u, mid[1] * u); ctx.lineTo(r1[0] * u, r1[1] * u); ctx.stroke(); // the rod
-    ctx.fillStyle = '#1e1c18'; ctx.beginPath(); ctx.arc(r0[0] * u, r0[1] * u, 0.4 * u, 0, TAU); ctx.fill(); ramTop = r1; }
+  // (7.6.64, owner) no hydraulic ram: lying along the near leg it read as a stray bar
   leg(fN, hx, hy, 2.6, 1.8, '#5a5650', '#3a3632'); // the near leg, lit on its upper face
-  { const r1 = ramTop; if (r1) { ctx.fillStyle = '#3a3630'; ctx.beginPath(); ctx.moveTo((r1[0] - 1.1) * u, (r1[1] + 0.2) * u); ctx.lineTo((r1[0] + 0.2) * u, (r1[1] + 1.3) * u); ctx.lineTo((r1[0] + 0.8) * u, (r1[1] - 0.4) * u); ctx.lineTo((r1[0] - 0.4) * u, (r1[1] - 1) * u); ctx.closePath(); ctx.fill(); // the lug welded to the leg
-    ctx.fillStyle = '#1e1c18'; ctx.beginPath(); ctx.arc(r1[0] * u, r1[1] * u, 0.4 * u, 0, TAU); ctx.fill(); ctx.fillStyle = 'rgba(220,214,196,0.4)'; ctx.beginPath(); ctx.arc((r1[0] - 0.12) * u, (r1[1] - 0.12) * u, 0.14 * u, 0, TAU); ctx.fill(); } }
   { const dx = hx - fN[0], dy = hy - fN[1], L = Math.hypot(dx, dy); ctx.strokeStyle = 'rgba(230,226,210,0.25)'; ctx.lineWidth = 0.2 * u; ctx.beginPath(); ctx.moveTo((fN[0] - 0.9) * u, (fN[1] - 0.6) * u); ctx.lineTo((hx - 0.6) * u, (hy - 0.6) * u); ctx.stroke(); void L; } // its lit edge
   // the head: a cast cap over both leg ends, rounded over the top, its pin; the sheave block hangs below it on a shackle
   { const cap = new Path2D(); cap.moveTo((hx - 1.9) * u, (hy + 1.2) * u); cap.quadraticCurveTo((hx - 2.0) * u, (hy - 1.9) * u, (hx + 0.6) * u, (hy - 2.0) * u); cap.quadraticCurveTo((hx + 2.9) * u, (hy - 1.9) * u, (hx + 2.6) * u, (hy + 1.2) * u); cap.quadraticCurveTo((hx + 0.4) * u, (hy + 2.1) * u, (hx - 1.9) * u, (hy + 1.2) * u);

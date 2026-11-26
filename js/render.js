@@ -643,8 +643,8 @@ export class Renderer {
     this.trapLabels = [];
     const night = g.day && g.day.light < 0.3;
     // (7.6.23, owner) the shipyard barge off the Margaret's bow, a picture painted once (barge_draw.js), riding the swell
-    { const bx = yardX(); if (bx > x0 - 12 && bx < x1 + 12) { const B = BARGE, pic = bargePicture(!!night, ppm), sc = ppm / B.PPM, bob = Math.sin(t * 0.9) * 0.05, roll = Math.sin(t * 0.7 + 1) * 0.008;
-        ctx.save(); ctx.translate(Math.round(S(bx)), Math.round(Sy(bob))); ctx.rotate(roll); ctx.drawImage(pic, Math.round(-7 * ppm), Math.round(-B.WL * ppm), pic.width, pic.height); ctx.restore(); void sc; } }
+    { const bx = yardX(); if (bx > x0 - 12 && bx < x1 + 12) { const B = BARGE, pic = bargePicture(!!night, this.steadyPpm(ppm)), sc = ppm / Math.max(12, Math.round(this.steadyPpm(ppm) * 4) / 4), bob = Math.sin(t * 0.9) * 0.05, roll = Math.sin(t * 0.7 + 1) * 0.008;
+        ctx.save(); ctx.translate(Math.round(S(bx)), Math.round(Sy(bob))); ctx.rotate(roll); ctx.drawImage(pic, Math.round(-7 * ppm), Math.round(-B.WL * ppm), pic.width * sc, pic.height * sc); /* (7.6.64) scaled from the held picture while the camera zooms */ ctx.restore(); } }
     for (const pt of SAIL) if ((pt.id === 'home' || pt.id === 'dave' || pt.id === 'station' || pt.id === 'cave') /* (7.4.27, owner) buoys only at the shops: the others' chains read as a black line down the screen */ && pt.x > x0 - 6 && pt.x < x1 + 6 && y0 < 4 + 400) drawSailBuoy(ctx, S, Sy, ppm, t, pt, surfY, g.world.floorAt(pt.x), y1, night); // (6.8.1) the sail points' buoys
     for (const tr of g.traps || []) {
       if (tr.x < x0 - 10 || tr.x > x1 + 10) continue;
@@ -901,7 +901,7 @@ export class Renderer {
       // repainted a few times a second (the radar turning, the lights) or when she turns, the light changes or a door
       // lights up; each frame that picture is rocked, darkened for the hour and scaled into place. It was drawn
       // stroke by stroke at full size every frame, the costliest thing on the screen on a phone
-      const REF = Math.max(16, Math.round(ppm * 4) / 4) /* (7.6.25, owner) painted at the screen's own scale: shrunk from a larger picture each frame, its fine grain shimmered as she moved */, Rw = Math.ceil(14 * REF * 1.3), Rh = Math.ceil(14 * REF * 0.75);
+      const REF = Math.max(16, Math.round(this.steadyPpm(ppm) * 4) / 4) /* (7.6.64, owner) the scale she is painted at holds still while the camera zooms (she was repainted at a new size every frame of the zoom on entering: she jittered); the held picture is scaled smoothly meanwhile */ /* (7.6.25, owner) painted at the screen's own scale: shrunk from a larger picture each frame, its fine grain shimmered as she moved */, Rw = Math.ceil(14 * REF * 1.3), Rh = Math.ceil(14 * REF * 0.75);
       const bcos = Math.cos(BOAT.yaw || 0), bsx = Math.sign(bcos || 1) * Math.max(0.06, Math.abs(bcos));
       const dimB = 1 - (0.22 + 0.78 * Math.sqrt(dayEff)), door = !!(g.tut && g.tut.door);
       const bc = this.boatC || (this.boatC = document.createElement('canvas'));
@@ -2876,6 +2876,12 @@ export class Renderer {
     }
     ctx.restore();
   }
+  // (7.6.64, owner) the scale pictures painted at the screen's own size (the boat, the barge) are made at: while the camera's
+  // zoom is moving it holds the last settled value, and catches up 0.35 s after the zoom stops, so they are repainted once
+  // when it settles instead of every frame of the zoom (on entering the game the boat jittered as it was)
+  steadyPpm(ppm) { const now = performance.now() / 1000;
+    if (this.ppLast == null || Math.abs(ppm - this.ppLast) > 0.005) { this.ppLast = ppm; this.ppMoved = now; }
+    if (this.ppHeld == null || now - this.ppMoved > 0.35) this.ppHeld = ppm; return this.ppHeld; }
   // (7.6.62, owner) the boat's weathering is a fixed picture (assets/textures/boat_wear.png, baked by tools/bake_pngs.cjs from
   // boatWearProc below), only scaled to the size she is painted at: it was generated afresh for every size, so while the
   // camera settled on entering the game her rust and grime reshuffled from frame to frame
