@@ -212,6 +212,41 @@ function rewardHtml(m) {
   const items = ids.map((it) => `<span class="qs-gift"><img src="${pictureOf(it.kind, it, 150, 90, true)}" alt=""><em style="color:${REWARD_INK[it.rarity] || REWARD_INK.common}">${it.name}</em></span>`).join('');
   return items + (m.pay ? `<span class="qs-cash">${cashIc()}${money(m.pay, false)}</span>` : '');
 }
+// (7.6.53, owner) the scenes behind the diver in the bag: water colours top to bottom, light, seabed, and what grows there
+const BAG_SCENES = {
+  reef: { name: 'Reef', water: ['#1d3a44', '#0c1c23', '#060e12'], light: 'rgba(60, 96, 100, 0.25)', bed: ['#13262c', '#081215'], draw(y, rnd, PW, PH) {
+    { const bx = PW * 0.2, by = PH * 0.9, tips = []; // a sea fan: a lace web on branching ribs
+      const br = (px, py, a, len, wdt, dpt) => { const ex = px + Math.cos(a) * len, ey = py + Math.sin(a) * len; y.lineWidth = wdt; y.beginPath(); y.moveTo(px, py); y.quadraticCurveTo((px + ex) / 2 + (rnd() - 0.5) * 5, (py + ey) / 2 + (rnd() - 0.5) * 3, ex, ey); y.stroke();
+        if (dpt >= 4 || len < 6) { tips.push([ex, ey]); return; } br(ex, ey, a - 0.28 - rnd() * 0.25, len * (0.72 + rnd() * 0.12), wdt * 0.7, dpt + 1); br(ex, ey, a + 0.28 + rnd() * 0.25, len * (0.72 + rnd() * 0.12), wdt * 0.7, dpt + 1); };
+      y.strokeStyle = 'rgba(70, 92, 86, 0.75)'; y.lineCap = 'round'; br(bx, by, -Math.PI / 2 + 0.08, 40, 3.6, 0);
+      tips.sort((p, q) => Math.atan2(p[1] - by, p[0] - bx) - Math.atan2(q[1] - by, q[0] - bx));
+      y.fillStyle = 'rgba(64, 88, 82, 0.28)'; y.beginPath(); y.moveTo(bx, by - 20); for (const [tx, ty] of tips) y.lineTo(tx, ty); y.closePath(); y.fill(); }
+    for (let i = 0; i < 4; i++) { const bx = PW * (0.68 + i * 0.07), by = PH * (0.9 + rnd() * 0.03), len = PH * (0.2 + rnd() * 0.16), lean = 16 + rnd() * 24, n = 14; // sea whips
+      for (let k = 0; k < n; k++) { const t0 = k / n, t1 = (k + 1) / n, P = (t) => [bx + lean * t * t, by - len * t]; const [x0, y0] = P(t0), [x1, y1] = P(t1);
+        y.strokeStyle = `rgba(${74 + i * 6}, ${96 + i * 4}, 86, ${0.8 - t0 * 0.35})`; y.lineWidth = 3.4 * (1 - t0 * 0.8); y.lineCap = 'round'; y.beginPath(); y.moveTo(x0, y0); y.lineTo(x1, y1); y.stroke(); } }
+    for (let i = 0; i < 3; i++) { const bx = PW * 0.4 + i * 15 + rnd() * 5, base = PH * 0.905, h = 20 + rnd() * 24, wd = 10 + rnd() * 6, lean = (rnd() - 0.5) * 6, top = base - h; // barrel sponges
+      y.fillStyle = `rgba(${54 + i * 6}, ${72 + i * 4}, 68, 0.9)`; y.beginPath(); y.moveTo(bx - wd * 0.3, base); y.bezierCurveTo(bx - wd * 0.75, base - h * 0.4, bx - wd * 0.6 + lean, top + h * 0.2, bx - wd * 0.5 + lean, top);
+      y.lineTo(bx + wd * 0.5 + lean, top); y.bezierCurveTo(bx + wd * 0.6 + lean, top + h * 0.2, bx + wd * 0.75, base - h * 0.4, bx + wd * 0.3, base); y.closePath(); y.fill();
+      y.fillStyle = 'rgba(4, 10, 12, 0.85)'; y.beginPath(); y.ellipse(bx + lean, top + 1, wd * 0.42, 2, 0, 0, Math.PI * 2); y.fill(); } } },
+  kelp: { name: 'Kelp', water: ['#2b4e4a', '#163330', '#0b1d1b'], light: 'rgba(120, 150, 110, 0.22)', bed: ['#2a3a30', '#141f19'], draw(y, rnd, PW, PH) {
+    for (let i = 0; i < 5; i++) { const bx = PW * (0.08 + i * 0.21 + (rnd() - 0.5) * 0.06), by = PH * 0.92, len = PH * (0.6 + rnd() * 0.35), sway = (rnd() - 0.5) * 50, col = `rgba(${78 + i * 5}, ${92 + i * 3}, 52, ${0.55 + rnd() * 0.25})`; // kelp: a stipe and its blades
+      const P = (t) => [bx + sway * Math.sin(t * 2.2) * t, by - len * t]; y.strokeStyle = col; y.lineWidth = 3.4; y.lineCap = 'round'; y.beginPath(); for (let k = 0; k <= 20; k++) { const [px, py] = P(k / 20); k ? y.lineTo(px, py) : y.moveTo(px, py); } y.stroke();
+      y.fillStyle = col; for (let t = 0.12; t < 0.96; t += 0.05 + rnd() * 0.07) { const [px, py] = P(t), sd2 = rnd() < 0.5 ? 1 : -1, bl = 22 + rnd() * 22, rise = 6 + rnd() * 14, wv = (rnd() - 0.5) * 6; // long, ruffled blades, each its own
+        y.beginPath(); y.moveTo(px, py); y.bezierCurveTo(px + sd2 * bl * 0.3, py - rise * 0.2 - 5, px + sd2 * bl * 0.7, py - rise + wv, px + sd2 * bl, py - rise - 2); y.bezierCurveTo(px + sd2 * bl * 0.65, py - rise * 0.5 + 3, px + sd2 * bl * 0.3, py + 3, px, py + 1); y.fill(); } } } },
+  midnight: { name: 'Midnight', water: ['#0c1820', '#060c11', '#020507'], light: 'rgba(40, 60, 70, 0.12)', bed: null, snow: 90, draw(y, rnd, PW, PH) {
+    for (let i = 0; i < 26; i++) { const px = rnd() * PW, py = rnd() * PH, r = 0.8 + rnd() * 1.6, g2 = y.createRadialGradient(px, py, 0, px, py, r * 5); g2.addColorStop(0, 'rgba(150, 200, 180, 0.5)'); g2.addColorStop(1, 'rgba(150, 200, 180, 0)'); y.fillStyle = g2; y.fillRect(px - r * 5, py - r * 5, r * 10, r * 10); } // a few lights of animals far off
+    { const jx = PW * 0.78, jy = PH * 0.22; y.fillStyle = 'rgba(120, 140, 150, 0.16)'; y.beginPath(); y.ellipse(jx, jy, 20, 13, 0, Math.PI, Math.PI * 2); y.fill(); // a jelly drifting, far off
+      y.strokeStyle = 'rgba(120, 140, 150, 0.12)'; y.lineWidth = 1; for (let k = 0; k < 6; k++) { y.beginPath(); y.moveTo(jx - 14 + k * 5.6, jy); y.bezierCurveTo(jx - 16 + k * 6, jy + 20, jx - 10 + k * 5, jy + 34, jx - 14 + k * 5.6 + (rnd() - 0.5) * 8, jy + 50 + rnd() * 20); y.stroke(); } }
+    { y.strokeStyle = 'rgba(110, 130, 120, 0.14)'; y.lineWidth = 1.4; y.beginPath(); const sx = PW * 0.12; for (let k = 0; k <= 30; k++) { const t = k / 30, px = sx + Math.sin(t * 5) * 10, py = PH * (0.1 + t * 0.6); k ? y.lineTo(px, py) : y.moveTo(px, py); } y.stroke(); } } }, // a siphonophore's long thread
+  vents: { name: 'Vents', water: ['#1a2226', '#0e1315', '#07090a'], light: 'rgba(90, 80, 70, 0.12)', bed: ['#1b1c1b', '#0b0c0b'], draw(y, rnd, PW, PH) {
+    const chimney = (bx, h, wd) => { y.fillStyle = 'rgba(28, 28, 27, 0.95)'; y.beginPath(); y.moveTo(bx - wd, PH * 0.92); for (let k = 0; k <= 8; k++) { const t = k / 8; y.lineTo(bx - wd * (1 - t * 0.55) + (rnd() - 0.5) * 4, PH * 0.92 - h * t); } for (let k = 8; k >= 0; k--) { const t = k / 8; y.lineTo(bx + wd * (1 - t * 0.55) + (rnd() - 0.5) * 4, PH * 0.92 - h * t); } y.closePath(); y.fill();
+      const g2 = y.createRadialGradient(bx, PH * 0.92 - h, 0, bx, PH * 0.92 - h, 30); g2.addColorStop(0, 'rgba(150, 80, 50, 0.25)'); g2.addColorStop(1, 'rgba(150, 80, 50, 0)'); y.fillStyle = g2; y.fillRect(bx - 30, PH * 0.92 - h - 30, 60, 60);
+      y.save(); y.filter = 'blur(5px)'; y.fillStyle = 'rgba(70, 74, 76, 0.16)'; let sx = bx; for (let k = 0; k < 9; k++) { sx += (rnd() - 0.35) * 7; y.beginPath(); y.ellipse(sx, PH * 0.92 - h - 6 - k * 11, 5 + k * 2.6, 4 + k * 1.6, (rnd() - 0.5) * 0.6, 0, Math.PI * 2); y.fill(); } y.restore(); }; // the smoke rising off it, soft and drifting
+    chimney(PW * 0.16, 120, 18); chimney(PW * 0.84, 160, 22); chimney(PW * 0.7, 70, 12);
+    for (let i = 0; i < 9; i++) { const bx = PW * 0.3 + i * 6 + rnd() * 4, h = 14 + rnd() * 18; y.strokeStyle = 'rgba(200, 196, 180, 0.4)'; y.lineWidth = 2; y.beginPath(); y.moveTo(bx, PH * 0.92); y.lineTo(bx + (rnd() - 0.5) * 4, PH * 0.92 - h); y.stroke(); // tube worms, their plumes rust
+      y.fillStyle = 'rgba(150, 62, 44, 0.7)'; y.beginPath(); y.ellipse(bx, PH * 0.92 - h - 2, 2.4, 3.2, 0, 0, Math.PI * 2); y.fill(); } } },
+};
+export const BAG_SCENE_IDS = Object.keys(BAG_SCENES);
 export class UI {
   constructor(h) {
     this.h = h;
@@ -1444,7 +1479,7 @@ export class UI {
     const nSpare = ['necklace', 'glowAdv'].filter((k) => (SP[k] || 0) > 0).length + trapKinds.length + Math.ceil(nGold / 10);
     const pop = this.lkSel ? this.itemPop(P, g, free) : '';
     return `<div class="inv-sec wide eq inv-split${free ? '' : ' locked'}"><div class="inv-left"><div class="cash-plate"><span>CASH</span><b>${moneyExact(P.cash)}</b></div>`
-      + `<div class="eq-stage"><div class="eq-col">${SLOTS.slice(0, 5).map(slot).join('')}</div><canvas class="eq-earl" width="360" height="520"></canvas><div class="eq-pouch">${beltSlot()}</div><div class="eq-col">${helmetSlot}${SLOTS.slice(5, 7).map(slot).join('')}${petGear}${SLOTS.slice(7).map(slot).join('')}</div>`
+      + `<div class="eq-stage"><div class="eq-deep"></div><button class="eq-scene" data-scene title="Change the scene behind your diver">${(BAG_SCENES[P.bagScene] || BAG_SCENES.reef).name}</button><div class="eq-col">${SLOTS.slice(0, 5).map(slot).join('')}</div><canvas class="eq-earl" width="360" height="520"></canvas><div class="eq-pouch">${beltSlot()}</div><div class="eq-col">${helmetSlot}${SLOTS.slice(5, 7).map(slot).join('')}${petGear}${SLOTS.slice(7).map(slot).join('')}</div>`
       /* (7.6.49, owner) a helmet slot at the top right, ready for helmets to come; the glow sticks (used up, not worn) moved to a pouch at his feet */
       /* (7.6.26, owner) Ability 2 at the foot of its column, level with Ability: the two scrolls on one row; the pet moved up */ + `</div>`
       /* (6.0.0) no lock note: gear changes anywhere */
@@ -1472,49 +1507,30 @@ export class UI {
         const v = fin ? f.to : f.from + (f.to - f.from) * (1 - Math.pow(1 - el / 700, 3)); f.cur = v; const b = document.querySelector(`#inventory .st-cell[data-st="${k}"] b`); if (b && this.statFmt[k]) b.textContent = this.statFmt[k](v); }
       if (more) this.statRaf = requestAnimationFrame(step); };
     this.statRaf = requestAnimationFrame(step); }
-  // (7.6.51, owner) behind the diver in the bag: a patch of the deep washed onto the plate, see-through and fading into it at
-  // an uneven edge (as the anglerfish's water in the quests): darker below, a low mound of seabed under his feet, a sea fan,
-  // a few sea whips leaning in the current, a clump of tube sponges, and a little sea snow. Drawn once
-  eqBackdrop(W, H) {
-    if (this.eqBd && this.eqBd.width === W && this.eqBd.height === H) return this.eqBd;
+  // (7.6.51-53, owner) behind the diver in the bag: a scene of the deep over the whole stage, see-through so the plate shows
+  // through it and fading out at its edges; the player picks which (BAG_SCENES, the button at the top of the stage). Each is
+  // drawn once at the stage's size; the plants and things in it are drawn in the turntable's own frame (360 x 520) under him
+  eqBackdropURL(w, h, scene) { const k = `${w}x${h}:${scene}`; if (this.eqBdKey !== k) { this.eqBdKey = k; this.eqBdURL = this.eqBackdrop(w * 2, h * 2, scene).toDataURL(); } return this.eqBdURL; }
+  eqBackdrop(W, H, scene = 'reef') {
     const c = document.createElement('canvas'); c.width = W; c.height = H; const x = c.getContext('2d');
     let sd = 5; const rnd = () => ((sd = (sd * 16807) % 2147483647) / 2147483647);
     const w = document.createElement('canvas'); w.width = W; w.height = H; const y = w.getContext('2d');
-    // the water: an uneven upright oval
-    const cx = W / 2, cy = H * 0.5, rx = W * 0.44, ry = H * 0.46, blob = new Path2D(), ph = [rnd() * 6, rnd() * 6];
-    for (let k = 0; k <= 72; k++) { const t = (k / 72) * Math.PI * 2, r = 1 + 0.06 * Math.sin(3 * t + ph[0]) + 0.035 * Math.sin(7 * t + ph[1]); const px = cx + Math.cos(t) * rx * r, py = cy + Math.sin(t) * ry * r; k ? blob.lineTo(px, py) : blob.moveTo(px, py); }
-    blob.closePath();
-    const gr = y.createLinearGradient(0, 0, 0, H); gr.addColorStop(0, '#1d3a44'); gr.addColorStop(0.6, '#0c1c23'); gr.addColorStop(1, '#060e12');
-    y.filter = 'blur(14px)'; y.fillStyle = gr; y.fill(blob); y.filter = 'none';
-    y.save(); y.clip(blob);
-    // seabed: a low mound with a softer one behind it
-    const bed = (top, col, a) => { y.fillStyle = col; y.globalAlpha = a; y.beginPath(); y.moveTo(0, H); for (let i = 0; i <= 24; i++) { const px = (i / 24) * W, py = top - Math.sin((i / 24) * Math.PI) * H * 0.05 + Math.sin(i * 1.7 + top) * 3; y.lineTo(px, py); } y.lineTo(W, H); y.closePath(); y.fill(); y.globalAlpha = 1; };
-    bed(H * 0.86, '#13262c', 0.8); bed(H * 0.92, '#081215', 1);
-    // a sea fan: a flat lace web held on branching ribs from one stem, behind on the left
-    { const bx = W * 0.2, by = H * 0.9, tips = [];
-      const br = (px, py, a, len, wdt, dpt) => { const ex = px + Math.cos(a) * len, ey = py + Math.sin(a) * len; y.lineWidth = wdt; y.beginPath(); y.moveTo(px, py); y.quadraticCurveTo((px + ex) / 2 + (rnd() - 0.5) * 5, (py + ey) / 2 + (rnd() - 0.5) * 3, ex, ey); y.stroke();
-        if (dpt >= 4 || len < 6) { tips.push([ex, ey]); return; } br(ex, ey, a - 0.28 - rnd() * 0.25, len * (0.72 + rnd() * 0.12), wdt * 0.7, dpt + 1); br(ex, ey, a + 0.28 + rnd() * 0.25, len * (0.72 + rnd() * 0.12), wdt * 0.7, dpt + 1); };
-      y.strokeStyle = 'rgba(70, 92, 86, 0.75)'; y.lineCap = 'round'; br(bx, by, -Math.PI / 2 + 0.08, 40, 3.6, 0);
-      tips.sort((p, q) => Math.atan2(p[1] - by, p[0] - bx) - Math.atan2(q[1] - by, q[0] - bx));
-      y.fillStyle = 'rgba(64, 88, 82, 0.28)'; y.beginPath(); y.moveTo(bx, by - 20); for (const [tx, ty] of tips) y.lineTo(tx, ty); y.closePath(); y.fill(); // the web between the ribs
-      y.strokeStyle = 'rgba(80, 104, 96, 0.18)'; y.lineWidth = 0.8; for (let i = 0; i < 14; i++) { const t = tips[Math.floor(rnd() * tips.length)], q2 = tips[Math.floor(rnd() * tips.length)]; y.beginPath(); y.moveTo(t[0], t[1]); y.lineTo((t[0] + q2[0]) / 2, (t[1] + q2[1]) / 2 + 6); y.stroke(); } }
-    // sea whips: long stalks leaning with the current, thick at the foot and thinning out
-    for (let i = 0; i < 4; i++) { const bx = W * (0.68 + i * 0.07), by = H * (0.9 + rnd() * 0.03), len = H * (0.2 + rnd() * 0.16), lean = 16 + rnd() * 24, n = 14;
-      for (let k = 0; k < n; k++) { const t0 = k / n, t1 = (k + 1) / n, P = (t) => [bx + lean * t * t, by - len * t]; const [x0, y0] = P(t0), [x1, y1] = P(t1);
-        y.strokeStyle = `rgba(${74 + i * 6}, ${96 + i * 4}, 86, ${0.8 - t0 * 0.35})`; y.lineWidth = 3.4 * (1 - t0 * 0.8); y.lineCap = 'round'; y.beginPath(); y.moveTo(x0, y0); y.lineTo(x1, y1); y.stroke(); } }
-    // barrel sponges: a few soft-sided vases, open at the top, each its own size and lean
-    for (let i = 0; i < 3; i++) { const bx = W * 0.4 + i * 15 + rnd() * 5, base = H * 0.905, h = 20 + rnd() * 24, wd = 10 + rnd() * 6, lean = (rnd() - 0.5) * 6, top = base - h;
-      y.fillStyle = `rgba(${54 + i * 6}, ${72 + i * 4}, 68, 0.9)`; y.beginPath(); y.moveTo(bx - wd * 0.3, base);
-      y.bezierCurveTo(bx - wd * 0.75, base - h * 0.4, bx - wd * 0.6 + lean, top + h * 0.2, bx - wd * 0.5 + lean, top);
-      y.lineTo(bx + wd * 0.5 + lean, top); y.bezierCurveTo(bx + wd * 0.6 + lean, top + h * 0.2, bx + wd * 0.75, base - h * 0.4, bx + wd * 0.3, base); y.closePath(); y.fill();
-      y.fillStyle = 'rgba(4, 10, 12, 0.85)'; y.beginPath(); y.ellipse(bx + lean, top + 1, wd * 0.42, 2, 0, 0, Math.PI * 2); y.fill();
-      y.strokeStyle = 'rgba(120, 140, 130, 0.25)'; y.lineWidth = 1; y.beginPath(); y.ellipse(bx + lean, top + 1, wd * 0.5, 2.4, 0, Math.PI, Math.PI * 2); y.stroke(); }
+    const S = BAG_SCENES[scene] || BAG_SCENES.reef, gr = y.createLinearGradient(0, 0, 0, H);
+    S.water.forEach((col, i) => gr.addColorStop(i / (S.water.length - 1), col)); y.fillStyle = gr; y.fillRect(0, 0, W, H);
+    // light from above, uneven: a few broad soft patches
+    for (let i = 0; i < 5; i++) { const px = W * (0.15 + rnd() * 0.7), py = H * rnd() * 0.3, r = W * (0.25 + rnd() * 0.25), g2 = y.createRadialGradient(px, py, 0, px, py, r); g2.addColorStop(0, S.light); g2.addColorStop(1, 'rgba(0,0,0,0)'); y.fillStyle = g2; y.fillRect(0, 0, W, H); }
+    const bed = (top, col, a, amp = 0.05) => { y.fillStyle = col; y.globalAlpha = a; y.beginPath(); y.moveTo(0, H); for (let i = 0; i <= 32; i++) { const px = (i / 32) * W, py = top - Math.sin((i / 32) * Math.PI) * H * amp + Math.sin(i * 1.7 + top) * H * 0.006; y.lineTo(px, py); } y.lineTo(W, H); y.closePath(); y.fill(); y.globalAlpha = 1; };
+    if (S.bed) { bed(H * 0.86, S.bed[0], 0.85); bed(H * 0.92, S.bed[1], 1); }
+    const PS = H / 520, PW = 360, PH = 520; y.save(); y.translate((W - PW * PS) / 2, 0); y.scale(PS, PS); S.draw(y, rnd, PW, PH); y.restore();
     // sea snow: tiny sharp specks
-    for (let i = 0; i < 60; i++) { y.fillStyle = `rgba(200, 212, 204, ${0.15 + rnd() * 0.35})`; const px = rnd() * W, py = rnd() * H * 0.85; y.fillRect(px, py, rnd() < 0.3 ? 2 : 1, rnd() < 0.2 ? 2 : 1); }
-    y.restore();
-    // the whole patch see-through, so the plate shows through it
-    x.globalAlpha = 0.62; x.drawImage(w, 0, 0); x.globalAlpha = 1;
-    return (this.eqBd = c);
+    const d0 = Math.max(1, Math.round(W / 600));
+    for (let i = 0; i < (S.snow || 140); i++) { y.fillStyle = `rgba(${S.snowCol || '200, 212, 204'}, ${0.15 + rnd() * 0.35})`; const px = rnd() * W, py = rnd() * H * 0.88; y.fillRect(px, py, rnd() < 0.3 ? d0 * 2 : d0, rnd() < 0.2 ? d0 * 2 : d0); }
+    // fade out at the edges of the stage, unevenly
+    y.globalCompositeOperation = 'destination-in'; const m = document.createElement('canvas'); m.width = W; m.height = H; const mx = m.getContext('2d');
+    mx.fillStyle = '#000'; mx.filter = `blur(${Math.round(W / 30)}px)`; const e = W * 0.035; mx.fillRect(e, e, W - 2 * e, H - 2 * e); mx.filter = 'none';
+    y.drawImage(m, 0, 0); y.globalCompositeOperation = 'source-over';
+    x.globalAlpha = 0.78; x.drawImage(w, 0, 0); x.globalAlpha = 1;
+    return c;
   }
   // (3.0.35) the locker is laid out at one size, 1240 x 820, and scaled to fit whatever screen it is on: a
   // phone sees the same locker as a computer, only smaller
@@ -1617,6 +1633,7 @@ export class UI {
     // Earl, in what he has on
     // (2.8.1) Earl, in what he has on, on a turntable: drag across him to turn him round; he keeps turning a
     // little after you let go, slows, and settles facing you
+    { const st = root.querySelector('.eq-stage'), dp = st && st.querySelector('.eq-deep'); if (dp) { const w0 = st.clientWidth, h0 = st.clientHeight; if (w0 > 20 && h0 > 20) dp.style.backgroundImage = `url(${this.eqBackdropURL(w0, h0, P.bagScene || 'reef')})`; } } // (7.6.52, owner)
     const cv = root.querySelector('.eq-earl');
     if (cv) {
       const sp = this.spin || (this.spin = { a: 0.35, v: 0 });
@@ -1625,7 +1642,6 @@ export class UI {
       const draw = () => {
         const cv = this.spinCv, c = cv.getContext('2d'), W2 = cv.width, H2 = cv.height, t = performance.now() / 1000, k = Math.cos(sp.a);
         c.clearRect(0, 0, W2, H2);
-        c.drawImage(this.eqBackdrop(W2, H2), 0, 0); // (7.6.51, owner) a patch of the deep behind him
         // his shadow on the floor of the stand
         c.fillStyle = 'rgba(0,0,0,0.35)'; c.beginPath(); c.ellipse(W2 / 2, H2 * 0.93, W2 * 0.22, H2 * 0.03, 0, 0, Math.PI * 2); c.fill();
         c.save(); c.translate(W2 / 2, H2 * 0.5 + Math.sin(t * 1.2) * 2); c.scale(Math.sign(k || 1) * Math.max(0.12, Math.abs(k)), 1); c.rotate(-Math.PI / 2);
@@ -1679,6 +1695,7 @@ export class UI {
       requestAnimationFrame(chk); c.addEventListener('scroll', chk, { passive: true }); });
     const pop = box.querySelector('.item-pop:not(.trap-pop)');
     if (pop) { pop.addEventListener('click', (ev) => { if (ev.target === pop || ev.target.closest('.ip-close')) { this.lkSel = null; this.renderInventory(); } }); }
+    { const sb = root.querySelector('[data-scene]'); if (sb) sb.addEventListener('click', () => { const ids = BAG_SCENE_IDS, i = ids.indexOf(P.bagScene || 'reef'); P.bagScene = ids[(i + 1) % ids.length]; this.h.onSaveProfile && this.h.onSaveProfile(); this.renderInventory(); }); } // (7.6.53, owner)
     if (!this.h.canChangeGear()) return;
     const put = (u) => { this.h.onEquip('on:' + u); this.renderInventory(); };
     const off = (kind) => { this.h.onEquip('off:' + kind); this.renderInventory(); };

@@ -2365,7 +2365,7 @@ html body #inventory .eq-slot.myth-slot .ms-c { display: none !important; }
 /* (7.6.49, owner) the helmet slot, waiting for helmets; the glow sticks in a pouch at his feet */
 html body #inventory .eq-stage { position: relative; }
 html body #inventory .eq-stage .eq-slot.helmet { opacity: 0.75; }
-html body #inventory .eq-pouch { position: absolute; left: calc(50% + 98px); bottom: 22px; transform: scale(0.78); transform-origin: 50% 100%; z-index: 2; }
+html body #inventory .eq-pouch { position: absolute; left: calc(50% + 92px); bottom: 11px; transform: scale(0.78); transform-origin: 50% 100%; z-index: 2; }
 /* (7.6.50, owner) each slot its own painting of the water, so no two neighbours match */
 html body #inventory .eq-stage .eq-col:first-child .eq-slot.sq:nth-child(4n+2):not(#_a):not(#_b), html body #inventory .eq-stage .eq-col:last-child .eq-slot.sq:nth-child(4n+4):not(#_a):not(#_b) { background-image: url("../assets/ui/olive/slot_deep2.png") !important; }
 html body #inventory .eq-stage .eq-col:first-child .eq-slot.sq:nth-child(4n+3):not(#_a):not(#_b), html body #inventory .eq-stage .eq-col:last-child .eq-slot.sq:nth-child(4n+1):not(#_a):not(#_b) { background-image: url("../assets/ui/olive/slot_deep3.png") !important; }
@@ -2375,7 +2375,7 @@ html body #inventory .eq-stage .eq-slot.sq.myth-slot.r-mythical:not(#_a):not(#_b
 /* (7.6.50, owner) a slot's rarity, not a bar along its foot (it read as a durability meter): the rarity's light pooling up
    from the bottom of the well, a fine lit edge along the foot that climbs a little way up each side and fades; the
    legendary's and the mythical's breathing slowly */
-html body #inventory .eq-stage .eq-slot.sq:not(.empty) > img, html body #inventory .eq-stage .eq-slot.sq > .slot-nm, html body #inventory .eq-stage .eq-slot.sq > b { position: relative; z-index: 1; }
+html body #inventory .eq-stage .eq-slot.sq:not(.empty) > img, html body #inventory .eq-stage .eq-slot.sq > .slot-nm { position: relative; z-index: 1; } html body #inventory .eq-stage .eq-slot.sq > b.belt-n { z-index: 2; }
 html body #inventory .eq-stage .eq-slot.sq:not(.empty)::before { content: ''; position: absolute; inset: 0; pointer-events: none; z-index: 0;
   background: radial-gradient(130% 50% at 50% 112%, color-mix(in srgb, var(--rc, #888) 42%, transparent), color-mix(in srgb, var(--rc, #888) 10%, transparent) 55%, transparent 80%); }
 html body #inventory .eq-stage .eq-slot.sq:not(.empty)::after { content: ''; position: absolute; inset: 0; pointer-events: none; z-index: 0; border: 1px solid color-mix(in srgb, var(--rc, #888) 80%, transparent); border-top: 0;
@@ -2386,3 +2386,10 @@ html body #inventory .eq-stage .eq-slot.sq.r-legendary::before, html body #inven
 /* bright things are earned: a common's light is faint, an uncommon's a little less so */
 html body #inventory .eq-stage .eq-slot.sq.r-common::before, html body #inventory .eq-stage .eq-slot.sq.r-common::after { opacity: 0.4; }
 html body #inventory .eq-stage .eq-slot.sq.r-uncommon::before, html body #inventory .eq-stage .eq-slot.sq.r-uncommon::after { opacity: 0.7; }
+/* (7.6.52, owner) the patch of the deep behind the diver spread wide: over the whole stage, behind the slots too */
+html body #inventory .eq-stage > .eq-deep { position: absolute; inset: -2px; z-index: 0; pointer-events: none; background: center / 100% 100% no-repeat; }
+html body #inventory .eq-stage > .eq-col, html body #inventory .eq-stage > canvas.eq-earl { position: relative; z-index: 1; }
+html body #inventory .eq-pouch .eq-slot .belt-n:not(#_a):not(#_b) { top: 4px !important; right: 6px !important; bottom: auto !important; }
+/* (7.6.53, owner) the scene behind the diver, changed by a small olive plate at the top of the stage */
+html body #inventory .eq-stage > .eq-scene:not(#_a) { position: absolute; top: 8px; left: 50%; transform: translateX(-50%); z-index: 3; padding: 2px 12px !important; min-height: 0 !important; border: 6px solid transparent !important; border-image: var(--o-btn, url("../assets/ui/olive/btn-olive.png")) 28 fill / 6px stretch !important; background: none !important; box-shadow: none !important; font: 600 13px var(--o-text) !important; letter-spacing: 0.06em; color: var(--o-cream, #e6dec4) !important; opacity: 0.85; }
+html body #inventory .eq-stage > .eq-scene::before { content: 'Scene: '; color: rgba(230, 222, 196, 0.55); }
