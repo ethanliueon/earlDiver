@@ -582,26 +582,33 @@ e.inSub ? [
     // (5.6.8) the top left is what is his: a painted stack of banknotes and the sum (no coin round it, as it is not a
     // button), the journal's coin beside it (HTML, placed by main.js at this.journalAt). The settings coin goes to the
     // top right corner, where a phone game keeps it; the depth moves left to make room (this.gearSpace)
-    { const ch = 30 * u, plusW = 22 * u, mx0 = 12 * u + ch * 0.8, mx = mx0 + plusW, my = 12 * u + 19 * u; // (7.6.72, owner) a + at the left of each row, inside the plate, as phone games set them
+    { const ch = 30 * u, QR = 10.5 * u, qcx = 7 * u + QR, mx = qcx + QR + 3 * u + ch * 0.8, my = 12 * u + 19 * u; // (7.6.73, owner) a real + button at the left of each row, fixed onto the plate's edge; the money and pearls close after it
       // (7.6.72) the + stud: a worn olive stud with a bone cross; the money's opens the shop's coins (money for pearls), the pearls' its pearl packs
-      const plusStud = (qx, qy, key) => { const qr = 7.5 * u; ctx.save(); ctx.shadowBlur = 0; const sg = ctx.createRadialGradient(qx - qr * 0.3, qy - qr * 0.4, qr * 0.1, qx, qy, qr); sg.addColorStop(0, '#5e6648'); sg.addColorStop(1, '#2c3224');
-        const pd = pressFx(key, qx, qy, qr), oy = pd ? 0.6 * u : 0; ctx.fillStyle = sg; ctx.beginPath(); ctx.arc(qx, qy + oy, qr, 0, TAU); ctx.fill(); ctx.strokeStyle = 'rgba(10,12,8,0.85)'; ctx.lineWidth = 1.1 * u; ctx.stroke();
-        ctx.strokeStyle = 'rgba(222,212,184,0.9)'; ctx.lineWidth = 1.7 * u; ctx.lineCap = 'round'; const k = qr * 0.48; ctx.beginPath(); ctx.moveTo(qx - k, qy + oy); ctx.lineTo(qx + k, qy + oy); ctx.moveTo(qx, qy - k + oy); ctx.lineTo(qx, qy + k + oy); ctx.stroke(); ctx.restore();
+      // (7.6.73, owner) a button you want to press: larger, raised (a dark ring set into the plate's edge, a domed bronze-olive
+      // face lit from above, a soft shadow under it), a bold bone cross; pressed, it sinks and darkens
+      const plusStud = (qx, qy, key) => { const qr = QR; ctx.save(); const pd = pressFx(key, qx, qy, qr), oy = pd ? 0.9 * u : 0;
+        ctx.shadowColor = 'rgba(0,0,0,0.6)'; ctx.shadowBlur = 4 * u; ctx.shadowOffsetY = (pd ? 0.6 : 1.8) * u; ctx.fillStyle = '#1b1e15'; ctx.beginPath(); ctx.arc(qx, qy + oy * 0.4, qr + 1.6 * u, 0, TAU); ctx.fill(); ctx.restore(); ctx.save();
+        const sg = ctx.createRadialGradient(qx - qr * 0.35, qy - qr * 0.45 + oy, qr * 0.1, qx, qy + oy, qr); sg.addColorStop(0, pd ? '#6a6a48' : '#8f8a5e'); sg.addColorStop(0.55, pd ? '#4b4c34' : '#5f6143'); sg.addColorStop(1, '#2c2f20');
+        ctx.fillStyle = sg; ctx.beginPath(); ctx.arc(qx, qy + oy, qr, 0, TAU); ctx.fill();
+        ctx.strokeStyle = 'rgba(232,222,190,0.35)'; ctx.lineWidth = 1.2 * u; ctx.beginPath(); ctx.arc(qx, qy + oy, qr - 1.2 * u, Math.PI * 1.1, Math.PI * 1.9); ctx.stroke(); // the lit upper rim
+        ctx.strokeStyle = 'rgba(8,9,6,0.9)'; ctx.lineWidth = 1.1 * u; ctx.beginPath(); ctx.arc(qx, qy + oy, qr, 0, TAU); ctx.stroke();
+        const k = qr * 0.5; ctx.lineCap = 'round'; ctx.lineWidth = 3.2 * u; ctx.strokeStyle = 'rgba(10,10,6,0.55)'; ctx.beginPath(); ctx.moveTo(qx - k, qy + oy + 0.8 * u); ctx.lineTo(qx + k, qy + oy + 0.8 * u); ctx.moveTo(qx, qy - k + oy + 0.8 * u); ctx.lineTo(qx, qy + k + oy + 0.8 * u); ctx.stroke(); // the cross's shadow
+        ctx.lineWidth = 2.6 * u; ctx.strokeStyle = '#ece4cc'; ctx.beginPath(); ctx.moveTo(qx - k, qy + oy); ctx.lineTo(qx + k, qy + oy); ctx.moveTo(qx, qy - k + oy); ctx.lineTo(qx, qy + k + oy); ctx.stroke(); ctx.restore();
         hot(qx - qr - 6 * u, qy - qr - 6 * u, qr * 2 + 12 * u, qr * 2 + 12 * u, key); };
       // (7.6.26, owner) the money and the pearls share one plate: the olive steel with a dark well pressed into it, the
       // banknotes and sum on its upper row, the pearl and its count under them (the pearls' own plate is gone)
       // (7.6.26, owner) one piece, shaped as the two were: the money's row full width, the pearls' row only as wide as its
       // own plate was, the two joined (an L, its inner corner rounded), one dark well following the same shape
       { ctx.save(); ctx.font = `700 ${21 * u}px ${HUDF}`; const tw = ctx.measureText(moneyExact(P.cash || 0)).width; ctx.font = `700 ${15 * u}px ${HUDF}`; const pw2 = ctx.measureText(String(Math.floor(P.pearls || 0).toLocaleString('en-US'))).width; ctx.restore();
-        const pr = 8 * u, bx = mx0 - ch * 0.8 - 5 * u, top = my - ch * 0.62, mid = my + ch * 0.55 + 2.5 * u, bot = my + ch * 0.55 + 6 * u + pr * 2 + 6 * u;
-        const w = plusW + ch * 1.6 + 11 * u + tw + 14 * u, w2 = Math.min(w, plusW + (3 * u + pr * 2.4 + 5 * u) + pw2 + 14 * u);
+        const pr = 8 * u, bx = qcx - QR * 0.4, top = my - ch * 0.62, /* (7.6.73) the plate begins under the buttons, which stand out past its edge */ mid = my + ch * 0.55 + 2.5 * u, bot = my + ch * 0.55 + 6 * u + pr * 2 + 6 * u;
+        const w = (mx + ch * 0.8 + 6 * u + tw + 13 * u) - bx, w2 = Math.min(w, (mx - ch * 0.8 + 3 * u + pr * 2.4 + 5 * u + pw2 + 12 * u) - bx);
         const Lp = (x0, y0, x1, ym, x2, y1, r, ri) => { const p = new Path2D(); p.moveTo(x0 + r, y0); p.lineTo(x1 - r, y0); p.arcTo(x1, y0, x1, y0 + r, r); if (x2 < x1 - 0.5) { p.lineTo(x1, ym - r); p.arcTo(x1, ym, x1 - r, ym, r); p.lineTo(x2 + ri, ym); p.arcTo(x2, ym, x2, ym + ri, ri); } p.lineTo(x2, y1 - r); p.arcTo(x2, y1, x2 - r, y1, r); p.lineTo(x0 + r, y1); p.arcTo(x0, y1, x0, y1 - r, r); p.lineTo(x0, y0 + r); p.arcTo(x0, y0, x0 + r, y0, r); p.closePath(); return p; };
         const outer = Lp(bx, top, bx + w, mid, bx + w2, bot, 4 * u, 3 * u), well = Lp(bx + 2.5 * u, top + 2.5 * u, bx + w - 2.5 * u, mid - 2.5 * u, bx + w2 - 2.5 * u, bot - 2.5 * u, 3 * u, 3 * u);
         const W2 = Math.round(w), H2 = Math.round(bot - top), kk = W2 + 'x' + H2; let im = PLATES.get(kk); if (!im) { im = new Image(); im.src = lockerTexture(W2, H2, { plain: true }); PLATES.set(kk, im); }
         ctx.save(); ctx.shadowColor = 'rgba(0,0,0,0.55)'; ctx.shadowBlur = 6 * u; ctx.shadowOffsetY = 2 * u; ctx.fillStyle = '#3b4434'; ctx.fill(outer); ctx.restore();
         if (im.complete && im.naturalWidth) { ctx.save(); ctx.clip(outer); ctx.drawImage(im, bx, top, w, bot - top); ctx.restore(); }
         ctx.fillStyle = 'rgba(0,0,0,0.3)'; ctx.fill(well); ctx.strokeStyle = 'rgba(0,0,0,0.7)'; ctx.lineWidth = 1; ctx.stroke(outer);
-        this.pearlRect = { r: bx + w2, y: my + ch * 0.55 + 6 * u + pr, h: bot - mid, u }; this.plusX = bx + 5 * u + 7.5 * u; }
+        this.pearlRect = { r: bx + w2, y: my + ch * 0.55 + 6 * u + pr, h: bot - mid, u }; this.plusX = qcx; }
       plusStud(this.plusX, my, 'cashshop');
       drawCash(ctx, mx, my, ch);
       ctx.save(); ctx.font = `700 ${21 * u}px ${HUDF}`; ctx.textAlign = 'left'; ctx.textBaseline = 'middle'; ctx.shadowColor = 'rgba(0,0,0,0.85)'; ctx.shadowBlur = 4 * u;
