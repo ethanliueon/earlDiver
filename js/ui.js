@@ -727,10 +727,38 @@ export class UI {
   }
   // (6.9.0) what a Log step gives, shown, not named: an item as its picture with its name in its rarity's colour, money as
   // the sum, both when both (never "a gift")
-  // (7.6.40, owner) an achievement's picture: the game's own triplewart seadevil, on the page itself, no window round it
+  // (7.6.43, owner) an achievement's picture, drawn like a panel from a comic: a blob of deep water with a hand-wobbled
+  // ink edge, flat colour, halftone dots darkening toward the bottom, the lure's light in two flat steps, sea snow, and
+  // the game's own triplewart seadevil in front. Drawn once, kept as an image
   achArt(a) {
     this.achPics = this.achPics || {}; if (this.achPics[a.id]) return this.achPics[a.id];
-    const sp = SPECIES_BY_ID[323] || SPECIES_BY_ID[100]; return (this.achPics[a.id] = sp ? fittedIcon(sp, 240, 140, 0.04).toDataURL() : '');
+    const W = 520, H = 220, c = document.createElement('canvas'); c.width = W; c.height = H; const x = c.getContext('2d');
+    let sd = 11; const rnd = () => ((sd = (sd * 16807) % 2147483647) / 2147483647);
+    // the blob: a wide oval pushed in and out by a few slow waves, so it reads as cut by hand
+    const cx = W / 2, cy = H / 2 + 4, rx = W * 0.44, ry = H * 0.4, ph = [rnd() * 6, rnd() * 6, rnd() * 6], blob = new Path2D();
+    for (let k = 0; k <= 96; k++) { const t = (k / 96) * Math.PI * 2, r = 1 + 0.07 * Math.sin(t * 3 + ph[0]) + 0.04 * Math.sin(t * 5 + ph[1]) + 0.025 * Math.sin(t * 9 + ph[2]);
+      const px = cx + Math.cos(t) * rx * r, py = cy + Math.sin(t) * ry * r; k ? blob.lineTo(px, py) : blob.moveTo(px, py); }
+    blob.closePath();
+    x.save(); x.clip(blob);
+    x.fillStyle = '#1d3a46'; x.fillRect(0, 0, W, H);
+    // halftone: dots on a slanted grid, larger toward the bottom
+    x.fillStyle = '#0e2029';
+    for (let gy = -12; gy < H + 12; gy += 13) for (let gx = -12; gx < W + 12; gx += 13) { const px = gx + (Math.floor(gy / 13) % 2) * 6.5, r = Math.max(0, (gy / H - 0.35) * 9); if (r > 0.3) { x.beginPath(); x.arc(px, gy, r, 0, Math.PI * 2); x.fill(); } }
+    // sea snow: flat bone flecks
+    x.fillStyle = '#d8d2bc'; for (let k = 0; k < 26; k++) { x.beginPath(); x.arc(rnd() * W, rnd() * H, 1 + rnd() * 1.8, 0, Math.PI * 2); x.fill(); }
+    const sp = SPECIES_BY_ID[323] || SPECIES_BY_ID[100], fw = 250, fh = 170, fx = cx - fw / 2 + 20, fy = cy - fh / 2 + 10;
+    let f = null, lx = cx - 40, ly = cy - 60;
+    if (sp) { f = fittedIcon(sp, fw, fh, 0.04); const d = f.getContext('2d').getImageData(0, 0, fw, fh).data; let best = -1;
+      for (let k = 0; k < fw * fh; k++) { if (d[k * 4 + 3] < 200) continue; const v = d[k * 4] + d[k * 4 + 1] * 1.2 + d[k * 4 + 2]; if (v > best) { best = v; lx = fx + (k % fw); ly = fy + Math.floor(k / fw); } } }
+    // the lure's light in flat steps, as a comic paints a glow
+    x.fillStyle = '#2b4c4a'; x.beginPath(); x.arc(lx, ly, 46, 0, Math.PI * 2); x.fill();
+    x.fillStyle = '#48705f'; x.beginPath(); x.arc(lx, ly, 22, 0, Math.PI * 2); x.fill();
+    x.restore();
+    // the ink edge: drawn twice, a little apart, as a pen goes round
+    x.lineJoin = 'round'; x.strokeStyle = '#17120a'; x.lineWidth = 6; x.stroke(blob);
+    x.save(); x.translate(1.5, -1); x.lineWidth = 1.5; x.globalAlpha = 0.6; x.stroke(blob); x.restore();
+    if (f) { x.save(); x.shadowColor = 'rgba(0,0,0,0.45)'; x.shadowOffsetY = 3; x.drawImage(f, fx, fy); x.restore(); }
+    return (this.achPics[a.id] = c.toDataURL());
   }
   renderQuests() {
     const P = this.h.getProfile(); if (!P || this.qFreeze) return;
