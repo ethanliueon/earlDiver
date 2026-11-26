@@ -71,6 +71,12 @@ last desktop build is kept on the branch `desktop-4.25.5`).
 
 ## How to work
 
+- **Bake static art into fixed PNGs (7.6.62, owner).** Anything that does not move is painted once into a PNG in assets/
+  (tools/bake_pngs.cjs, tools/slot_wells.py, tools/seabed_*.py) and only scaled in play; never regenerate a texture per
+  zoom or size (the boat's rust reshuffled while the camera settled). Random numbers only in things that really move.
+- **Every part sits on something (7.6.62, owner).** On the boat and anywhere else: legs on foot brackets, rams on clevises,
+  cables over sheaves; no round caps floating above a deck, no plain rectangles or rounded boxes standing in for objects.
+- **Tutorial highlights glow on the thing itself (7.6.62, owner):** a door's frame glows; never a hand that follows the player.
 - **Never say "Earl" to the player (7.6.49, owner).** Text the player reads uses the diver's own name (the profile's name) or no name at all; "Earl" stays only in code and comments.
 
 - **The game as it is (6.2) is the standard.** What is in the game now is the owner's taste made real: the suits'

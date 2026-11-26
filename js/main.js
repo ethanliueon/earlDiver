@@ -1343,7 +1343,7 @@ function tutor() {
   const inCabin = shown('cabin'), qOpen = shown('quests'), invOpen = shown('inventory'), catOpen = shown('catalog'), jOpen = shown('journal'), shopOpen = shown('workshop');
   // (4.3.2) words drawn beside the fish: { text, col }
   const netPrompt = () => ({ text: g.toolSel !== 'net' ? 'Take out your net' : 'Swing your net' });
-  let text = null, to = null, fish = null, prompt = null, spot = null, door = false, action = null;
+  let text = null, to = null, fish = null, prompt = null, spot = null, door = false, action = null, sellDoor = false;
   // (4.4.1) a hit area: on the moment he is in it, off only once he has been out of it for a moment, so a button
   // never blinks at the edge. offer(): the step's one action here, shown as the tutorial's button
   const Z = g.tutZones || (g.tutZones = {}), now = performance.now();
@@ -1410,7 +1410,7 @@ function tutor() {
     else if (g.aboard) { text = 'Jump in beside the Margaret: you sell from the water'; to = ladder; }
     else if (!zone('boat', nearBoat)) { text = 'Bring your catch up beside the Margaret'; to = ladder; }
     else { const wx = BOAT.x + 4.5 * dir; // (7.1.0) the winch is used where it is: led there first, then offered
-      if (Math.abs(e.x - wx) >= 1.6) { text = 'Swim to the Sell door at the stern'; to = { x: wx, y: 0.4 }; } // (7.5.0, owner) at the door itself, not the ladder beside it
+      sellDoor = true; /* (7.6.62, owner) its frame glows */ if (Math.abs(e.x - wx) >= 1.6) { text = 'Swim to the Sell door at the stern'; to = { x: wx, y: 0.4 }; } // (7.5.0, owner) at the door itself, not the ladder beside it
       else { text = 'Tap the Sell door on the Margaret'; offer('sell', 'Sell your catch', 'U'); } }
   } else if (m.id === 'buy') {
     // the cheapest piece of gear he can afford at Bayside, to point at
@@ -1429,7 +1429,7 @@ function tutor() {
     }
     else if (inCabin) { text = 'Walk to the computer to shop'; cabinTo('desk', 'shop', 'Open the shop'); }
     else if (g.aboard) { text = 'Go into the cabin: the door by the wheelhouse'; to = { x: BOAT.x + DOOR_M * dir, y: -1.2 }; door = true; if (zone('door', deckAtDoor())) { offer('cabin', 'Enter the cabin'); spot = null; g.tutVig = 1; text = 'Tap the cabin door to go in'; } /* (7.6.22, owner) no glove at the door: the door glows and the screen's edges darken */
-      { const bf = renderer.boatFrame, kx = innerWidth / renderer.c.width; if (bf) spot = { pt: [(bf.x + bf.sx * 19 * bf.k) * kx, (bf.y - 17.5 * bf.k) * kx, 5.4 * bf.k * kx, 14 * bf.k * kx] }; } } // (7.5.0, owner) up on deck: the glove points at the cabin door itself // (4.3.5) the door itself lit up
+      /* (7.6.62, owner) no glove: it turned with him and shifted awkwardly; the door's own frame glows (render.js, guide.door) */ } // (7.5.0, owner) up on deck: the glove points at the cabin door itself // (4.3.5) the door itself lit up
     else { text = 'Climb aboard the Margaret by the ladder'; to = ladder; g.tutLadder = true; if (ladderZone()) { offer('climb', 'Climb aboard'); text = 'Tap the ladder to climb aboard'; } }
   } else if (m.id === 'wear') {
     const Kit = P.kit || { items: [], on: {} }, worn = new Set(Object.values(Kit.on || {}));
@@ -1491,7 +1491,7 @@ function tutor() {
       else { text = 'Autopilot home'; spot = { key: 'c', say: 'Autopilot home' }; }
     }
   }
-  g.tut = { text, to, fish, prompt, spot, door };
+  g.tut = { text, to, fish, prompt, spot, door, sellDoor };
   // (4.3.8) the instruction has its own line at the left (tutspot.js), so the game's own messages at the top are
   // never held back by it. None while the quests are open: the arrow at Claim is enough.
   if (ui.anyOpen('cabin') && !(catOpen && m && m.id === 'buy') && !(m && m.id === 'subtrip' && ui.tankOpen && ui.tankOpen())) g.tut.text = null; /* (7.6.26) the tank room keeps its line: it is a lesson there */ // (4.4.1) nor over any open screen (the journal, the shop, ...): its arrow says it; (5.6.9) the shop on a phone keeps a short line over it, as nothing else says why

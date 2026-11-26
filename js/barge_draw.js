@@ -6,7 +6,17 @@
 export const BARGE = { PPM: 64, W: 14, H: 8, WL: 5.4, X0: 1 }; // metres; WL: the waterline from the picture's top; X0: the hull's left end
 
 const cache = {};
+// (7.6.62, owner) baked: the barge's day and night pictures are fixed PNGs (assets/textures/barge_day.png, barge_night.png, made
+// by tools/bake_pngs.cjs from bargePictureProc at 128 px a metre), only scaled down to the screen's own scale here
+const IMGS = {}; const imgOf = (night) => { const k = night ? 'night' : 'day'; if (!IMGS[k] && typeof Image !== 'undefined') { IMGS[k] = new Image(); IMGS[k].src = `assets/textures/barge_${k}.png`; } return IMGS[k]; };
 export function bargePicture(night = false, ppm = BARGE.PPM) {
+  const im = imgOf(night); if (!(im && im.complete && im.naturalWidth > 0)) return bargePictureProc(night, ppm);
+  const kq = Math.max(12, Math.round(ppm * 4) / 4), key = 'i' + (night ? 'n' : 'd') + kq; if (cache[key]) return cache[key];
+  for (const k0 of Object.keys(cache)) if (!k0.endsWith(String(kq))) delete cache[k0];
+  const c = document.createElement('canvas'); c.width = Math.round(BARGE.W * kq); c.height = Math.round(BARGE.H * kq); const x = c.getContext('2d'); x.imageSmoothingQuality = 'high'; x.drawImage(im, 0, 0, c.width, c.height);
+  return (cache[key] = c);
+}
+export function bargePictureProc(night = false, ppm = BARGE.PPM) {
   /* (7.6.25, owner) painted at the screen's own scale (kept for the last two), so it is never shrunk each frame and shimmers */
   const kq = Math.max(12, Math.round(ppm * 4) / 4), key = (night ? 'n' : 'd') + kq; if (cache[key]) return cache[key];
   for (const k0 of Object.keys(cache)) if (!k0.endsWith(String(kq))) delete cache[k0];

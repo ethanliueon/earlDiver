@@ -906,7 +906,7 @@ export class Renderer {
       const dimB = 1 - (0.22 + 0.78 * Math.sqrt(dayEff)), door = !!(g.tut && g.tut.door);
       const bc = this.boatC || (this.boatC = document.createElement('canvas'));
       const BK = this.boatK || {};
-      if (bc.width !== Rw || bc.height !== Rh || BK.flip !== (bsx < 0) || BK.door !== door || Math.abs((BK.dim ?? -1) - dimB) > 0.02 || BK.docked !== g.sub.docked || t - (BK.t ?? -9) > (this.phone ? 0.25 : 0.1)) {
+      if (bc.width !== Rw || bc.height !== Rh || BK.flip !== (bsx < 0) || BK.door !== door || Math.abs((BK.dim ?? -1) - dimB) > 0.02 || BK.docked !== g.sub.docked || BK.wear !== this.wearReady() || t - (BK.t ?? -9) > (this.phone ? 0.25 : 0.1)) {
         if (bc.width !== Rw || bc.height !== Rh) { bc.width = Rw; bc.height = Rh; }
         const bctx = bc.getContext('2d');
         bctx.setTransform(1, 0, 0, 1, 0, 0); bctx.clearRect(0, 0, Rw, Rh); bctx.globalCompositeOperation = 'source-over';
@@ -915,10 +915,19 @@ export class Renderer {
         bctx.setTransform(1, 0, 0, 1, 0, 0); bctx.globalCompositeOperation = 'source-atop'; bctx.drawImage(this.boatWear(Rw, Rh, bsx < 0), 0, 0);
         if (dimB > 0.01) { bctx.fillStyle = `rgba(4,6,10,${dimB.toFixed(3)})`; bctx.fillRect(0, 0, Rw, Rh); }
         bctx.globalCompositeOperation = 'source-over';
-        this.boatK = { flip: bsx < 0, door, dim: dimB, docked: g.sub.docked, t };
+        this.boatK = { flip: bsx < 0, door, dim: dimB, docked: g.sub.docked, wear: this.wearReady(), t };
       }
       const kB = ppm / REF; crane = this.boatCrane ? { craneTip: [this.boatCrane.craneTip[0] * kB, this.boatCrane.craneTip[1] * kB] } : null;
       ctx.save(); ctx.scale(bsx, 1); ctx.rotate(boatRock(t)); ctx.drawImage(bc, Math.round(-Rw * 0.45 * kB), Math.round(-Rh * 0.82 * kB), Rw * kB, Rh * kB);
+      // (7.6.62, owner) a door the tutorial wants: its own frame glows, a warm lamp light breathing round its edge, drawn in the
+      // boat's frame so it stays on the door as she rocks (never a hand following him about)
+      const sellD = !!(g.tut && g.tut.sellDoor);
+      if (door || sellD) { const u = 0.14 * ppm, pulse = 0.55 + 0.45 * Math.sin(t * 2.6), fr = new Path2D();
+        if (door) { fr.moveTo(16.5 * u, -10.8 * u); fr.lineTo(16.5 * u, -24.6 * u); fr.lineTo(21.5 * u, -24.6 * u); fr.lineTo(21.5 * u, -10.8 * u); }
+        else { const x0 = 28.1, x1 = 35.9, y0 = -10.4, y1 = -2.1, r = 1.4; fr.moveTo((x0 + r) * u, y0 * u); fr.lineTo((x1 - r) * u, y0 * u); fr.quadraticCurveTo(x1 * u, y0 * u, x1 * u, (y0 + r) * u); fr.lineTo(x1 * u, (y1 - r) * u); fr.quadraticCurveTo(x1 * u, y1 * u, (x1 - r) * u, y1 * u); fr.lineTo((x0 + r) * u, y1 * u); fr.quadraticCurveTo(x0 * u, y1 * u, x0 * u, (y1 - r) * u); fr.lineTo(x0 * u, (y0 + r) * u); fr.quadraticCurveTo(x0 * u, y0 * u, (x0 + r) * u, y0 * u); }
+        ctx.save(); ctx.lineJoin = 'round'; ctx.shadowColor = `rgba(255, 214, 150, ${(0.6 + 0.4 * pulse).toFixed(2)})`; ctx.shadowBlur = (6 + 8 * pulse) * Math.max(1, ppm / 40);
+        ctx.strokeStyle = `rgba(255, 226, 170, ${(0.35 + 0.45 * pulse).toFixed(2)})`; ctx.lineWidth = Math.max(1.2, 0.45 * u); ctx.stroke(fr);
+        ctx.shadowBlur = 0; ctx.strokeStyle = `rgba(255, 244, 214, ${(0.25 + 0.35 * pulse).toFixed(2)})`; ctx.lineWidth = Math.max(0.6, 0.15 * u); ctx.stroke(fr); ctx.restore(); }
       { const u = 0.14 * ppm, sh = 1 - dimB; for (let k = 0; k < 4; k++) { const p = ((t * 0.25 + k / 4) % 1); ctx.fillStyle = `rgba(${Math.round(90 * sh)},${Math.round(90 * sh)},${Math.round(92 * sh)},${(0.25 * (1 - p)).toFixed(3)})`; ctx.beginPath(); ctx.arc((13.5 + p * 8) * u, (-39 - p * 10) * u, (1 + p * 3) * u, 0, TAU); ctx.fill(); } } /* (7.6.25, owner) the stack's smoke drawn every frame, not baked with her four times a second */ drawBoatRadar(ctx, 0.14 * ppm, t, dimB); /* (7.4.0) smooth, every frame */ this.boatWays(ctx, g, t, 0.14 * ppm, Math.sqrt(dayEff)); ctx.restore(); // (3.0.0) turned with her heading
       this.boatFrame = { x: boatX, y: boatY, roll, rock: boatRock(t), sx: bsx, k: 0.14 * ppm, a: roll + boatRock(t), lit: 0.35 + 0.65 * Math.sqrt(dayEff) }; // (2.5.0: Earl on deck is drawn in this frame; the deck stations are gone)
       if (dayEff < 0.5) {
@@ -2867,7 +2876,19 @@ export class Renderer {
     }
     ctx.restore();
   }
+  // (7.6.62, owner) the boat's weathering is a fixed picture (assets/textures/boat_wear.png, baked by tools/bake_pngs.cjs from
+  // boatWearProc below), only scaled to the size she is painted at: it was generated afresh for every size, so while the
+  // camera settled on entering the game her rust and grime reshuffled from frame to frame
+  wearReady() { if (!this.wearImg) { this.wearImg = new Image(); this.wearImg.src = 'assets/textures/boat_wear.png'; } return this.wearImg.complete && this.wearImg.naturalWidth > 0; }
   boatWear(w, h, flip) {
+    if (!this.wearReady()) return this.boatWearProc(w, h, flip);
+    const key = 'i' + w + 'x' + h + (flip ? 'f' : '');
+    if (this.boatWearC && this.boatWearC.key === key) return this.boatWearC.c;
+    const c = document.createElement('canvas'); c.width = w; c.height = h; const x = c.getContext('2d'); x.imageSmoothingQuality = 'high';
+    if (flip) { x.translate(w, 0); x.scale(-1, 1); } x.drawImage(this.wearImg, 0, 0, w, h);
+    this.boatWearC = { key, c }; return c;
+  }
+  boatWearProc(w, h, flip) {
     const key = w + 'x' + h + (flip ? 'f' : '');
     if (this.boatWearC && this.boatWearC.key === key) return this.boatWearC.c;
     const c = document.createElement('canvas'); c.width = w; c.height = h; const x = c.getContext('2d');
