@@ -108,7 +108,7 @@ export function toolPic(kind, def) {
 // glow spilling onto a rough dark hide in warm flecks, fading to black with no edge. The slit and the lids are laid
 // over it live (hud: marked), so it can still blink and narrow as the thing comes nearer
 let EYE_PIC = null;
-function eyePicture() {
+export function eyePicture() {
   if (EYE_PIC) return EYE_PIC;
   const W = 320, H = 190, c = document.createElement('canvas'); c.width = W; c.height = H; const x = c.getContext('2d');
   let sd = 9137; const r = () => ((sd = (sd * 16807) % 2147483647) / 2147483647);
@@ -348,7 +348,7 @@ export class Hud {
     const hot = (x, y, w, h, key) => this.hots.push({ x: (x + this.safeL) * kx, y: (y + this.safeT) * kx, w: w * kx, h: h * kx, key });
     // (5.3) sized from the finger, not the screen: CSS pixels (about 0.18 mm each on a phone). The main button about
     // 2 cm across, the others about 1.4 cm, never below Apple's 44 pt
-    const u = (this.pxPt || 1.5) * (this.U || 1), pad = 16 * u, R = 41 * u; // (5.15.7) the buttons in the one unit: proportional on every screen
+    const u = (this.pxPt || 1.5) * (this.U || 1), pad = 13 * u, R = 41 * u; /* (7.7.0, owner) the corner a little tighter: the arc further right */ // (5.15.7) the buttons in the one unit: proportional on every screen
     const
       cx = W - pad - R, cy = H - pad - R; // (5.3.1) small: about 1.3 cm // (5.4) a tablet (no page scaling): 1.3x, so the small buttons reach 44 pt
     const held = this.held || new Set();
@@ -443,19 +443,17 @@ e.inSub ? [
     // side) bobbing in toward the button from the middle of the screen. With the spotlight (below) it is drawn again
     // over the darkened screen
     // (6.5.0) sq: a square tile (the menu's), ringed in its own rounded square, not a circle drawn over it
+    // (7.7.0, owner) the tutorial's light on a button, over its rim: a soft bone light hugging the edge, breathing slowly,
+    // added (lighter) so it brightens the rim instead of painting a band over it
+    const ringLight = (x, y, r, sq = false) => { const q = 0.5 + 0.5 * Math.sin(g.time * 3.2); ctx.save(); ctx.globalCompositeOperation = 'lighter';
+      const rg = ctx.createRadialGradient(x, y, r * 0.78, x, y, r * (1.32 + 0.1 * q)); rg.addColorStop(0, 'rgba(236,226,198,0)'); rg.addColorStop(0.42, `rgba(236,226,198,${(0.16 + 0.14 * q).toFixed(3)})`); rg.addColorStop(0.62, `rgba(236,226,198,${(0.1 + 0.08 * q).toFixed(3)})`); rg.addColorStop(1, 'rgba(236,226,198,0)');
+      ctx.fillStyle = rg; ctx.beginPath(); if (sq) ctx.roundRect(x - r * 1.4, y - r * 1.4, r * 2.8, r * 2.8, r * 0.4); else ctx.arc(x, y, r * 1.45, 0, TAU); ctx.fill(); ctx.restore(); };
     const ring = (x, y, r, spot = false, sq = false) => {
       if (!spot) { this.tutTarget = { x, y, r, sq }; }
       
       if (!spot) halo(x, y, r); // (6.0.5) behind the button only: over the dark the button must stay readable
-      // (6.6.0) no lines round it: a soft light in the button's own shape, hugging its edge and breathing
-      { const q = 0.5 + 0.5 * Math.sin(g.time * 3.6); ctx.save(); ctx.shadowColor = `rgba(240,228,196,${(0.75 + 0.25 * q).toFixed(3)})`; ctx.shadowBlur = (14 + 18 * q) * u;
-        ctx.fillStyle = `rgba(240,228,196,${(0.3 + 0.22 * q).toFixed(3)})`; ctx.beginPath();
-        if (sq) { ctx.roundRect(x - r * 1.07, y - r * 1.07, r * 2.14, r * 2.14, r * 0.3); ctx.roundRect(x - r * 0.99, y - r * 0.99, r * 1.98, r * 1.98, r * 0.26); }
-        else { ctx.arc(x, y, r * 1.07, 0, TAU); ctx.arc(x, y, r * 0.99, 0, TAU); }
-        ctx.fill('evenodd'); ctx.restore(); }
-      // motes of light drifting round it
-      for (let i = 0; i < 3; i++) { const a2 = g.time * (0.5 + i * 0.07) + i * 0.9, rr2 = r * (1.35 + 0.25 * Math.sin(g.time * 1.3 + i)), mx = x + Math.cos(a2) * rr2, my = y + Math.sin(a2) * rr2, ms = (1.4 + (i % 3)) * u, al = 0.45 + 0.4 * Math.sin(g.time * 2 + i);
-        const mg = ctx.createRadialGradient(mx, my, 0, mx, my, ms * 3); mg.addColorStop(0, `rgba(232,226,208,${(al * 0.6).toFixed(3)})`); mg.addColorStop(1, 'rgba(232,226,208,0)'); ctx.fillStyle = mg; ctx.beginPath(); ctx.arc(mx, my, ms * 3, 0, TAU); ctx.fill(); }
+      // (7.7.0, owner) the rim's light is laid after the button itself (ringLight, from btn), over its dark edge: drawn under
+      // it, the button's own dark rim showed through as a black outline; no drifting dots (they read as drawn circles)
       // the arrow (not for the Log's quiet ring)
       if (this.quietRing) return;
       const es = g.earlScr && !this.inCabin ? g.earlScr : null, ox = es ? es[0] * W : W * 0.5, oy = es ? es[1] * H : H * 0.45; /* (6.5.6) on the line from Earl to the button, not from the screen's middle */
@@ -527,14 +525,14 @@ e.inSub ? [
         // (7.6.79, owner) what goes here: the outline of the game's own scroll, engraved into the socket's floor (its shadow above,
         // its lit lip below), nothing inside it: empty, not missing; a tap still opens the bag
         { const G0 = ghostScroll(); if (G0) { const sz = r * 1.62, gx = x - sz / 2, gy = y - sz / 2; ctx.save(); ctx.globalAlpha = 0.75; ctx.drawImage(G0.dark, gx, gy - 1 * u, sz, sz); ctx.globalAlpha = 0.9; ctx.drawImage(G0.lit, gx, gy + 1 * u, sz, sz); ctx.globalAlpha = 0.55; ctx.drawImage(G0.dark, gx, gy, sz, sz); ctx.restore(); } }
-        ctx.restore(); hot(x - r, y - r, r * 2, r * 2, 'slotempty'); return; }
+        ctx.restore(); return; } /* (7.6.94, owner) an empty socket does nothing when tapped */
       if (a.dom) { this.journalAt = { x: (x + this.safeL) * kx, y: (y + this.safeT) * kx, r: r * kx }; this.journalR = r * kx; return; } // (5.6.9) the journal's HTML coin is placed here by main.js
       const down = pressFx(a.key, x, y, r);
       // one that comes and goes rises in (and sinks away) over a fifth of a second rather than blinking
       if (a.away) { const v0 = vis[a.key] ?? 0, v = vis[a.key] = clamp(v0 + (a.on ? 1 : -1) * dt * 6, 0, 1); if (v <= 0.01) return; r *= 0.7 + 0.3 * (1 - (1 - v) * (1 - v)); ctx.save(); ctx.globalAlpha *= v; }
       else ctx.save();
       const want = (tutKey === a.key || (a.tutAlt && tutKey === a.tutAlt)) && a.on;
-      if (want) { ring(x, y, r, false, !!a.tile); r *= 1 + 0.07 * (0.5 + 0.5 * Math.sin(g.time * 4.2)); } // (5.7.5) and it swells gently with the pulse
+      if (want) { ring(x, y, r, false, !!a.tile); } // (7.7.0, owner) no swelling: the pulse is in its light (the scaled button's dark rim flickered as an outline)
       /* (5.17.0) one that cannot be used now keeps its size: its greyed face says it */ // (5.7.5) one that cannot be used now sits back: smaller and fainter
       // (5.10.10) in its jaws the layout stays put: everything that cannot help goes dim, and a ready Tidewarden wakes:
       // saturated, a slow warm swell behind it. The same swell shows whenever the Tidewarden can be used.
@@ -555,6 +553,7 @@ e.inSub ? [
         const hg = ctx.createRadialGradient(x, y, R0, x, y, R3); hg.addColorStop(0, `rgba(226,196,146,${(0.34 + 0.16 * q).toFixed(3)})`); hg.addColorStop(1, 'rgba(226,196,146,0)'); ctx.fillStyle = hg; ctx.beginPath(); ctx.arc(x, y, R3, 0, TAU); ctx.fill(); }
       drawCoin(ctx, x, y, r, a.icon, down ? 'press' : tideReady ? 'lit' : this.inKill || !a.on ? 'off' : a.lit && !a.inter ? 'lit' : 'on', a.inter ? { ...(a.look || {}), k: a.icon === 'hand' ? 0.92 : 1.15 } /* (6.5.6) the hand smaller: it outsized the others */ : a.lit && LIT_ART.has(a.icon) ? { lit: true } : a.look, a.tint); } /* (6.5.1) the interact button: its picture larger, never the lit face (its glow says it) */
       if (a.inter) bezel(x, y, r, false, down);
+      if (want) ringLight(x, y, r, !!a.tile); // (7.7.0) the tutorial's light over the rim, after the button
       if (a.lock) padlock(x + r * 0.42, y + r * 0.42, r * 0.42);
       if (a.key === 'b' && (P.bagGot || 0) > (P.bagSeenAt || 0)) { // (5.9.6) something new in the bag: a red "!" at its top right, as games do
         drawBang(ctx, x + r * 0.7, y - r * 0.62, r * 0.5); } /* (7.5.0, owner) the same badge as every tile's */
@@ -669,7 +668,7 @@ e.inSub ? [
         ctx.restore(); }
       this.moneyRowBottom += PEARL_ROW * u;
       this.topLeftBottom = (my + ch * 0.55 + PEARL_ROW * u + 8 * u + this.safeT) * kx; this.topLeftX = (12 * u + this.safeL) * kx;
-      const rg = 19 * u, gx = W - 12 * u - rg, gy = 12 * u + rg; /* (5.9.4) the same size as the journal and the bag under it */
+      const rg = 19 * u, gx = W - 9 * u - rg, gy = 12 * u + rg; /* (7.7.0, owner) further right */ /* (5.9.4) the same size as the journal and the bag under it */
       btn({ key: 'settings', icon: 'gear', on: true }, gx, gy, rg);
       // (5.6.9b) the journal and the bag (and in the sub what else is carried) hang in a column right under the settings
       // coin, at the very right edge; the depth and the radar sit to the left of that column
@@ -729,7 +728,7 @@ e.inSub ? [
     if (tutKey === bKey) ring(cx, cy, R); // (6.0.5) drawn before the coin, so the hand (or net) stays readable on top
     if (can) { const q = 0.5 + 0.5 * Math.sin(g.time * 3), gg = ctx.createRadialGradient(cx, cy, R * 0.85, cx, cy, R * 1.38); gg.addColorStop(0, `rgba(222,212,186,${(0.2 + 0.1 * q).toFixed(3)})`); gg.addColorStop(1, 'rgba(222,212,186,0)'); ctx.fillStyle = gg; ctx.beginPath(); ctx.arc(cx, cy, R * 1.38, 0, TAU); ctx.fill(); } // (6.0.5) quieter, bone
     const toolLook = (k) => (k === 'net' ? toolPic('net', gear(P, 'net')) || netLook(gear(P, 'net').look || 0) : k === 'cam' ? toolPic('cam', gear(P, 'cam')) || gear(P, 'cam').look : null); // (5.17.0) its own picture
-    { const noNet = !!(P && P.kit && P.kit.on && !P.kit.on.net), kind = e.inSub ? 'claw' : sel || 'net', look = kind === 'net' && noNet ? netLook(0) /* (7.4.26, owner) no net on: a plain common net, not the last one worn */ : toolLook(kind); /* (6.5.0) aboard too: the net, greyed */ /* (6.9.1) the net unequipped: its button greyed */ drawCoin(ctx, cx, cy, R, kind, pressFx(bKey, cx, cy, R) ? 'press' : aboard && !(this.inCabin && this.cabinNear === 'door') ? 'off' /* (7.4.0) at the cabin door it works: it takes him out */ : ((e.inSub && !armT) || (!sel && !e.inSub) || (kind === 'net' && noNet)) ? 'off' : 'on', look, rarOf(kind)); }
+    { const noNet = !!(P && P.kit && P.kit.on && !P.kit.on.net), kind = e.inSub ? 'claw' : sel || 'net', look = kind === 'net' && noNet ? netLook(0) /* (7.4.26, owner) no net on: a plain common net, not the last one worn */ : toolLook(kind); /* (6.5.0) aboard too: the net, greyed */ /* (6.9.1) the net unequipped: its button greyed */ drawCoin(ctx, cx, cy, R, kind, pressFx(bKey, cx, cy, R) ? 'press' : aboard ? 'off' /* (7.7.0, owner) greyed everywhere aboard, the cabin door too: the action button takes him out */ : ((e.inSub && !armT) || (!sel && !e.inSub) || (kind === 'net' && noNet)) ? 'off' : 'on', look, rarOf(kind)); }
     // (6.5.7) the swing's time on its button: a hair-thin bone arc runs round the rim while the net is in motion, so a slow
     // net is seen to take its second
     if (g.capture && g.capture.kind === 'net' && !aboard) { const k = clamp(g.capture.t / g.capture.dur, 0, 1); ctx.save(); ctx.lineCap = 'round';
@@ -802,7 +801,7 @@ e.inSub ? [
       if (T && vS > 0.01) { const x0 = -this.safeL, y0 = -this.safeT, X1 = x0 + this.c.width, Y1 = y0 + this.c.height, far = Math.max(Math.hypot(T.x - x0, T.y - y0), Math.hypot(T.x - X1, T.y - y0), Math.hypot(T.x - x0, T.y - Y1), Math.hypot(T.x - X1, T.y - Y1)) * 1.08;
         const sg = ctx.createRadialGradient(T.x, T.y, T.r * 1.25, T.x, T.y, far), b0 = T.r * 1.25, k1 = clamp((T.r * 3.2 - b0) / (far - b0), 0.02, 0.5);
         sg.addColorStop(0, 'rgba(4,8,8,0)'); sg.addColorStop(k1, `rgba(4,8,8,${(0.5 * vS).toFixed(3)})`); sg.addColorStop(1, `rgba(2,4,4,${(0.74 * vS).toFixed(3)})`);
-        ctx.fillStyle = sg; ctx.fillRect(x0, y0, this.c.width, this.c.height); if (vS > 0.5) ring(T.x, T.y, T.r, true, T.sq); } }
+        ctx.fillStyle = sg; ctx.fillRect(x0, y0, this.c.width, this.c.height); if (vS > 0.5) { ringLight(T.x, T.y, T.r, T.sq); ring(T.x, T.y, T.r, true, T.sq); } } }
     // (5.7.5) every button's picture in every state is painted once, now (during the loading screen), rather than the
     // first time each is needed, which showed as a button popping in a beat late
     if (!this.prewarmed) { this.prewarmed = true; const off = document.createElement('canvas').getContext('2d'), st = ['on', 'off', 'lit', 'press'];
@@ -869,7 +868,9 @@ e.inSub ? [
   }
   // (4.17.0) the HUD is drawn inside the screen's safe area (clear of a phone's notch and rounded corners)
   draw(g, dt) {
-    const sf = this.safe || { l: 0, r: 0, t: 0, b: 0 }; this.safeL = sf.l; this.safeT = sf.t;
+    // (7.7.0, owner) the sides use a little of the notch margin (60 % of it kept): the arc and the gear sit further right,
+    // the money and pearls further left, filling the empty strips at the screen's edges, still clear of the rounded corners
+    const sf0 = this.safe || { l: 0, r: 0, t: 0, b: 0 }, sf = { l: sf0.l * 0.6, r: sf0.r * 0.6, t: sf0.t, b: sf0.b }; this.safeL = sf.l; this.safeT = sf.t;
     this.ctx.clearRect(0, 0, this.c.width, this.c.height);
     this.ctx.save(); this.ctx.translate(sf.l, sf.t);
     try { this.drawIn(g, dt, this.c.width - sf.l - sf.r, this.c.height - sf.t - sf.b); } finally { this.ctx.restore(); }

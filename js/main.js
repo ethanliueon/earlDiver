@@ -155,7 +155,7 @@ function statRows(P) { if (!P) return []; const S = suitOf(P), tk = worn(P, 'tan
     ['press', 'Safe depth', S.press || 0, (v) => `${Math.round(v)} m`, 1],
     ['resist', 'Pressure resistance', Math.round((1 - res) * 100), (v) => `${Math.round(v)} %`, 1],
     ['swim', 'Swim speed', statValue(P, 'swim') * (S.speed || 1) * (tk.speed || 1), (v) => v.toFixed(2), 1],
-    ['bag', 'Bag', Math.round(statValue(P, 'bag')), (v) => `${Math.round(v)} spaces`, 1],
+    ['catch', 'Catch rate', Math.round(((nt && nt.success) || 0) * 100), (v) => `${Math.round(v)} %`, 1], // (7.7.0, owner) in place of the bag's spaces
     ['reach', 'Net reach', nt ? nt.range || 0 : 0, (v) => `${v.toFixed(1)} m`, 1],
   ]; }
 function applyKit(e, P) {
@@ -1362,7 +1362,9 @@ function tutor() {
   const Z = g.tutZones || (g.tutZones = {}), now = performance.now();
   const zone = (name, inside) => { if (inside) Z[name] = now; return now - (Z[name] || -1e9) < 400; };
   // (5.5) on a phone, with a fish in reach: the net button ringed (or the net's slot, if it is not in hand)
-  const netSpot = (near = false) => (g.catchTarget || near /* (7.6.22, owner) in the tutorial, shown as soon as he is by the fish, before any swing */ ? (g.toolSel !== 'net' ? { key: '1', say: 'Tap the net to take it out' } : { act: 'use', say: 'Tap the net to swing it' }) : null);
+  // (7.7.0, owner) once he has swung the net, its ring waits: only after 10 s of a net step without a catch is it shown again
+  const netWait = () => { if (!P.tutNetUsed) return false; const now = g.time; if (g.tutNetAsk == null || now - (g.tutNetAskLast ?? now) > 1.5) g.tutNetAsk = now; g.tutNetAskLast = now; return now - g.tutNetAsk < 10; };
+  const netSpot = (near = false) => (netWait() ? null : g.catchTarget || near /* (7.6.22, owner) in the tutorial, shown as soon as he is by the fish, before any swing */ ? (g.toolSel !== 'net' ? { key: '1', say: 'Tap the net to take it out' } : { act: 'use', say: 'Tap the net to swing it' }) : null);
   const offer = (id, say, key = 'F') => { action = { id, say, key }; spot = { key, say, button: id }; };
   const cabinTo = (id, act, say) => { ui.cabin.tutMark = id; if (zone('cabin-' + id, ui.cabin.near && ui.cabin.near() === id)) offer(act, say); else action = { id: act, say, key: 'F', cabinOnly: true }; };
   const ladderZone = () => zone('ladder', !e.inSub && !g.aboard && e.y < 2.6 && e.y > -0.6 && Math.abs(e.x - BOAT.x - LADDER_M) < 1.6);
@@ -1404,10 +1406,13 @@ function tutor() {
       const gap = (g.tutObsAt != null && g.time - g.tutObsAt < 2.2) || (g.tutOops && g.time - g.tutOops < 3.5);
       fishStep(() => {
         const kind = part <= 1 ? 'observe' : 'net', t0 = focus0 && focus0.kind === kind && focus0.fish === fish ? focus0.t0 : g.time;
-        if (!gap && !(kind === 'net' && (g.capture || g.bag.length))) { g.tutFocus = { kind, fish, t0 }; g.tutVig = 1; } // (7.6.82) the swing itself runs in moving time, so the catch can play out
+        if (kind !== 'net') g.tutNetT0 = null; else if (g.tutNetT0 == null) g.tutNetT0 = g.time;
+        const knowsNet = kind === 'net' && P.tutNetUsed && g.time - (g.tutNetT0 ?? g.time) < 10; // (7.7.0, owner) he has swung the net before: let him catch it his own way; only after 10 s without it are the net's prompts shown
+        if (!gap && !knowsNet && !(kind === 'net' && (g.capture || g.bag.length))) { g.tutFocus = { kind, fish, t0 }; g.tutVig = 1; } // (7.6.82) the swing itself runs in moving time, so the catch can play out
         if (part <= 1) { text = 'Tap the fish'; offer('observe', 'Observe', 'obs'); spot = g.time - t0 > 0.5 ? fishSpot(fish) : null; /* (7.6.87, owner) the tap cue almost at once, as phone games do */ } // (7.6.71, owner) no eye button: a tap on the fish observes it
         else if (g.tutOops && g.time - g.tutOops < 3.5) { text = 'It got away. Try again'; prompt = { text: 'It got away. Try again', col: '#f2c7a0' }; }
         else if (gap) { text = 'Now catch it'; }
+        else if (knowsNet) { text = 'Catch it'; }
         else { text = g.toolSel !== 'net' ? 'Take out your net' : 'Swing your net'; prompt = netPrompt(); spot = spot || netSpot(true); if (spot) prompt = null; /* (5.5.3) the ringed button and its words say it already */ }
       });
       if (text === 'Swim to the orange fish') text = 'Swim down to the orange fish under the boat';
@@ -1486,6 +1491,10 @@ function tutor() {
     else if (part === 2) { const F2 = tripFish(2); fish = F2; if (e.inSub) { text = 'Leave the sub'; offer('leavesub', 'Leave the sub'); spot = { key: 'leavesub', say: 'Leave the sub', button: 'leavesub' }; /* (7.1.0) ring the sub's own leave button (its key is not F) */ } else set(3); }
     else if (part === 3 || part === 4) { // net the fish, then the one below
       const F = tripFish(part === 3 ? 2 : 3);
+      // (7.7.0, owner) out of the sub for these fish nothing may go wrong: his air never falls below about 3 s, and a sprint
+      // that is cooling down is given one charge (once), so he can always reach the fish and get back
+      if (!e.inSub && !g.aboard) { const floor = 3 * (e.o2Mul || 1) * (g.airMul || 1) * 1.5; if (e.o2 < floor) e.o2 = Math.min(e.o2Max || floor, floor);
+        if (!P.tutSprintGift) { const A = currentAbility(), q = A && A.inst; if (A && A.speed && q && !(q.load > 0) && (cooldownLeft(P) > 0 || minLeft(P) > 0)) { q.load = 1; P.abilMinAt = 0; P.tutSprintGift = true; saveProfile(P); } } }
       if (tripCaught(F)) set(part + 1);
       else if (e.inSub) { text = 'Leave the sub'; offer('leavesub', 'Leave the sub'); spot = { key: 'leavesub', say: 'Leave the sub', button: 'leavesub' }; /* (7.1.0) ring the sub's own leave button (its key is not F) */ }
       else { fish = F; to = { x: F.x, y: F.y }; text = part === 3 ? 'Net the fish' : 'Net the one below';
@@ -2846,7 +2855,7 @@ function update(dt) {
       // at the surface: open the depth meter (setting happens there; the Space that set it is ignored)
       if (!ui.trapSetOpen() && performance.now() - (ui.tsClosedAt || 0) > 400) { const msg = canSetHere(g); if (msg) hud.toast(msg, 'warn'); else ui.openTrapSet(); }
     } else if (pressed.has(' ') && !e.inSub) {
-      if (tool.kind === 'cam') { if (!g.photo) { const why = startPhoto(g); if (why) hud.toast(why, 'warn'); else audio.ready && audio.click(); } } else if (tool.kind === 'none') { if (tool.noNet) { hud.toast('No net equipped: put one on from your bag', 'warn'); audio.ready && audio.uiSoft && audio.uiSoft(); } /* hands free: nothing to use */ } else { const msg = useTool(g); if (msg) hud.toast(msg, 'warn'); else if (g.capture && g.capture.t === 0) audio.ready && audio.whoosh && audio.whoosh(0.25); }
+      if (tool.kind === 'cam') { if (!g.photo) { const why = startPhoto(g); if (why) hud.toast(why, 'warn'); else audio.ready && audio.click(); } } else if (tool.kind === 'none') { if (tool.noNet) { hud.toast('No net equipped: put one on from your bag', 'warn'); audio.ready && audio.uiSoft && audio.uiSoft(); } /* hands free: nothing to use */ } else { const msg = useTool(g); if (!msg && profile && !profile.tutNetUsed && tool.kind === 'net') { profile.tutNetUsed = true; saveProfile(profile); } /* (7.7.0, owner) he knows the net now */ if (msg) hud.toast(msg, 'warn'); else if (g.capture && g.capture.t === 0) audio.ready && audio.whoosh && audio.whoosh(0.25); }
     } else if (pressed.has(' ') && e.inSub && !g.armGame && !g.homeRun) {
       if (!owns(profile, 'arm')) hud.toast('The claw needs hydraulics', 'warn');
       else { const msg = startArm(g); if (msg) hud.toast(msg, 'warn'); else audio.ready && audio.ram && audio.click(); }

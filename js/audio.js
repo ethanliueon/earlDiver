@@ -97,7 +97,10 @@ export class Audio {
     this.lapping = { s, g };
   }
   journalPage() { this.sfx('journal_page', 0.7, 0.96 + Math.random() * 0.08); }
-  uiSoft() { this.sfx('ui_click_soft', 0.6); }
+  // (7.7.0, owner) one press, one click: the button's own click and the click of what it does came together (two or
+  // three at once); any click within 0.12 s of the last is the same press
+  clickOnce() { const t = performance.now(); if (t - (this.lastClickAt || 0) < 120) return false; this.lastClickAt = t; return true; }
+  uiSoft() { if (!this.clickOnce()) return; this.sfx('ui_click_soft', 0.6); }
   uiHover() { const now = performance.now(); if (now - (this.hoverAt || 0) < 70) return; this.hoverAt = now; this.sfx('ui_rollover', 0.35); }
   sale() { this.sfx('ui_sale_coins', 0.7); }
   chamberPlop() { this.sfx('chamber_plop', 0.8, 0.95 + Math.random() * 0.1) || this.bubbles(5, 0.05); }
@@ -441,7 +444,7 @@ export class Audio {
     lp.connect(out); if (pan) out.connect(pan).connect(this.master); else out.connect(this.master);
   }
   sonar(vol = 0.05) { this.tone(1180, 0.9, vol, 'sine'); this.tone(2360, 0.4, vol * 0.2, 'sine'); }
-  click() { if (!this.sfx('ui_click', 0.55)) this.burst('bandpass', 2400, 3, 0.08, 0.12); }
+  click() { if (!this.clickOnce()) return; if (!this.sfx('ui_click', 0.55)) this.burst('bandpass', 2400, 3, 0.08, 0.12); }
   pickup() { this.tone(660, 0.18, 0.05, 'triangle'); this.tone(990, 0.25, 0.03, 'triangle', 0.06); }
   note() { this.tone(523, 0.5, 0.04, 'sine'); this.tone(784, 0.7, 0.03, 'sine', 0.12); }
   creak(vol) {

@@ -114,7 +114,7 @@ export class TutSpot {
     // panel's middle, meets the thing's box), never over it; the picture points down, its fingertip at 0.451, 0.883
     // of the angles near that line, the one where the glove lies over the fewest other words and buttons (a list of links,
     // a card's label) and stays on the screen; worked out once per thing and place, then kept
-    const G = 71 /* (7.3.0) the glove 15 % bigger, as in olive.css */, a0 = Math.atan2(dy, dx), key = Math.round(cx / 24) + ',' + Math.round(cy / 24); /* (7.6.67, owner) keyed on where the thing is only, coarsely: a pulsing button changed its size every moment and the glove was worked out again, flipping between two angles */ /* (7.4.26, owner) the glove kept where it was while the thing stays put: keyed on the angle too, it was worked out again each time Earl's small sway crossed a tenth of a radian, and it hopped left and right */
+    const G = 71 /* (7.3.0) the glove 15 % bigger, as in olive.css */, a0 = cx < innerWidth / 2 ? Math.PI : 0 /* (7.7.0, owner) level, from the side with room: steep angles from the diver lay it over other things */, aLine = Math.atan2(dy, dx), key = Math.round(cx / 24) + ',' + Math.round(cy / 24); /* (7.6.67, owner) keyed on where the thing is only, coarsely: a pulsing button changed its size every moment and the glove was worked out again, flipping between two angles */ /* (7.4.26, owner) the glove kept where it was while the thing stays put: keyed on the angle too, it was worked out again each time Earl's small sway crossed a tenth of a radian, and it hopped left and right */
     const place = (an) => { const ux = Math.cos(an), uy = Math.sin(an), e2 = Math.min(Math.abs(ux) > 1e-3 ? (w / 2) / Math.abs(ux) : 1e9, Math.abs(uy) > 1e-3 ? (h / 2) / Math.abs(uy) : 1e9) + 4;
       const tx = cx - ux * e2, ty = cy - uy * e2, rad = an - Math.PI / 2, ox2 = (0.451 - 0.5) * G, oy2 = (0.883 - 0.5) * G;
       return { rad, ax: tx - (ox2 * Math.cos(rad) - oy2 * Math.sin(rad)), ay: ty - (ox2 * Math.sin(rad) + oy2 * Math.cos(rad)) }; };
@@ -125,7 +125,7 @@ export class TutSpot {
           if (el === document.body) return 0; }
         return 0; };
       let best = Infinity, bestA = a0;
-      for (let i = 0; i < 19; i++) { const k = (i % 2 ? 1 : -1) * Math.ceil(i / 2), an = a0 + k * 0.17, P0 = place(an); let c = Math.abs(k) * 0.15;
+      for (let i = 0; i < 19; i++) { const k = (i % 2 ? 1 : -1) * Math.ceil(i / 2), an = a0 + k * 0.17, P0 = place(an); let c = Math.abs(k) * 0.35; /* (7.7.0) kept level unless that covers something */
         for (const [fx, fy] of [[0, 0], [-0.3, -0.3], [0.3, -0.3], [-0.3, 0.2], [0.3, 0.2], [0, -0.42]]) { const rx = fx * G, ry = fy * G; c += hit(P0.ax + rx * Math.cos(P0.rad) - ry * Math.sin(P0.rad), P0.ay + rx * Math.sin(P0.rad) + ry * Math.cos(P0.rad)); }
         if (c < best - 0.01) { best = c; bestA = an; } }
       // (7.6.67) worked out again: the angle it had is kept unless the new one is clearly better (no flipping between near-equals)

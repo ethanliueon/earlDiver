@@ -2453,3 +2453,10 @@ html body #tut-spot .ts-ripple::after { animation: ts-rip2 1.7s ease-out infinit
    land on the card */
 html.touch body:has(#tankroom:not([hidden])) #tut-spot .ts-line:not(#_a):not(#_b):not(#_c):not(#_d):not(#_e):not(#_f):not(#_g) { top: 126px !important; }
 html body:has(#tankroom:not([hidden])):has(#tut-spot .ts-card:not([style*="none"])) #msgs:not(#_a) { opacity: 0 !important; transition: opacity 0.2s; }
+
+/* (7.7.0, owner) the diver screen's corners: Back is lettering alone (no rounded pill behind it), larger, with a soft
+   shadow to read over the sea; the gear larger too; both set in from the edges so a phone's rounded corners never cut them */
+html body #title .t-back:not(#_a):not(#_b):not(#_c) { left: 44px; top: 24px; padding: 10px 8px !important; background: none !important; border-radius: 0 !important;
+  font: 700 21px var(--o-title) !important; letter-spacing: 0.16em; text-shadow: 0 1px 2px rgba(0, 0, 0, 0.9), 0 0 10px rgba(0, 0, 0, 0.6); }
+html body #title .t-back:not(#_a):not(#_b):not(#_c):active { transform: translateY(1px); opacity: 0.8; }
+html body #title .t-gear:not(#_a):not(#_b):not(#_c) { right: 44px !important; top: 22px !important; width: 56px !important; height: 56px !important; background-size: 100% 100% !important; }

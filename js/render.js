@@ -2,6 +2,7 @@
 // Light model: the scene is drawn in "true" colour, then multiplied by a lightmap
 // (ambient that fades with depth and loses red, plus lamps and bioluminescence),
 // then additive glows are layered on top.
+import { eyePicture } from './hud.js';
 import { UPRIGHT } from './fauna.js';
 import { clamp, lerp, smoothstep, sampleTable, rgbStr, TAU, fbm1, hexToRgb, mixRgb } from './util.js';
 import { drawSpecies } from './creatures_draw.js';
@@ -726,7 +727,7 @@ export class Renderer {
         ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.globalAlpha = 1; ctx.globalCompositeOperation = 'source-over'; ctx.fillStyle = vg; ctx.fillRect(0, 0, W0, H0); ctx.restore(); } }
     const guide = g.tut && g.tut.to ? g.tut : g.devGuide ? { to: g.devGuide.c, fish: g.devGuide.c } : g.markGuide ? { to: g.markGuide } : null; // (4.9.0) or the developer's trail to a legend (X)
     // (5.6.8) on a phone, once the thing to tap is in reach its brackets say it all: no trail or ring on top of them
-    if (guide && g.mode === 'play' && !(!guide.fish /* (7.1.0) a fish to catch keeps its ring */ && g.tapMarks && g.tapMarks.some((m) => m.what !== 'winch' || (g.tutAction && String(g.tutAction.key).toLowerCase() === 'u')))) {
+    if (guide && g.mode === 'play' && !(!guide.fish /* (7.1.0) a fish to catch keeps its ring */ && !guide.sellDoor /* (7.7.0, owner) on the way to the Sell door the trail stays, whatever else (the ladder) is in reach */ && g.tapMarks && g.tapMarks.some((m) => m.what !== 'winch' || (g.tutAction && String(g.tutAction.key).toLowerCase() === 'u')))) {
       const e = guide.from || g.earl, tx = guide.to.x, ty = guide.to.y, d = Math.hypot(tx - e.x, ty - e.y); // (4.8.1) from: where the trail starts (the trawl's mouth in its lesson)
       const ang = Math.atan2(Sy(ty) - Sy(e.y), S(tx) - S(e.x)), gap = 1.5, n = Math.min(36, Math.floor(d / gap));
       const sz = clamp(ppm * 0.22, 7, 16), flow = (g.time * 1.6) % 1;
@@ -1880,11 +1881,26 @@ export class Renderer {
         ctx.globalAlpha = 0.55 * Math.sin(Math.PI * k); ctx.fillStyle = '#020405'; ctx.beginPath(); ctx.ellipse(x, y, L * 0.5, L * 0.075, 0, 0, TAU); ctx.fill();
         ctx.beginPath(); ctx.moveTo(x + L * 0.46, y); ctx.lineTo(x + L * 0.66, y - L * 0.09 + Math.sin(g.time * 1.4) * L * 0.02); ctx.lineTo(x + L * 0.63, y); ctx.lineTo(x + L * 0.66, y + L * 0.08 + Math.sin(g.time * 1.4) * L * 0.02); ctx.closePath(); ctx.fill();
         ctx.beginPath(); ctx.moveTo(x - L * 0.05, y - L * 0.07); ctx.lineTo(x + L * 0.06, y - L * 0.15); ctx.lineTo(x + L * 0.1, y - L * 0.06); ctx.fill(); }
-      if (T > 50 && idle > 22) { const o = smoothstep(22, 26, idle) * (1 - 0.15 * Math.pow(Math.max(0, Math.sin(g.time * 0.9)), 30)), ex = this.W * 0.88, ey = this.H * 0.9, r = Math.min(this.W, this.H) * 0.04;
-        const gl = ctx.createRadialGradient(ex, ey, 0, ex, ey, r * 4); gl.addColorStop(0, `rgba(170,20,14,${(0.35 * o).toFixed(3)})`); gl.addColorStop(1, 'rgba(120,10,8,0)'); ctx.globalAlpha = 1; ctx.fillStyle = gl; ctx.fillRect(ex - r * 4, ey - r * 4, r * 8, r * 8);
-        ctx.save(); ctx.beginPath(); ctx.ellipse(ex, ey, r * 1.5, r * 0.75 * o + 0.5, 0, 0, TAU); ctx.clip();
-        const ir = ctx.createRadialGradient(ex, ey, 0, ex, ey, r * 1.5); ir.addColorStop(0, '#ffb070'); ir.addColorStop(0.35, '#e0301c'); ir.addColorStop(1, '#3a0604'); ctx.fillStyle = ir; ctx.fillRect(ex - r * 1.6, ey - r, r * 3.2, r * 2);
-        ctx.fillStyle = '#050101'; ctx.beginPath(); ctx.ellipse(ex + Math.sin(g.time * 0.3) * r * 0.25, ey, r * 0.16, r * 0.62, 0, 0, TAU); ctx.fill(); ctx.restore(); }
+      // (7.7.0, owner) the eye in the dark: the thing's own painted eye (hud.js eyePicture: an ember iris full of fibres, a
+      // rough hide round it), not gradients; its slit darts from place to place as a live eye does (quick saccades, a held
+      // look, now and then a long stare), it narrows and widens, the glow round it beats unevenly, and it blinks
+      if (T > 50 && idle > 22) { const o = smoothstep(22, 26, idle), E = eyePicture(), ew = Math.min(this.W, this.H) * 0.075, sc = ew / E.ew, ex = this.W * 0.87, ey = this.H * 0.88;
+        const M = this.menuEye || (this.menuEye = { px: 0, py: 0, tx: 0, ty: 0, next: 0, dil: 1, tdil: 1, blinkAt: g.time + 3 }); const now = g.time, dt = Math.min(0.05, now - (M.t ?? now)); M.t = now;
+        if (now > M.next) { const stare = Math.random() < 0.18; M.tx = (Math.random() - 0.5) * E.ew * 0.9; M.ty = (Math.random() - 0.5) * E.eh * 0.5; M.tdil = 0.55 + Math.random() * 0.9; M.next = now + (stare ? 1.4 + Math.random() * 1.6 : 0.18 + Math.random() * 0.7); }
+        const kq = 1 - Math.exp(-dt * 26); M.px += (M.tx - M.px) * kq; M.py += (M.ty - M.py) * kq; M.dil += (M.tdil - M.dil) * (1 - Math.exp(-dt * 6));
+        if (now > M.blinkAt + 0.22) M.blinkAt = now + 2.5 + Math.random() * 5; const bk = now > M.blinkAt ? Math.sin(clamp((now - M.blinkAt) / 0.22, 0, 1) * Math.PI) : 0;
+        const beat = Math.pow(Math.max(0, Math.sin(now * 2.1)), 3) * 0.7 + Math.pow(Math.max(0, Math.sin(now * 2.1 - 0.9)), 6) * 0.4; // a heavy double beat
+        { const gl = ctx.createRadialGradient(ex, ey, ew * 0.4, ex, ey, ew * (2.6 + 0.5 * beat)); gl.addColorStop(0, `rgba(170,22,10,${((0.5 + 0.35 * beat) * o).toFixed(3)})`); gl.addColorStop(0.45, `rgba(110,10,5,${((0.2 + 0.18 * beat) * o).toFixed(3)})`); gl.addColorStop(1, 'rgba(60,4,2,0)'); ctx.globalAlpha = 1; ctx.fillStyle = gl; ctx.fillRect(ex - ew * 3.2, ey - ew * 3.2, ew * 6.4, ew * 6.4); }
+        ctx.save(); ctx.globalAlpha = o * (0.82 + 0.18 * beat); ctx.beginPath(); ctx.ellipse(ex, ey - E.eh * sc * 0.08, E.ew * sc * 1.45, E.eh * sc * 1.7, -0.18, 0, TAU); ctx.clip();
+        ctx.drawImage(E.c, ex - E.cx * sc, ey - E.cy * sc, E.c.width * sc, E.c.height * sc); ctx.restore();
+        ctx.save(); ctx.translate(ex, ey); ctx.scale(sc, sc); ctx.globalAlpha = o;
+        const almond = () => { ctx.beginPath(); ctx.moveTo(-E.ew, E.eh * 0.25); ctx.bezierCurveTo(-E.ew * 0.55, -E.eh * 1.15, E.ew * 0.3, -E.eh * 1.2, E.ew, -E.eh * 0.5); ctx.bezierCurveTo(E.ew * 0.45, E.eh * 0.85, -E.ew * 0.45, E.eh * 1.05, -E.ew, E.eh * 0.25); ctx.closePath(); };
+        almond(); ctx.clip();
+        const px = M.px, py = M.py, sw = E.eh * 0.3 * M.dil * (1 + 0.08 * beat);
+        { const hg = ctx.createRadialGradient(px, py, 0, px, py, E.eh * 0.95); hg.addColorStop(0, `rgba(255,190,140,${(0.45 + 0.25 * beat).toFixed(3)})`); hg.addColorStop(1, 'rgba(255,120,80,0)'); ctx.fillStyle = hg; ctx.fillRect(px - E.eh, py - E.eh, E.eh * 2, E.eh * 2); }
+        ctx.shadowColor = 'rgba(90,10,2,0.9)'; ctx.shadowBlur = 6; ctx.fillStyle = '#040100'; ctx.beginPath(); ctx.moveTo(px, py - E.eh * 1.25); ctx.quadraticCurveTo(px + sw, py, px, py + E.eh * 1.25); ctx.quadraticCurveTo(px - sw, py, px, py - E.eh * 1.25); ctx.fill(); ctx.shadowBlur = 0;
+        const shut = Math.max(bk, 1 - o); if (shut > 0.01) { ctx.fillStyle = '#060201'; const up = -E.eh * 1.25 + E.eh * 1.3 * shut, lo = E.eh * 1.1 - E.eh * 1.05 * shut; ctx.fillRect(-E.ew * 1.1, -E.eh * 1.4, E.ew * 2.2, up + E.eh * 1.4); ctx.fillRect(-E.ew * 1.1, lo, E.ew * 2.2, E.eh * 1.5); }
+        ctx.restore(); }
       ctx.restore();
     }
     // (5.7.0) drowning: as the breath-hold runs out the colour drains, the edges of sight close in and pulse with the
@@ -3788,7 +3804,7 @@ export class Renderer {
       const cy = Math.cos(sub.yaw), sxs = (cy >= 0 ? 1 : -1) * Math.max(0.14, Math.abs(cy));
       const vis = Math.pow(Math.abs(cy), 0.7); // beams swing towards/away from us while turning
       const ang = sxs > 0 ? sub.tilt : Math.PI - sub.tilt;
-      const lp = (p) => [sx + p[0] * sxs, sy + p[1]];
+      const rt = sub.tilt * Math.sign(sxs), cr = Math.cos(rt), sr = Math.sin(rt), lp = (p) => { const px = p[0] * sxs, py = p[1]; return [sx + px * cr - py * sr, sy + px * sr + py * cr]; }; // (7.7.0, owner) turned with the hull as it is drawn (rotate, then mirror): unturned, the lamp slid about on the bow as she pitched
       const [ax, ay] = lp(subLamps.lampA), [bx, by] = lp(subLamps.lampB);
       const lc = mixRgb([235, 238, 245], BEAM_DREAD, fx.torchShift);
       cone(ax, ay, ang, 32 * ppm, 0.34, lc, 1.15 * flick * vis);
@@ -4131,7 +4147,7 @@ export class Renderer {
       const cy = Math.cos(sub.yaw), sxs = (cy >= 0 ? 1 : -1) * Math.max(0.14, Math.abs(cy));
       const vis = Math.pow(Math.abs(cy), 0.7);
       const ang = sxs > 0 ? sub.tilt : Math.PI - sub.tilt;
-      const lx = S(sub.x) + subLamps.lampA[0] * sxs, ly = Sy(sub.y) + subLamps.lampA[1];
+      const rt = sub.tilt * Math.sign(sxs), pxA = subLamps.lampA[0] * sxs, pyA = subLamps.lampA[1], lx = S(sub.x) + pxA * Math.cos(rt) - pyA * Math.sin(rt), ly = Sy(sub.y) + pxA * Math.sin(rt) + pyA * Math.cos(rt); // (7.7.0, owner) the glare sits on the lamp as the hull pitches
       // soft volumetric glow around the whole sub, and the little stern lamp itself
       halo(S(sub.x), Sy(sub.y), ppm * 9, [150, 175, 185], 0.06 * haze * lp);
       halo(S(sub.x) - 4.8 * sxs * ppm, Sy(sub.y) - 0.4 * ppm, ppm * 0.7, [255, 175, 110], 0.22 * lp);

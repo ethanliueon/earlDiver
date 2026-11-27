@@ -24,7 +24,9 @@ export class Touch {
   }
   get lampAt() { const L = this.lamp; return L && (L.far > 8 || performance.now() - L.t0 > 220) ? { x: L.x, y: L.y } : null; }
   key(k, down) { act(k, down); } // (7.2.4) the button's action (input.js), no longer a made-up key press
-  radius() { const k = window.__fingerK || 1; return 53 * uiUnit() * k; } // (7.4.0, owner) a little bigger (was 46) // (5.15.7) in the one unit, as the HUD: proportional on every screen // (5.4) in real points, on a page laid out wider than the screen // (5.3.1) CSS px centre to rim: about 1.6 cm across
+  radius() { const k = window.__fingerK || 1; return 60 * uiUnit() * k; } // (7.7.0, owner) slightly bigger (was 53)
+  // (7.7.0, owner) a fixed stick: its place in the lower left, a little nearer the corner than before
+  restAt() { const R = this.radius(), k = (window.__fingerK || 1) * uiUnit(); return [R + 40 * k, window.innerHeight - R - 38 * k]; } // (7.4.0, owner) a little bigger (was 46) // (5.15.7) in the one unit, as the HUD: proportional on every screen // (5.4) in real points, on a page laid out wider than the screen // (5.3.1) CSS px centre to rim: about 1.6 cm across
   start(e) {
     if (!this.active()) return;
     e.preventDefault();
@@ -40,8 +42,12 @@ export class Touch {
       // toward it (kept in front of him), and a quick tap there is still a tap on the world
       if (t.clientX > window.innerWidth * 0.5) { if (!this.lamp) { this.lamp = { id: t.identifier, x: t.clientX, y: t.clientY, x0: t.clientX, y0: t.clientY, t0: performance.now(), far: 0 }; this.fingers.set(t.identifier, { lamp: true }); } else this.fingers.set(t.identifier, {}); continue; }
       { const M = window.__hudMenuRect, pad = 18; if (M && t.clientX < M[0] + M[2] + pad && t.clientY < M[1] + M[3] + pad && t.clientY > M[1] - pad) { this.fingers.set(t.identifier, {}); continue; } } // (7.6.70, owner) not over the button strip on the left: those are its buttons
+      // (7.7.0, owner) the stick is fixed: only a thumb on it (or close round it) drives it, from its own centre; a touch
+      // anywhere else is a tap on the world (a fish), and no stick appears there
+      { const [rx, ry] = this.restAt(), R0 = this.radius(); if (Math.hypot(t.clientX - rx, t.clientY - ry) > R0 * 1.7) { this.fingers.set(t.identifier, { tap: true, x0: t.clientX, y0: t.clientY, t0: performance.now(), far: 0 }); continue; } }
       if (!this.stick) {
-        this.stick = { id: t.identifier, x: t.clientX, y: t.clientY, x0: t.clientX, y0: t.clientY, t0: performance.now(), far: 0 };
+        const [rx, ry] = this.restAt();
+        this.stick = { id: t.identifier, x: rx, y: ry, x0: t.clientX, y0: t.clientY, t0: performance.now(), far: 0 };
         this.fingers.set(t.identifier, { stick: true });
         this.update(t.clientX, t.clientY);
       }
@@ -58,6 +64,7 @@ export class Touch {
       const f = this.fingers.get(t.identifier); if (!f) continue;
       this.fingers.delete(t.identifier);
       if (f.key) this.key(f.key, false);
+      if (f.tap) { const k = window.__fingerK || 1; if (this.onTap && performance.now() - f.t0 < 400 && Math.hypot(t.clientX - f.x0, t.clientY - f.y0) < 14 * k) this.onTap(f.x0, f.y0); } // (7.7.0) a touch off the stick: a tap on the world
       if (f.lamp) { const L = this.lamp, k = window.__fingerK || 1; if (L && this.onTap && performance.now() - L.t0 < 280 && L.far < 12 * k) this.onTap(L.x0, L.y0); this.lamp = null; }
       if (f.stick) { const S = this.stick, k = window.__fingerK || 1; if (S && this.onTap && performance.now() - S.t0 < 280 && S.far < 12 * k) this.onTap(S.x0, S.y0); this.clearStick(); }
     }
@@ -79,7 +86,7 @@ export class Touch {
     if (!this.el) return;
     if (!show) { this.el.hidden = true; return; }
     if (this.stick) return;
-    const R = this.radius(), k = (window.__fingerK || 1) * uiUnit(), x = R + 62 * k, y = window.innerHeight - R - 50 * k; /* (7.4.0, owner) further right and up, clear of the corner */ /* (6.5.7) a little right and up, where the thumb rests */ // (5.17.0) deep in the corner, the lamp having left it (a thumb's margin kept from the edges)
+    const [x, y] = this.restAt(), R = this.radius(); /* (7.4.0, owner) further right and up, clear of the corner */ /* (6.5.7) a little right and up, where the thumb rests */ // (5.17.0) deep in the corner, the lamp having left it (a thumb's margin kept from the edges)
     this.el.hidden = false; this.el.style.setProperty('--r', R + 'px');
     this.base.style.transform = `translate(${x}px, ${y}px)`; this.knob.style.transform = `translate(${x}px, ${y}px)`;
   }

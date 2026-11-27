@@ -524,3 +524,12 @@ for (const it of Object.values(ITEMS)) if (it.kind === 'net' && it.minLen) { it.
 
 // (7.4.15, owner) a mythical scroll is worth three of its legendary (set last, after every price above is settled)
 for (const it of Object.values(ITEMS)) if (it.kind === 'ability' && it.rarity === 'mythical') { const leg = ITEMS[`ab_${it.fam}_legendary`]; if (leg) it.price = leg.price * 3; }
+
+// (7.7.0, owner) a net's catch rate: the chance a swing that reaches a fish holds it, set by the net's rarity and, within
+// it, by its price (the dearer, the surer): common 40-55 %, uncommon 55-70 %, rare 70-87 %, exotic 87-95 %, legendary
+// 97-99 %; the hand net he starts with 40 %
+{ const BAND = { common: [0.40, 0.55], uncommon: [0.55, 0.70], rare: [0.70, 0.87], exotic: [0.87, 0.95], legendary: [0.97, 0.99], mythical: [0.99, 0.99] };
+  const by = {}; for (const it of Object.values(ITEMS)) if (it.kind === 'net') (by[it.rarity] || (by[it.rarity] = [])).push(it);
+  for (const [rar, L] of Object.entries(by)) { const B = BAND[rar] || BAND.common; L.sort((a, b) => (a.price || 0) - (b.price || 0));
+    L.forEach((it, i) => { it.success = +(B[0] + (B[1] - B[0]) * (L.length > 1 ? i / (L.length - 1) : 0.5)).toFixed(3); }); }
+  if (ITEMS.hand) ITEMS.hand.success = 0.40; }

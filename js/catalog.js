@@ -79,7 +79,7 @@ export function crossBoosts(kind, sk) {
 }
 // the numbers compared, per kind: [label, value as text, a number to compare, higher is better?]
 export const MEASURES = {
-  net: [['Fish size', sizeOf, (it) => it.maxLen, true], ['Reach', (it) => `${it.range} m`, (it) => it.range, true], ['Swing speed', (it) => `${it.time.toFixed(2)} s`, (it) => -it.time, true]], // (6.0.8) just the seconds
+  net: [['Catch rate', (it) => `${Math.round((it.success || 0) * 100)} %`, (it) => it.success || 0, true] /* (7.7.0, owner) */, ['Fish size', sizeOf, (it) => it.maxLen, true], ['Reach', (it) => `${it.range} m`, (it) => it.range, true], ['Swing speed', (it) => `${it.time.toFixed(2)} s`, (it) => -it.time, true]], // (6.0.8) just the seconds
   slurp: [['Fish size', sizeOf, (it) => it.maxLen, true], ['Reach', (it) => `${it.range} m`, (it) => it.range, true], ['Reload', (it) => `${it.time} s`, (it) => -it.time, true]],
   tag: [['Range', (it) => `${it.range} m`, (it) => it.range, true], ['Reload', (it) => `${it.time} s`, (it) => -it.time, true]],
   cam: [['Quality', (it) => (it.idx || 10).toFixed(2), (it) => it.idx || 10, true], /* (5.10.10) */ ['Holds', (it) => `${it.shots} exposures`, (it) => it.shots, true], ['Shutter', (it) => `${it.exp} s`, (it) => -it.exp, true], ['Range', (it) => `${it.range} m`, (it) => it.range, true]],
