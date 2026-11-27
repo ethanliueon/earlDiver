@@ -635,6 +635,11 @@ export class Renderer {
     }
     ctx.setTransform(baseM);
     if (fl) { fl.setTransform(baseM); this.layerEnd(ctx, g, fl, null); } // (2.3.2: no rim-and-belly shading on the animals: it popped in and out around whatever was drawn live)
+    // (7.6.88, owner) the tutorial's tap cue lives in the sea: the diver's own glove (assets/ui/tap_glove.png, baked by
+    // tools/tap_glove.py) comes up out of the dark below the fish on the side away from the diver, its fingertip stopping at
+    // the fish's edge (never over it), and taps twice, then rests; each touch sends a soft ring out through the water. Drawn
+    // here, with the animals, so the lamp's light and the depth's dark fall on it and the snow, kelp and veil pass in front
+    if (g.tutFocus && g.tutFocus.kind === 'observe' && g.tutFocus.fish && !g.tutFocus.fish.dead && this.tapGloveReady()) this.drawTapGlove(ctx, g, S, Sy, ppm);
     // ---- pickups + lanterns (over the veiled layer, so nothing valuable hides behind the coral) ----
     for (const p of g.world.pickups) if (!p.taken && inView(p.x, p.y)) {
       if (p.rot === undefined) p.rot = p.y > g.world.floorAt(p.x) - 0.6 ? seabedPose(g.world, p.x, 0.25, true).rot : 0; // lying on the slope
@@ -2900,6 +2905,31 @@ export class Renderer {
   // (7.6.62, owner) the boat's weathering is a fixed picture (assets/textures/boat_wear.png, baked by tools/bake_pngs.cjs from
   // boatWearProc below), only scaled to the size she is painted at: it was generated afresh for every size, so while the
   // camera settled on entering the game her rust and grime reshuffled from frame to frame
+  // (7.6.90, owner) the tutorial's pointing hands: the diver's gloved hand from the owner's own pictures (tools/cut_hands.py): the back of
+  // the hand pointing up, and the side of it pointing across; the numbers are each picture's size and fingertip
+  tapGloveReady() { if (!this.handImgs) { this.handImgs = { back: new Image(), side: new Image() }; this.handImgs.back.src = 'assets/ui/hand_back.png'; this.handImgs.side.src = 'assets/ui/hand_side.png'; }
+    return ['back', 'side'].every((k) => this.handImgs[k].complete && this.handImgs[k].naturalWidth > 0); }
+  drawTapGlove(ctx, g, S, Sy, ppm) {
+    const HANDS = { back: { w: 411, h: 510, tip: [67, 2], dir: [0.12, 0.99] }, side: { w: 780, h: 401, tip: [2, 59], dir: [1, 0.08] } }; // (7.6.90, owner) the owner's own gloved hands (tools/cut_hands.py)
+    const f = g.tutFocus.fish, M = g.earl.inSub ? g.sub : g.earl, side = M.x < f.x ? 1 : -1; // the hand on the side away from the diver
+    const cx = S(f.x), cy = Sy(f.y), low = cy > this.H * 0.6, kind = low ? 'side' : 'back', Hd = HANDS[kind]; // low on the screen: no room below, it points across
+    const hpx = clamp(ppm * 2.2, 72, 124), k = kind === 'back' ? hpx / Hd.h : (hpx * 1.5) / Hd.w;
+    const T = 1.7, ph = ((g.time - (g.tutFocus.t0 || 0)) % T) / T;
+    const ease = (a, b, x) => { const q = clamp((x - a) / (b - a), 0, 1); return q * q * (3 - 2 * q); };
+    const back = 10 - 10 * ease(0, 0.1, ph) + 6 * ease(0.15, 0.22, ph) - 6 * ease(0.22, 0.32, ph) + 10 * ease(0.37, 0.46, ph); // a double tap, then rest
+    const press = Math.max(1 - Math.abs(ph - 0.125) / 0.035, 1 - Math.abs(ph - 0.345) / 0.035, 0);
+    const fr = Math.max(6, (f.len || 0.25) * ppm * 0.5), dx = side * Hd.dir[0], dy = Hd.dir[1], L0 = Math.hypot(dx, dy), ux = dx / L0, uy = dy / L0;
+    const tx = cx + ux * (fr + 3 + back), ty = cy + uy * (fr + 3 + back);
+    const lit = clamp(Math.max(1 - f.y / 300, this.litAt ? this.litAt(f.x, f.y) : 1), 0.25, 1);
+    ctx.save(); ctx.translate(tx, ty); ctx.scale(side * k * (1 - 0.03 * press), k * (1 + 0.015 * press));
+    ctx.filter = `brightness(${(0.5 + 0.6 * lit).toFixed(2)})`;
+    ctx.drawImage(this.handImgs[kind], -Hd.tip[0], -Hd.tip[1], Hd.w, Hd.h); ctx.restore();
+    // the touch: a faint soft stir going out through the water from the fingertip, one for each press
+    for (const at of [0.125, 0.345]) { const q = (ph - at + 1) % 1; if (q > 0.4) continue; const e = q / 0.4, rr = 6 + e * Math.max(20, ppm * 0.9), a = 0.26 * (1 - e) * (1 - e) * Math.min(1, q * 30);
+      const ox = cx + ux * (fr + 3), oy = cy + uy * (fr + 3), rg = ctx.createRadialGradient(ox, oy, rr * 0.45, ox, oy, rr);
+      rg.addColorStop(0, 'rgba(226,222,200,0)'); rg.addColorStop(0.75, `rgba(226,222,200,${a.toFixed(3)})`); rg.addColorStop(1, 'rgba(226,222,200,0)');
+      ctx.fillStyle = rg; ctx.beginPath(); ctx.arc(ox, oy, rr, 0, TAU); ctx.fill(); }
+  }
   wearReady() { if (!this.wearImg) { this.wearImg = new Image(); this.wearImg.src = 'assets/textures/boat_wear.png'; } return this.wearImg.complete && this.wearImg.naturalWidth > 0; }
   boatWear(w, h, flip) {
     if (!this.wearReady()) return this.boatWearProc(w, h, flip);

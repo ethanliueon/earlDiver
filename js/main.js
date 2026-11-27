@@ -1369,7 +1369,7 @@ function tutor() {
   // the steps that need a fish: the fish to go to, and what to do at it
   // (7.6.71) where a fish is on the page, for the glove to point at it
   const fishSpot = (f) => { const cm = renderer.cam; if (!f || !cm) return null; const kk = innerWidth / renderer.c.width, S0 = (wx) => ((wx - cm.x) * cm.ppm + renderer.c.width / 2) * kk, px = ((f.x - cm.x) * cm.ppm + renderer.c.width / 2) * kk, py = ((f.y - cm.y) * cm.ppm + renderer.c.height / 2) * kk, w = Math.max(40, (f.len || f.sp && f.sp.len || 0.4) * cm.ppm * kk);
-    return { pt: [px, py, w, w * 0.6], inPanel: true, say: 'Observe', tap: true, side: S0(g.earl.inSub ? g.sub.x : g.earl.x) > px ? -1 : 1 }; }; // (7.6.79, owner) tap: the glove taps the fish itself
+    return { pt: [px, py, w, w * 0.6], inPanel: true, say: 'Observe', tap: true, world: true, side: S0(g.earl.inSub ? g.sub.x : g.earl.x) > px ? -1 : 1 }; }; // (7.6.79, owner) tap: the glove taps the fish itself
   const fishStep = (doWhat) => {
     const tf = tutorFish(dir), bd = dist(e.x, e.y, tf.x, tf.y); to = { x: tf.x, y: tf.y }; fish = tf;
     if (inCabin) { text = 'Leave the cabin: walk to the door'; cabinTo('door', 'outdoor', 'Out on deck'); return; } // (4.3.3) arrows to the door

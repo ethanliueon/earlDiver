@@ -209,6 +209,7 @@ export class TutSpot {
       // (7.6.87, owner) as a real phone game's tap cue: the fingertip on the fish itself, the hand leaning in 30 degrees from the
       // side away from the diver, a double tap (press, lift, press, lift, rest); each press leaves a soft ring spreading from
       // the touch, fixed there while the hand moves (olive.css ts-tap2, ts-rip)
+      if (spot.world) { this.arrow.style.display = 'none'; this.ripple.style.display = 'none'; return; } // (7.6.88, owner) the glove is drawn in the sea itself (render.js drawTapGlove)
       if (spot.tap) { const G = 71, tilt = (spot.side || 1) * 30;
         const ax = px - (0.451 - 0.5) * G, ay = py - (0.883 - 0.5) * G; this.arrow.style.display = 'block'; setClass(this.arrow, 'ts-arrow down aim tap');
         Object.assign(this.arrow.style, { left: ax.toFixed(1) + 'px', top: ay.toFixed(1) + 'px', transform: `translate(-50%, -50%) rotate(${tilt}deg)` });
