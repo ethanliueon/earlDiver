@@ -15,6 +15,7 @@ export const ENTITY_BURST = 15; // m/s: a burst, only once it is in sight of him
 // asked for it 0.6x as fast as v1.30: 7.2 m/s travelling, a 9 m/s burst)
 export const ENTITY_PACE = 0.6;
 export const LANTERN_RADIUS = 3;
+export const FLEE_SPEED = 20; // (7.7.3, owner) m/s, driven off by the Warden: not scaled by its pace
 export const SAFE_DEPTH = 120;   // above this it can never reach Earl
 export const REST_CEILING = 200; // when not chasing it keeps below this
 const FORGET_TIME = 180;         // seconds above SAFE_DEPTH before a mark fades on its own
@@ -225,6 +226,19 @@ export class Entity {
     // (5.9.0) Tidewarden: held still while the water turns, then gone far off for five minutes
     if (this.frozen) { this.dist = dist(this.x, this.y, g.earl.x, g.earl.y); return; }
     if (this.sleepT > 0) { this.sleepT -= dt; this.marked = false; this.dist = dist(this.x, this.y, g.earl.x, g.earl.y); this.fade = this.sleepT > 0 ? 0 : 1; return; }
+    // (7.7.3, owner) driven off by the Warden (Tidewarden, Warden Heart): it turns and swims straight away at 20 m/s,
+    // its mark on the radar gone blue, out past the radar's edge and a little further; then it roams as usual, and for
+    // 30 s nothing he does draws it back
+    if (this.flee) { const F = this.flee, e0 = g.earl; F.t += dt;
+      if (F.ux == null) { const dx = this.x - e0.x, dy = this.y - e0.y, l = Math.hypot(dx, dy) || 1; F.ux = dx / l; F.uy = Math.max(0.25, dy / l); const l2 = Math.hypot(F.ux, F.uy); F.ux /= l2; F.uy /= l2; }
+      const sp = Math.min(FLEE_SPEED, FLEE_SPEED * F.t / 0.8); this.vx = F.ux * sp; this.vy = F.uy * sp; this.x += this.vx * dt; this.y += this.vy * dt;
+      const fl = this.world ? this.world.floorAt(clamp(this.x, 0, 5000)) - 15 : 3900; if (this.y > fl) { this.y = fl; F.uy = 0; F.ux = Math.sign(F.ux) || 1; }
+      if (this.x < 20 || this.x > 4980) { this.x = clamp(this.x, 20, 4980); F.ux = 0; F.uy = 1; }
+      this.heading = Math.atan2(this.vy, this.vx); this.marked = false; this.hunt = null; this.ap = null; this.slip = null; this.state = 'away'; this.attn = 0; this.fade = 1;
+      this.dist = dist(this.x, this.y, e0.x, e0.y); this.tideBlue = 1;
+      if (this.dist > 1100 && F.past == null) F.past = F.t;
+      if (F.past != null && F.t - F.past > 4) { this.flee = null; this.tideBlue = 0; this.state = 'roam'; this.roamX = this.x; this.roamY = this.y; this.roamT = 0; this.graceT = Math.max(this.graceT || 0, 30); this.vx *= 0.3; this.vy *= 0.3; }
+      return; }
     this.closeIn(g);
     const e = g.earl;
     const d = dist(this.x, this.y, e.x, e.y);
@@ -249,7 +263,7 @@ export class Entity {
         this.slip = null; this.marked = false; this.ap = null; this.hunt = null; this.flick = 0; this.attn = 0.5; this.offRadarT = 60;
         this.lingerT = 90; this.lingerX = clamp(e.x + S.dir * 240, 20, 4980); this.lingerY = Math.max(e.y + 60, this.y); this.state = 'linger'; g.events.push('unmarked');
       }
-      if (this.slip) { tx = clamp(e.x + S.dir * 240, 20, 4980); ty = Math.max(e.y + 60, this.y); speed = ENTITY_SPEED * 0.12; this.state = 'away';
+      if (this.slip) { tx = clamp(e.x + S.dir * 240, 20, 4980); ty = Math.max(e.y + 60, this.y); speed = ENTITY_SPEED * 0.35; /* (7.7.3) turning away a little quicker (was 0.12) */ this.state = 'away';
         ty = Math.min(ty, floorY); const dx0 = tx - this.x, dy0 = ty - this.y, dl0 = Math.hypot(dx0, dy0) || 1, w0 = Math.min(speed * ENTITY_PACE, dl0);
         this.vx = lerp(this.vx, dx0 / dl0 * w0, 1 - Math.exp(-dt * 1.4)); this.vy = lerp(this.vy, dy0 / dl0 * w0, 1 - Math.exp(-dt * 1.4)); this.x += this.vx * dt; this.y += this.vy * dt;
         if (Math.abs(this.vx) > 0.2) this.heading = Math.atan2(this.vy, this.vx); this.eyeOpen = lerp(this.eyeOpen, 0, dt); this.lights(g, dt); return; }
@@ -296,12 +310,12 @@ export class Entity {
         // gone off: it does not wait outside a safe place for him, it leaves for a while
         this.awayT -= dt;
         this.state = 'away';
-        tx = this.awayX; ty = this.awayY; speed = ENTITY_SPEED * 0.8;
+        tx = this.awayX; ty = this.awayY; speed = ENTITY_SPEED * 1.4; /* (7.7.3, owner) it leaves at a good pace (was 0.8) */
         if (this.awayT <= 0) { this.state = 'drift'; this.senseT = this.rng.range(20, 40); }
       } else if (prot && d < 70) {
         // it will not come near a lantern, the necklace or the old one's cave: it turns and goes
         this.goAway(prot.x, prot.y, bandLo);
-        tx = this.awayX; ty = this.awayY; speed = ENTITY_SPEED * 0.8;
+        tx = this.awayX; ty = this.awayY; speed = ENTITY_SPEED * 1.4; /* (7.7.3, owner) it leaves at a good pace (was 0.8) */
       } else if (this.state === 'hunt') {
         if (d < per) { tx = e.x; ty = e.y; }
         else if (dist(this.x, this.y, this.lastX, this.lastY) < 6) { this.state = 'search'; this.searchT = 0; }

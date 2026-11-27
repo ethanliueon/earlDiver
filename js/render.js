@@ -1919,7 +1919,7 @@ export class Renderer {
       const red = g.mode === 'menu' ? 0 : Math.round(clamp(fx.redTint || 0, 0, 1) * 20) / 20;
       const key = want + ':' + red;
       if (key !== this.filtKey) { this.filtKey = key; const f = [];
-        if (red > 0) f.push(`sepia(${Math.min(1, 1.5 * red).toFixed(2)})`, `hue-rotate(${(-40 * Math.min(1, 1.5 * red)).toFixed(0)}deg)`, `saturate(${(1 + 3.2 * red).toFixed(2)})`, `brightness(${(1 - 0.08 * red).toFixed(2)})`);
+        if (red > 0) f.push(`sepia(${Math.min(1, 1.5 * red).toFixed(2)})`, `hue-rotate(${(-40 * Math.min(1, 1.5 * red)).toFixed(0)}deg)`, `saturate(${(1 + 2.4 * red).toFixed(2)})`, `brightness(${(1 - 0.72 * red).toFixed(2)})` /* (7.7.3) sepia lifts dark blue: brought back to about the same brightness as the water was, a touch less */);
         if (want < 1) f.push(`saturate(${want})`);
         this.filterExtra = f.join(' '); } // main.js puts it on the canvas, with the dread grade and the wake's blur (one writer)
     }

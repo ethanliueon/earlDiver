@@ -35,7 +35,7 @@ import { CHESTS } from './chests.js';
 import { giveRolled, wornInst, putOn2, equipScroll, slotKey, bagSlotOf, fixMythSlot, SLOT_HOOK, SLOT_KEYS } from './items.js';
 // (7.6.71) when two skill slots trade scrolls, their running states trade too
 SLOT_HOOK.trade = (m, n) => { if (!g) return; const a = m === 1 ? 'abil' : 'abil' + m, b = 'abil' + n; [g[a], g[b]] = [g[b] || null, g[a] || null]; if (!g.abil) g.abil = { activeT: 0, maxT: 0, def: null, charges: null, fx: 0 }; };
-import { abilityOf, abilityState, whyNot, ALL_ABILITIES, cooldownLeft, minLeft, MIN_CD, skipCost, fmtLeft, MYTH, NEXT_TIER, maxLoad, chargePrice, growCharges, withSlot, slotNow } from './abilities.js';
+import { abilityOf, abilityState, whyNot, ALL_ABILITIES, cooldownLeft, minLeft, MIN_CD, skipCost, fmtLeft, MYTH, ECHO, echoHears, NEXT_TIER, maxLoad, chargePrice, growCharges, withSlot, slotNow } from './abilities.js';
 import { startLegendFx } from './legendfx.js';
 import { SKILLS, RARITY, skillCol } from './item_data.js';
 import { pictureOf, hourglassURL } from './catalog.js';
@@ -2355,7 +2355,12 @@ function slotAbility(n) { const q = profile && wornInst(profile, 'ability' + n);
 function currentAbility() { const q = profile && wornInst(profile, 'ability'); const A = q ? abilityOf(q.id) : null; if (A) { A.loaded = q.load || 0; A.inst = q; } return A; } // (7.6.3) with its loaded charges
 // (7.6.26, owner) a use's cooldown: with a charge loaded on the worn scroll, the charge is spent and there is no cooldown
 // at all (none shown); only with none left does the cooldown run
-function coolAfter(P, secs) { P.abilMinAt = Date.now() + MIN_CD * 1000; /* (7.6.47, owner) 15 s at least, charges or not */ const q = wornInst(P, 'ability'); if (q && q.load > 0) { q.load--; P.abilReadyAt = 0; } else P.abilReadyAt = Date.now() + secs * 1000; }
+// (7.7.3, owner) a charge is the cooldown bought ahead, never a second use on top of it: a press spends a loaded charge
+// if there is one, and the wait carries on as it was (cooling: the same time left; ready: a fresh cooldown). So a
+// scroll has as many uses as it has charges, or one when it is ready with none: a Warden Heart with one charge,
+// ready or not, is one use
+function coolAfter(P, secs) { P.abilMinAt = Date.now() + MIN_CD * 1000; /* (7.6.47, owner) 15 s at least, charges or not */ const q = wornInst(P, 'ability'), was = g && g.prevReadyAt; if (g) g.prevReadyAt = 0;
+  if (q && q.load > 0) { q.load--; P.abilReadyAt = was && was > Date.now() ? was : Date.now() + secs * 1000; } else P.abilReadyAt = Date.now() + secs * 1000; }
 function useAbility() {
   const A = currentAbility(), why = whyNot(g, profile, A);
   // (7.4.9, owner) cooling down: the wait can be skipped with pearls (abilities.js skipCost)
@@ -2367,7 +2372,7 @@ function useAbility() {
   if (why) { hud.toast(why, 'note'); return; }
   // (7.6.3, owner) a loaded charge: fires at once, no wait and no question (running, it starts over)
   // (7.6.26, owner) the charge itself is spent where the cooldown would start (coolAfter): with charges, no cooldown at all
-  const S0 = abilityState(g); if (A.loaded > 0 && (cooldownLeft(profile) > 0 || S0.activeT > 0) && !(A.charges && S0.charges > 0) && !g.dashAim) { profile.abilReadyAt = 0; S0.activeT = 0; S0.charges = 0; }
+  const S0 = abilityState(g); g.prevReadyAt = 0; if (A.loaded > 0 && (cooldownLeft(profile) > 0 || S0.activeT > 0) && !(A.charges && S0.charges > 0) && !g.dashAim) { g.prevReadyAt = profile.abilReadyAt || 0; profile.abilReadyAt = 0; S0.activeT = 0; S0.charges = 0; }
   // (5.16.0) Dash on a phone: pressed, it waits for a tap where to go (time slowed, the screen greyed, the view opened by
   // its tier); pressed again, or 3 s with no tap, and it is put away unspent
   if (A.dash) { if (g.dashAim) { g.dashAim = null; renderer.aimZoom = 1; } else { g.dashAim = { t: 3, A, slot: slotNow() }; renderer.aimZoom = A.zoom || 1; } return; }
@@ -2394,7 +2399,7 @@ function useAbility() {
   if (A.blood) bloodmoon(A);
   if (A.shoal) { g.shoalFx = { t: 0, lv: A.shoal, dur: A.dur, fish: A.fish || 49, guard: A.guard || 1, used: 0 }; } // (7.6.15) its strikes to take
   if (A.revel) g.revelFx = { t: 0, lv: A.revel, dur: A.dur };
-  if (A.echo) { g.echoT = A.dur; g.echoLv = A.echo; g.echoAt = g.time; g.echoSweep = 0; const m0 = g.earl.inSub ? g.sub : g.earl, sh = [0.4, 0.6, 0.8, 1][Math.min(4, A.echo) - 1]; g.echoC = g.fauna.echoContacts(m0.x, m0.y, 1000 * sh, Math.round(4 + 10 * sh), [0.01, 0.015, 0.025, 0.035][Math.min(4, A.echo) - 1]); } // (7.6.30, owner) far contacts by the sea's own rules // (5.16.0) the screen-wide sweep (render.js), then the marks on the radar (hud.js)
+  if (A.echo) { g.echoT = A.dur; g.echoLv = A.echo; g.echoAt = g.time; g.echoSweep = 0; const m0 = g.earl.inSub ? g.sub : g.earl, sh = [0.4, 0.6, 0.8, 1][Math.min(4, A.echo) - 1]; g.echoKey = Math.random(); g.echoC = g.fauna.echoContacts(m0.x, m0.y, ECHO[Math.min(4, A.echo)].r, [0, 3, 6, 9, 12][Math.min(4, A.echo)], [0, 0, 0.12, 0.15, 0.18][Math.min(4, A.echo)]).filter((C) => echoHears(A.echo, C.rk, g.echoKey + ':' + C.x.toFixed(1))); } // (7.6.30, owner) far contacts by the sea's own rules // (5.16.0) the screen-wide sweep (render.js), then the marks on the radar (hud.js)
   if (A.tide) { // (7.4.15) The Last Tide: any time. In red water as Tidewarden; marked, the mark washed off; else only its light and air
     const red = g.bloodT > 0 || (g.fx && (g.fx.redTint || 0) > 0.03) || (g.entity && g.entity.dist < 160 && (g.entity.marked || g.entity.state === 'hunt' || g.entity.state === 'stalk'));
     if (red || !A.any) g.tideFx = { t: 0 };
@@ -2516,7 +2521,8 @@ function tickAbility(dt) {
     M.x = Q.x0 + (Q.x1 - Q.x0) * q; M.y = Q.y0 + (Q.y1 - Q.y0) * q; M.vx = 0; M.vy = 0; if (Q.sub) { g.earl.x = M.x; g.earl.y = M.y; }
     if (tj > 0 && tj < J) { const gone = Math.hypot(M.x - (Q.px ?? Q.x0), M.y - (Q.py ?? Q.y0)); if (gone >= Math.max(1.3, Q.A.siphon.dist / 40)) { Q.px = M.x; Q.py = M.y; /* (no more than about 40 puffs a jet) */ /* (7.6.11) let out by distance along the whole path, not by time (it bunched where the jet eased in and out) */ (g.inkPuffs || (g.inkPuffs = [])).push({ x: M.x - Q.dx * (Q.sub ? 2.5 : 1) + (Math.random() - 0.5) * 0.6, y: M.y - Q.dy * (Q.sub ? 2.5 : 1) + (Math.random() - 0.5) * 0.6, t: 0, r: (Q.sub ? 1.1 : 0.6) * (0.7 + Math.random() * 0.6) * (1 + (Q.A.tier === 'legendary' ? 0.5 : Q.A.tier === 'exotic' ? 0.25 : 0)), s: Math.random() * 100, d: Math.atan2(Q.dy, Q.dx) }); }
       for (let i = 0; i < 2; i++) g.bubbles.push({ x: M.x - Q.dx * 1.2 + (Math.random() - 0.5), y: M.y - Q.dy * 1.2 + (Math.random() - 0.5), r: 0.03 + Math.random() * 0.08, w: Math.random() * 6, t: 0 }); }
-    if (Q.t > SIPH.fo + J + SIPH.fi) { g.siphon = null; renderer.aimZoom = 1; } }
+    if (Q.t > SIPH.fo + J + SIPH.fi) { g.siphHold = { light: Q.A.siphon.light || 0, t: 1.5 }; g.siphon = null; renderer.aimZoom = 1; } } /* (7.7.3, owner) its light stays on him where he lands, then eases off: no gap */
+  if (g.siphHold) { g.siphHold.t -= dt; if (g.siphHold.t <= 0) g.siphHold = null; }
   if (g.inkPuffs) { for (const p of g.inkPuffs) p.t += dt; g.inkPuffs = g.inkPuffs.filter((p) => p.t < 7); if (!g.inkPuffs.length) g.inkPuffs = null; }
   if (g.dashMove) { const D = g.dashMove, M = g.earl.inSub ? g.sub : g.earl; D.t += dt; const k = Math.min(1, D.t / D.dur), q = 1 - Math.pow(1 - k, 3);
     M.x = D.x0 + (D.x1 - D.x0) * q; M.y = D.y0 + (D.y1 - D.y0) * q; M.vx = (D.x1 - D.x0) / D.dur * 0.15; M.vy = (D.y1 - D.y0) / D.dur * 0.15;
@@ -2580,7 +2586,7 @@ function tickAbility(dt) {
   if (g.songFx) { g.songFx.t += dt; if (g.songFx.t > 4) g.songFx = null; }
   if (g.markWashFx) { g.markWashFx.t += dt; if (g.markWashFx.t > 2) g.markWashFx = null; }
   { const RA = firstW('reach'); g.multiCatch = RA && RA.multi ? RA.multi : 1; g.reachMul = RA ? RA.reach : 1; g.swingMul = RA && RA.swing ? RA.swing : 1; g.sureCatch = !!(RA && RA.sure); g.blessCatch = !!(RA && RA.bless); g.reachDef = RA; }
-  { const L0 = Math.max(best('light', 0), g.mythT > 0 ? MYTH.light : 0, g.siphon ? g.siphon.A.siphon.light : 0);
+  { const L0 = Math.max(best('light', 0), g.mythT > 0 ? MYTH.light : 0, g.siphon ? g.siphon.A.siphon.light : 0, g.siphHold ? g.siphHold.light : 0);
     // (7.6.29, owner) nothing snaps off: when a skill's light ends (or drops a level) it keeps its last strength and fades
     // to the new one over a second and a half (g.abilOutK, multiplied into every light the skills draw)
     if (L0 >= 2 && !(g.lhOn)) g.lhAt = g.time; g.lhOn = L0 >= 2;
@@ -2595,10 +2601,10 @@ function tickAbility(dt) {
   if (g.echoT > 0) g.echoT = Math.max(0, g.echoT - dt);
   // (7.6.70, owner) the echo keeps listening as he moves: every couple of seconds, once he has gone a quarter of its reach
   // from where it last listened, it finds what is round him now and lets go of what is far behind (it found them once)
-  if (g.echoT > 0 && g.echoC && g.echoLv && !g.bloodT) { g.echoScanT = (g.echoScanT || 0) + dt; const m0 = g.earl.inSub ? g.sub : g.earl, sh = [0.4, 0.6, 0.8, 1][Math.min(4, g.echoLv) - 1], R = 1000 * sh;
+  if (g.echoT > 0 && g.echoC && g.echoLv && !g.bloodT) { g.echoScanT = (g.echoScanT || 0) + dt; const m0 = g.earl.inSub ? g.sub : g.earl, sh = [0.4, 0.6, 0.8, 1][Math.min(4, g.echoLv) - 1], R = ECHO[Math.min(4, g.echoLv)].r; void sh;
     if (!g.echoFrom) g.echoFrom = { x: m0.x, y: m0.y };
     if (g.echoScanT > 2 && Math.hypot(m0.x - g.echoFrom.x, m0.y - g.echoFrom.y) > R * 0.25) { g.echoScanT = 0; g.echoFrom = { x: m0.x, y: m0.y };
-      g.echoC = g.echoC.filter((C) => C.fish || Math.hypot(C.x - m0.x, C.y - m0.y) < R * 1.1).concat(g.fauna.echoContacts(m0.x, m0.y, R, Math.round(2 + 5 * sh), [0.01, 0.015, 0.025, 0.035][Math.min(4, g.echoLv) - 1]));
+      g.echoC = g.echoC.filter((C) => C.fish || Math.hypot(C.x - m0.x, C.y - m0.y) < R * 1.1).concat(g.fauna.echoContacts(m0.x, m0.y, R, [0, 2, 3, 4, 5][Math.min(4, g.echoLv)], [0, 0, 0.12, 0.15, 0.18][Math.min(4, g.echoLv)]).filter((C) => echoHears(g.echoLv, C.rk, g.echoKey + ':' + C.x.toFixed(1))));
       if (g.echoC.length > 40) g.echoC = g.echoC.slice(-40); } }
   if (!(g.echoT > 0)) { g.echoFrom = null; g.echoScanT = 0; }
   // (7.6.30) a far contact becomes the real animal once he comes near it (just past the view), swimming where it was found
@@ -2609,10 +2615,12 @@ function tickAbility(dt) {
   if (g.subGuardT > 0) g.subGuardT = Math.max(0, g.subGuardT - dt);
   // Tidewarden: the red washes to blue, the thing's light turns blue, it freezes, fades, and is gone for 5 minutes
   if (g.tideFx) { const T = g.tideFx, ent = g.entity; T.t += dt;
-    if (ent) { ent.frozen = T.t < 3.2; ent.fade = Math.max(0, 1 - Math.max(0, T.t - 1.6) / 1.4); ent.tideBlue = Math.min(1, T.t / 1.2); }
+    // (7.7.3, owner) the blue wave: it is held a moment as its light turns blue, then turns and swims off at 20 m/s
+    // (entity.js flee); the red goes out of the water with it. It is never taken off the map
+    if (ent && !T.sent) { ent.frozen = T.t < 1.2; ent.tideBlue = Math.min(1, T.t / 1.2); }
     if (T.t >= 1.2 && g.bloodT > 2) g.bloodT = 2; /* (7.7.2, owner) the blue wave ends Bloodmoon's red too (it fades out over 2 s) */
-    if (T.t >= 3.2 && !T.sent && ent) { T.sent = true; ent.sleepT = 300; ent.marked = false; ent.x = clamp(e.x + (e.x > 2500 ? -2600 : 2600), 80, 4920); ent.y = 2600; }
-    if (T.t >= 4.2) { if (ent) { ent.frozen = false; ent.tideBlue = 0; } g.tideFx = null; } }
+    if (T.t >= 1.2 && !T.sent && ent) { T.sent = true; ent.frozen = false; ent.flee = { t: 0 }; ent.marked = false; if (g.kill) { /* in its jaws: it lets go */ } }
+    if (T.t >= 4.2) g.tideFx = null; }
 }
 
 // ---------------- update ----------------
@@ -3318,13 +3326,13 @@ function update(dt) {
   fx.dread = lerp(fx.dread, targetDread, 1 - Math.exp(-dt * 1.5));
   // it is close and hunting: the lights in the water go out and the sea goes quiet
   // its red, creeping into the water round him as its eyes come up (see entity.lights)
-  fx.redTint = lerp(fx.redTint || 0, g.mode === 'menu' ? 0 : (ent.lit ? ent.lit.tint : 0) * clamp((150 - (ent.dist ?? 999)) / 100, 0, 1), 1 - Math.exp(-dt * 2));
+  fx.redTint = lerp(fx.redTint || 0, g.mode === 'menu' || ent.flee ? 0 : (ent.lit ? ent.lit.tint : 0) * clamp((150 - (ent.dist ?? 999)) / 100, 0, 1), 1 - Math.exp(-dt * 2)); /* (7.7.3) driven off: the water clears at once */
   fx.hush = lerp(fx.hush || 0, g.kill || (ent.marked && ent.hunt) ? 1 : ent.marked && d < 120 ? 0.45 : 0, 1 - Math.exp(-dt * 0.8));
   fx.torchShift = clamp(fx.dread * 1.5, 0, 1) * (0.35 + 0.65 * clamp((g.earl.y - 100) / 60, 0, 1));
   // (5.16.0) its dark rolling in round him (as render.js draws it: within 260 m): flares, Lighthouse and glow sticks fade
   // out over 3 s (their time keeps running, and what is left comes back over 3 s if it goes), and the lamp and the
   // floodlight weaken, flicker and slide from amber toward red with the water
-  g.entDark = g.mode === 'menu' || !(ent.dist < 260) ? 0 : clamp((260 - ent.dist) / 230, 0, 1) * (fx.safeK ?? 1);
+  g.entDark = g.mode === 'menu' || ent.flee || !(ent.dist < 260) ? 0 : clamp((260 - ent.dist) / 230, 0, 1) * (fx.safeK ?? 1);
   g.lightFade = clamp((g.lightFade ?? 1) + (g.entDark > 0.04 || (fx.redTint || 0) > 0.03 ? -dt / 1.5 : dt / 0.8), 0.45, 1); /* (7.7.2, owner) dimmed, never out, and back within a second once clear (a jump away no longer leaves him dark for 3 s) */ // (6.0.5) once the water round him reddens, the lights the thing ignores (Flare, Lighthouse, glow sticks) go out over a second
   fx.torchShift = Math.max(fx.torchShift, g.entDark);
   // in the safe zone you still hear and sense it (sonar, heartbeat), but the water stays the water
@@ -3454,7 +3462,7 @@ function updateBubbles(dt) {
 
 // ---------------- loop ----------------
 let last = performance.now();
-let wakeBlur = '', filterKey = '';
+let hudFilterKey = '', wakeBlur = '', filterKey = '';
 let frameEma = 1 / 60, qualityT = 0, hudDt = 0;
 function adaptQuality(realDt) {
   frameEma = lerp(frameEma, realDt, 0.05);
@@ -3639,6 +3647,10 @@ function frame(now) {
   const f = `saturate(${(1 - fx.dread * 0.65 - fx.pressure * 0.25 - (g.injury >= 4 ? 0.45 : g.injury >= 3 ? 0.15 : 0)).toFixed(2)}) contrast(${(1 + fx.dread * 0.18).toFixed(2)})${blurPx > 0.25 ? ` blur(${blurPx.toFixed(1)}px)` : ''}`;
   const f2 = (fx.dread < 0.01 && fx.pressure < 0.01 && blurPx <= 0.25 && g.injury < 3) || (renderer.lite && fx.dread < 0.5 && blurPx <= 0.25) ? 'none' : f; // (5.3) lite: no full-screen filter for a faint grade
   // (7.7.2) one writer for the canvas's filter: the dread grade, the thing's red and the drowning (render.js), the wake's blur
+  // (7.7.3, owner) the red is the world's alone; the buttons and dials only lose their colour with it (up to 70 % less
+  // saturated) and dim a touch, coming back as it goes
+  { const r = g.mode === 'menu' ? 0 : Math.round(clamp(fx.redTint || 0, 0, 1) * 20) / 20, hf = r > 0 ? `saturate(${(1 - 0.7 * r).toFixed(2)}) brightness(${(1 - 0.08 * r).toFixed(2)})` : '';
+    if (hf !== hudFilterKey) { hudFilterKey = hf; hudCanvas.style.filter = hf; const jb = document.getElementById('journal-btn') || document.querySelector('.journal-coin'); if (jb) jb.style.filter = hf; } }
   { const f3 = [wakeBlur, f2 === 'none' ? '' : f2, renderer.filterExtra || ''].filter(Boolean).join(' ') || 'none'; if (f3 !== filterKey) { canvas.style.filter = f3; filterKey = f3; } }
   pressed.clear();
   noteWork(performance.now() - workFrom, Math.min(0.1, realDt));

@@ -45,6 +45,7 @@ import { toolIcon, netLook } from './tools_draw.js';
 import { bagSlots, bagUsed, tankSlots, pressSlots, NETS_SUB, TOW_MAX, netKinds, netsOf, tankUsed, BIG, hasBigTank, bigIn } from './capture.js';
 import { SPECIES_BY_ID } from './species.js';
 import { drawSpecies, speciesBox } from './creatures_draw.js';
+import { ECHO, echoHears } from './abilities.js';
 
 // (7.2.8) the tutorial's pointing glove (painted by tools/action_icons.py point()), pointing down in its picture, the
 // fingertip at 0.451, 0.883 of it
@@ -1157,19 +1158,19 @@ e.inSub ? [
     // 80 %, Whalesong 100 %) for the exotics and legendaries there (the real ones about and the far contacts the ping found,
     // main.js echoContacts), each a plain dot: one bone colour for Echo and Echo+, exotics purple and legendaries amber from
     // Fathom up. Nothing round them
-    if (g.echoT > 0) { const al = Math.min(1, g.echoT / 1.5), lv = Math.max(1, Math.min(4, g.echoLv || 1)), reach = RR * [0.4, 0.6, 0.8, 1][lv - 1], split = lv >= 3;
+    if (g.echoT > 0) { const al = Math.min(1, g.echoT / 1.5), lv = Math.max(1, Math.min(4, g.echoLv || 1)), reach = ECHO[lv].r, split = lv >= 3; /* (7.7.2, owner) 200, 500, 750, 1,000 m, and only the share it hears */
       const dot = (x, y, R) => { const dx = x - e.x, dy = y - e.y, d = Math.hypot(dx, dy); if (d > reach) return; const k = rr * Math.min(1, d / RR), px = rcx + dx / (d || 1) * k, py = rcy + dy / (d || 1) * k;
         ctx.fillStyle = !split ? '#e6dcc0' : R === 'legendary' ? '#f2c56e' : '#b98fe0'; ctx.beginPath(); ctx.arc(px, py, (R === 'legendary' && split ? 2.8 : 2.2) * s, 0, TAU); ctx.fill(); };
       ctx.globalAlpha = al;
       const seen = new Set();
       for (const C of g.echoC || []) { if (C.fish) { if (C.fish.dead) continue; seen.add(C.fish); dot(C.fish.x, C.fish.y, C.rk); } else dot(C.x, C.y, C.rk); }
-      for (const c of (g.fauna && g.fauna.list) || []) { if (c.dead || seen.has(c)) continue; const R = c.rk || (c.rk = (rarityOf(c.sp) || {}).id || 'common'); if (R === 'exotic' || R === 'legendary') dot(c.x, c.y, R); }
+      for (const c of (g.fauna && g.fauna.list) || []) { if (c.dead || seen.has(c)) continue; const R = c.rk || (c.rk = (rarityOf(c.sp) || {}).id || 'common'); if ((R === 'exotic' || R === 'legendary') && echoHears(lv, R, (g.echoKey || 0) + ':' + (c.uid || (c.uid = Math.random().toString(36).slice(2))))) dot(c.x, c.y, R); }
       ctx.globalAlpha = 1; }
     const ent = g.entity;
     if (ent && ent.dist < RR && !dying && !(ent.offRadarT > 0)) { // (5.16.0) after it loses you in the dark it stays off the radar a minute
       const a = Math.atan2(ent.y - e.y, ent.x - e.x);
       const da = ((this.sweep - a) % TAU + TAU) % TAU;
-      if (da < dt * 1.7 + 0.001) { this.blip = { a, d: ent.dist, life: 1 }; g.audio && g.audio.sonar(0.03 + fx.dread * 0.04); }
+      if (da < dt * 1.7 + 0.001) { this.blip = { a, d: ent.dist, life: 1, blue: !!ent.flee }; g.audio && g.audio.sonar(0.03 + fx.dread * 0.04); }
     }
     if (this.blip) {
       this.blip.life -= dt * 0.45;
@@ -1178,9 +1179,9 @@ e.inSub ? [
         const r = Math.min(1, this.blip.d / RR) * rr;
         const bxp = rcx + Math.cos(this.blip.a) * r, byp = rcy + Math.sin(this.blip.a) * r;
         const bg2 = ctx.createRadialGradient(bxp, byp, 0, bxp, byp, 6 * s);
-        bg2.addColorStop(0, `rgba(255,90,70,${this.blip.life})`); bg2.addColorStop(1, 'rgba(255,90,70,0)');
+        const BC = this.blip.blue ? '110,170,240' : '255,90,70'; bg2.addColorStop(0, `rgba(${BC},${this.blip.life})`); bg2.addColorStop(1, `rgba(${BC},0)`); /* (7.7.3, owner) driven off: its mark blue */
         ctx.fillStyle = bg2; ctx.beginPath(); ctx.arc(bxp, byp, 6 * s, 0, TAU); ctx.fill();
-        ctx.fillStyle = `rgba(214,56,40,${Math.min(1, this.blip.life * 1.3).toFixed(3)})`; ctx.beginPath(); ctx.arc(bxp, byp, 2.4 * s, 0, TAU); ctx.fill(); // (7.6.0, owner) the thing is a red dot, nothing drawn round it (the bracket is gone)
+        ctx.fillStyle = this.blip.blue ? `rgba(90,150,226,${Math.min(1, this.blip.life * 1.3).toFixed(3)})` : `rgba(214,56,40,${Math.min(1, this.blip.life * 1.3).toFixed(3)})`; ctx.beginPath(); ctx.arc(bxp, byp, 2.4 * s, 0, TAU); ctx.fill(); // (7.6.0, owner) the thing is a red dot, nothing drawn round it (the bracket is gone)
       }
     }
     // (6.8.0) the radar ghost: when the sweep passes its bearing, a large contact at the very edge, there for half a

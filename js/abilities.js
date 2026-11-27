@@ -33,9 +33,9 @@ export const ABILITY_DEFS = {
     mythical: { name: 'Pharos Heart', dur: 120, cd: 1800, light: 3.2, ward: true, line: '120 s of light 110 m round you, brighter than the Lighthouse, three beams sweeping round. Hunters keep out of it, and the thing does not see it.' },
   },
   echo: {
-    rare: { name: 'Echo', dur: 30, cd: 480, echo: 1, line: 'A ping through the water: exotic and legendary animals near you show on the radar for 30 s.' },
-    exotic: { name: 'Echo+', dur: 45, cd: 1200, echo: 2, line: 'A ping through the water: exotic and legendary animals near you show on the radar for 45 s.' },
-    legendary: { name: 'Fathom', dur: 90, cd: 5400, echo: 3, line: 'A deep ping: exotic and legendary animals far round you show on the radar for 90 s.' },
+    rare: { name: 'Echo', dur: 30, cd: 480, echo: 1, line: 'A ping through the water: for 30 s some of the exotic animals within 200 m show on the radar.' },
+    exotic: { name: 'Echo+', dur: 45, cd: 1200, echo: 2, line: 'A ping through the water: for 45 s some of the exotic and legendary animals within 500 m show on the radar.' },
+    legendary: { name: 'Fathom', dur: 90, cd: 5400, echo: 3, line: 'A deep ping: for 90 s most of the exotic and legendary animals within 750 m show on the radar.' },
     mythical: { name: 'Whalesong Heart', dur: 120, cd: 3600, echo: 4, song: true, line: 'A long, deep call that carries through the sea: for 120 s exotic animals show on the radar twice as far round you, and legendary ones brighter, in their own colour.' },
   },
   ironhull: {
@@ -130,6 +130,11 @@ export const ABILITY_DEFS = {
 // (7.4.15, owner) mythical: above legendary, only from three legendaries of the same scroll combined. Each has its own
 // power, and every one of them, for the 10 s after it is fired, also gives at least Flare+ light, at least Sprint+ speed
 // (the sub too), and air: +5 % of the full a second, up to +50 %, with none lost meanwhile. Usable any time
+// (7.7.2, owner) the Echo family by reach and by how much it picks up: a wider ping catches fewer of what is out there,
+// so the radar shows a handful of marks, never every rare animal in the sea. [reach m, share of exotics, of legendaries]
+export const ECHO = [null, { r: 200, ex: 0.4, leg: 0 }, { r: 500, ex: 0.4, leg: 0.3 }, { r: 750, ex: 0.7, leg: 0.6 }, { r: 1000, ex: 0.85, leg: 0.85 }];
+// the same animal is either heard or not for the whole ping (no marks blinking in and out): a hash of the animal
+export const echoHears = (lv, rk, key) => { const E = ECHO[Math.max(1, Math.min(4, lv || 1))]; const p = rk === 'legendary' ? E.leg : rk === 'exotic' ? E.ex : 0; if (p <= 0) return false; let h = 2166136261; const s2 = String(key); for (let i = 0; i < s2.length; i++) { h ^= s2.charCodeAt(i); h = Math.imul(h, 16777619); } return ((h >>> 0) % 1000) / 1000 < p; };
 export const MYTH = { t: 10, light: 1.6, speed: 2, air: 0.05 };
 export const NEXT_TIER = { rare: 'exotic', exotic: 'legendary', legendary: 'mythical' };
 export const abilityId = (fam, tier) => `ab_${fam}_${tier}`;
