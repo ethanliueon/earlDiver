@@ -1638,7 +1638,12 @@ hud.touchRef = touch; // (5.7.0) the HUD draws the sprint button beside the stic
 // (5.17.0) the buttons that do nothing special make the one plain click when pressed (the light, the hand, leaving the
 // sub, the menu's tiles, the swap); a greyed one a softer click with its reason. The net, the glow stick and the skill have their own
 const PLAIN_CLICK = new Set(['l', 'f', 'g', 'v', 'u', 'leavesub', 'outdeck', 'c', 't', 'b', 'journal', 'settings', 'swap', 'menu', 'r', 'n']);
-function hudButtonAt(x, y) { for (const h of hud.hots || []) if (inRect(h, x, y)) return h; return !(ui.cabinOpen && ui.cabinOpen()) ? tapRectAt(x, y) : null; } // (5.6.8) a thing to tap is pressed as a button: a tap does it, a hold holds it (prying, cutting a net free)
+// (7.7.1, owner) fat fingers: a touch that just misses a HUD button still presses it, if it lands within a small margin
+// of it (the nearer button wins where two are in reach); the stick and the world keep everything further off
+function hudNear(x, y) { const pad = 12 * (window.__fingerK || 1); let best = null, bd = Infinity;
+  for (const h of hud.hots || []) { const dx = Math.max(h.x - x, 0, x - (h.x + h.w)), dy = Math.max(h.y - y, 0, y - (h.y + h.h)), d = Math.hypot(dx, dy); if (d <= pad && d < bd) { bd = d; best = h; } }
+  return best; }
+function hudButtonAt(x, y) { for (const h of hud.hots || []) if (inRect(h, x, y)) return h; { const n = hudNear(x, y); if (n) return n; } return !(ui.cabinOpen && ui.cabinOpen()) ? tapRectAt(x, y) : null; } // (5.6.8) a thing to tap is pressed as a button: a tap does it, a hold holds it (prying, cutting a net free)
 hudCanvas.addEventListener('contextmenu', (ev) => ev.preventDefault());
 
 // (4.12.3) a long piece of work in progress, held down
@@ -3671,6 +3676,15 @@ window.addEventListener('pointerdown', (ev) => { if (ev.clientX < innerWidth * 0
 // (7.4.26, owner) one press for everything on the screen that can be tapped, as the HUD's coins have: the thing sinks and
 // lights a little, a soft ring of light runs out from under the finger, and the phone gives its small tick. On the
 // screens that had no sound of their own (the new diver, its keyboard, the slots, the title) a soft click as well
+// (7.7.1, owner) fat fingers on the page's buttons: a tap that lands on nothing pressable is given to the nearest visible
+// button within reach (a close cross within 26 px, any other within 14 px), so a thumb just beside a button still hits it
+const CLOSERS = '.ip-close, .inv-close, .tr-close, .gx-x, .st-x, .cf-x, .x-btn, [aria-label="Close"], .close';
+window.addEventListener('click', (ev) => { if (!ev.isTrusted || ev.__fat) return; const t = ev.target; if (!t || !t.closest || t.closest(PRESSABLE) || t.closest('input, select, textarea, a, label, canvas')) return;
+  const k = window.__fingerK || 1, px = ev.clientX, py = ev.clientY; let best = null, bd = Infinity;
+  for (const b of document.querySelectorAll(PRESSABLE)) { if (b.disabled || b.closest('[hidden]') || !b.getClientRects().length) continue; const r = b.getBoundingClientRect(); if (!r.width) continue;
+    const reach = (b.matches(CLOSERS) ? 26 : 14) * k, dx = Math.max(r.left - px, 0, px - r.right), dy = Math.max(r.top - py, 0, py - r.bottom), d = Math.hypot(dx, dy);
+    if (d <= reach && d < bd) { const top = document.elementFromPoint(Math.min(Math.max(r.left + r.width / 2, 0), innerWidth - 1), Math.min(Math.max(r.top + r.height / 2, 0), innerHeight - 1)); if (top && (top === b || b.contains(top) || top.contains(b))) { bd = d; best = b; } } }
+  if (best) { ev.stopPropagation(); ev.preventDefault(); const c = new MouseEvent('click', { bubbles: true, cancelable: true, clientX: ev.clientX, clientY: ev.clientY }); c.__fat = true; best.dispatchEvent(c); } }, true);
 const PRESSABLE = 'button, [data-act], [data-test], [data-store], [data-pet], [data-evday], [data-tab], [data-t], .jcell, .lk-tile, .sl-main, .ev-day, .st-card, .cr-sw, [role="button"]';
 const QUIET_SCREENS = '#creator, #slots, #title, .cr-kb';
 let pressLayer = null;
