@@ -1184,7 +1184,7 @@ function tipEquip() { const P = profile; if (!P || P.tut === 'on' || P.tut === '
 // the first backup air tank. They use the tutorial's own spotlight (the world holds still while one button glows and is
 // waited on), its banner and its trail; inside the tank room and the bag the dive is held (air and animals keep) until
 // the step is done. Elsewhere: only the quiet ring on the trawl or air button, as before.
-function lessonSet(text, spot = null, to = null, fish = null) { g.lesson = { id: 'l' }; g.tut = { text, spot, to, fish, prompt: null, door: false }; }
+function lessonSet(text, spot = null, to = null, fish = null) { g.lesson = { id: 'l', allow: new Set(spot && spot.key ? [String(spot.key).toLowerCase()] : []) }; /* (7.6.92) the button a step lights always works, even with time held (the air lesson's bag was shut out, so it could never end) */ g.tut = { text, spot, to, fish, prompt: null, door: false }; }
 function lessonHold(on) { // the dive held: air, the animals aboard, the sea's creatures, the thing
   const e = g.earl, sub = g.sub;
   if (on) { if (!g.lessonHold) g.lessonHold = { o2: sub.o2, eo2: e.o2 }; sub.o2 = g.lessonHold.o2; e.o2 = g.lessonHold.eo2; g.frozen = true; }
@@ -1244,7 +1244,7 @@ function lessons() {
     if (st === 'drop') { if (n) setSt('tow'); else lessonSet('Let out the trawl net', { key: 'n', say: 'Let out the trawl net' }, J && { x: J.x, y: J.y }, J); return; }
     if (st === 'tow') { if (J && J.netted) setSt('close'); else { lessonSet('Tow the net through the jellyfish', null, J && { x: J.x, y: J.y }, J); if (n && n.mx != null) g.tut.from = { x: n.mx, y: n.my }; /* the trail from the net's mouth */ } if (!(J && J.netted)) return; }
     if ((P.lessonTrawl || st) === 'close') { if (!n) setSt('tank'); else { lessonSet('Close the net', { key: 'n', say: 'Close the net' }, n && n.mx != null ? { x: n.mx, y: n.my } : null); return; } }
-    const pile = g.subTank.find((s) => s.pile), inTank = g.subTank.find((s) => s.id === 171 && !s.pile && !s.pressed);
+    const pile = g.subTank.find((s) => s.pile), inTank = g.subTank.find((s) => s.id === jSp.id && !s.pile && !s.pressed); // (7.6.92) the lesson's own jelly (a lion's mane since 7.6.70; this looked for the moon jelly, 171, and the lesson never ended)
     if (P.lessonTrawl === 'tank') {
       if (!tankO) { if (pile || !inTank) { lessonSet('The catch is on the floor of the sub', { key: 't', say: 'Open the tank room' }); return; } }
       if (tankTour()) return; /* (7.6.23, owner) the room shown first */
