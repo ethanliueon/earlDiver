@@ -2447,3 +2447,9 @@ html body #tut-spot .ts-ripple::before { animation: ts-rip1 1.7s ease-out infini
 html body #tut-spot .ts-ripple::after { animation: ts-rip2 1.7s ease-out infinite; }
 @keyframes ts-rip1 { 0%, 14% { opacity: 0; scale: 0.2; } 15% { opacity: 1; scale: 0.25; } 48% { opacity: 0; scale: 1.25; } 100% { opacity: 0; scale: 1.25; } }
 @keyframes ts-rip2 { 0%, 36% { opacity: 0; scale: 0.2; } 37% { opacity: 1; scale: 0.25; } 70% { opacity: 0; scale: 1.25; } 100% { opacity: 0; scale: 1.25; } }
+
+/* (7.6.93) in the tank room the lesson's line sits in the gap between the dive counter and the tank, clear of the ceiling
+   lamp it used to run across; and while a tour card is up, the sea's messages ("Net in, 1 animal") wait, so they never
+   land on the card */
+html.touch body:has(#tankroom:not([hidden])) #tut-spot .ts-line:not(#_a):not(#_b):not(#_c):not(#_d):not(#_e):not(#_f):not(#_g) { top: 126px !important; }
+html body:has(#tankroom:not([hidden])):has(#tut-spot .ts-card:not([style*="none"])) #msgs:not(#_a) { opacity: 0 !important; transition: opacity 0.2s; }
