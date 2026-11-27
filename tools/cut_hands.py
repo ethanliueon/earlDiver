@@ -46,3 +46,13 @@ for name, box, fade, up, keep in [('hand_back', (120, 10, 690, 540), (230, 360, 
                                   ('hand_side', (620, 50, 1536, 520), (560, 200, 780, 260), False, lambda x, y: ~((x < 700) & (y > 330)))]:
     im, tip = cut(box, fade, up, keep); im.save(os.path.join(OUT, name + '.png'), optimize=True); meta[name] = {'w': im.width, 'h': im.height, 'tip': tip}
 print(json.dumps(meta))
+
+# (7.6.91, owner) every tutorial pointer (the hand at the buttons, in the spotlights, in the drag lesson) is the same picture,
+# assets/ui/icons/tut-point.png: a square, pointing down, the fingertip at (0.451, 0.883) of it (hud.js, tutspot.js, olive.css).
+# Now the owner's short-cuffed glove, the back of the hand, turned to point down, its cuff fading out (no cut edge)
+im, tip = cut((230, 535, 600, 1015), (0, 380, 0, 470), True, lambda x, y: np.ones_like(x, bool))
+im = im.rotate(180, expand=True); tip = (im.width - 1 - tip[0], im.height - 1 - tip[1])
+N = 256; tx, ty = 0.451 * N, 0.883 * N; k = min((ty - 4) / tip[1], (tx - 3) / tip[0], (N - 3 - tx) / (im.width - tip[0]))  # the whole glove inside the square, nothing clipped
+im = im.resize((max(1, round(im.width * k)), max(1, round(im.height * k))), Image.LANCZOS); tip = (tip[0] * k, tip[1] * k)
+sq = Image.new('RGBA', (N, N), (0, 0, 0, 0)); sq.alpha_composite(im, (int(round(tx - tip[0])), int(round(ty - tip[1]))))
+sq.save(os.path.join(OUT, 'icons', 'tut-point.png'), optimize=True); print('tut-point', sq.size, 'glove', im.size)
