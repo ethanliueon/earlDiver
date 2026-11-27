@@ -2471,3 +2471,5 @@ html body #title .t-gear:not(#_a):not(#_b):not(#_c) { right: 44px !important; to
 #revive .rv-sacts { display: flex; gap: 12px; justify-content: center; }
 #revive .rv-sacts button { min-width: 130px; }
 body:has(#revive:not([hidden])) #store:not([hidden]) { z-index: 85 !important; }
+
+html body .store-panel .pk-card img.pk-pic { width: 200px; height: 130px; object-fit: contain; filter: drop-shadow(0 3px 4px rgba(0,0,0,0.35)); } /* (7.7.3, owner) the pail and the hoard */

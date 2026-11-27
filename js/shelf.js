@@ -1,3 +1,4 @@
+import { packPicture } from './pearl_art.js';
 // (7.6.2, owner) the shop's pearl pages: the scroll shelf, coins for pearls, and pearl packs (docs/PLAN_SKILLS.md).
 // Pearls are a fuel spent every day; every price here is the same for every player (never scaled by the hidden level).
 import { ITEMS, RARITY } from './items.js';
@@ -71,6 +72,7 @@ export function coinsHtml(P, tabs, cashPic) {
 export function packsHtml(P, tabs) {
   // a heap of pearls, bigger for the bigger pack: each pearl placed by hand in a low pile, the back ones higher
   const PILE = [[[60, 52], [36, 56], [84, 56], [48, 36], [72, 36]], [[60, 58], [32, 60], [88, 60], [12, 62], [108, 62], [46, 40], [74, 40], [22, 44], [98, 44], [60, 22], [36, 26], [84, 26]]];
-  const card = (k, i) => `<div class="st-card pk-card"><div class="pk-pile">${PILE[i].slice().reverse().map(([x, y]) => pearl.replace('alt=""', `alt="" style="left:${x}px;top:${y}px"`)).join('')}</div><b>${fmt(k.pearls)}</b><small>Pearls</small><button data-pack="${k.key}">${k.price}</button></div>`;
+  // (7.7.3, owner) a picture that says how many: a pail of pearls, and a hoard (pearl_art.js)
+  void PILE; const card = (k, i) => `<div class="st-card pk-card"><img class="pk-pic" src="${packPicture(i)}" alt=""><b>${fmt(k.pearls)}</b><small>Pearls</small><button data-pack="${k.key}">${k.price}</button></div>`;
   return `<div class="st-plate st-shopplate st-packs"><button class="st-x" aria-label="Close">×</button>${tabs}<div class="st-row">${PACKS.map(card).join('')}</div></div>`;
 }
