@@ -33,7 +33,8 @@ export class Touch {
     if (navigator.vibrate) this.vibe = true;
     for (const t of e.changedTouches) {
       const b = this.buttonAt(t.clientX, t.clientY);
-      if (!b && this.aim && this.aim(t.clientX, t.clientY)) { this.fingers.set(t.identifier, {}); continue; } // (5.16.0) Dash's tap: taken, no stick
+      const onStick = !b && t.clientX <= window.innerWidth * 0.5 && (() => { const [rx, ry] = this.restAt(); return Math.hypot(t.clientX - rx, t.clientY - ry) <= this.radius() * 1.7; })(); // (7.7.2, owner) the stick's thumb is never taken as a skill's tap (Snatch, Dash, Cast)
+      if (!b && !onStick && this.aim && this.aim(t.clientX, t.clientY)) { this.fingers.set(t.identifier, {}); continue; } // (5.16.0) Dash's tap: taken, no stick
       if (b && b.key.startsWith('msg:')) { this.fingers.set(t.identifier, {}); this.onMessage && this.onMessage(b.key.slice(4)); continue; } // a greyed button: why
       if (b) { this.fingers.set(t.identifier, { key: b.key }); this.key(b.key, true); this.onPress && this.onPress(b.key); if (this.vibe) navigator.vibrate(8); continue; } // (5.17.0) its click
       // (5.6.1) the stick grows wherever a thumb lands that is not on a button (not only the left half); a quick tap

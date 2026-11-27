@@ -352,6 +352,36 @@ export class Audio {
     o.connect(bp).connect(g).connect(this.master); o.start(t0); o.stop(t0 + 7.1);
     this.whale && this.whale(0.35);
   }
+  // (7.7.2, owner) every skill makes a sound as it fires: a rush of water whose size is its rarity (rare a short swish,
+  // exotic fuller with a low body, legendary long and deep with the hull's creak under it, mythical deeper still), and
+  // over it the family's own voice: the Echo family a sonar ping that rings out and comes back, the depth skills the
+  // hull straining, air skills a breath of bubbles, schools and lures a stir of bubbles, lights a soft ignition
+  whooshTier(tier) {
+    if (!this.ready) return; const T = { rare: [0.55, 900, 0.16, 0], exotic: [0.8, 700, 0.2, 1], legendary: [1.2, 520, 0.24, 2], mythical: [1.6, 420, 0.28, 3] }[tier] || [0.55, 900, 0.16, 0];
+    const [dur, f0, vol, lv] = T, t0 = this.ac.currentTime;
+    const f = this.burst('bandpass', f0, 1.1, dur, vol, this.white); f.frequency.setValueAtTime(f0 * 0.6, t0); f.frequency.exponentialRampToValueAtTime(f0 * 2.2, t0 + dur * 0.35); f.frequency.exponentialRampToValueAtTime(f0 * 0.5, t0 + dur);
+    if (lv >= 1) this.burst('lowpass', 220, 0.8, dur * 1.1, vol * 0.9, this.brown);
+    if (lv >= 2) this.creak(0.25 + 0.1 * lv);
+    if (lv >= 3) this.tone(44, 1.1, 0.3, 'sine', 0.05, 30);
+  }
+  ping(lv = 1) { // a sonar ping that rings out and returns, fainter, once for each step of reach
+    if (!this.ready) return; const n = 1 + Math.min(3, lv);
+    for (let i = 0; i < n; i++) { const v = 0.07 / (1 + i * 0.9), at = i * (0.45 + 0.1 * lv); this.tone(1320, 1.1, v, 'sine', at, 1240); this.tone(660, 0.9, v * 0.35, 'sine', at); }
+  }
+  skill(A) {
+    if (!this.ready || !A) return; this.whooshTier(A.tier);
+    const lv = { rare: 1, exotic: 2, legendary: 3, mythical: 4 }[A.tier] || 1;
+    if (A.echo) this.ping(lv);
+    if (A.press || A.temper || A.repair || A.iron || A.sink) this.creak(0.4 + 0.1 * lv);
+    if (A.airNow || A.breath) { this.bubbles(6 + 3 * lv, 0.05); }
+    if (A.shoal || A.call) this.bubbles(10 + 4 * lv, 0.035);
+    if (A.light || A.revel) { this.burst('highpass', 2600, 0.7, 0.5, 0.06); this.tone(330, 1.2, 0.03, 'sine', 0.05); }
+    if (A.snatch || A.cast) this.burst('bandpass', 1800, 2, 0.25, 0.1);
+    if (A.nacre) this.sapphire();
+    if (A.tide) { this.swell && this.swell(); this.tone(523, 1.4, 0.03, 'sine', 0.3); this.tone(784, 1.6, 0.025, 'sine', 0.45); }
+    if (A.calm) this.tone(196, 1.8, 0.04, 'sine');
+  }
+  jet(tier) { if (!this.ready) return; this.whooshTier(tier); this.bubbles(8, 0.04); } // a dash or a squid's jet: each one
   // (7.4.15) any other mythical as it fires: a deep thrum, and the hull's creak a little lower
   mythic() {
     if (!this.ready) return; this.tone(48, 0.9, 0.5, 'sine', 0, 30); this.tone(96, 0.5, 0.18, 'triangle', 0.02, 60);

@@ -22,9 +22,9 @@ export const ABILITY_DEFS = {
   },
   dash: { // (7.5.6, owner) charges: rare 2, exotic 2, legendary 3, mythical 5 dashes, then the rest
     rare: { name: 'Dash', dur: 0.3, cd: 45, dash: 1, zoom: 1, charges: 2, line: 'Two dashes before it rests: tap where to go, and you are there in an instant.' },
-    exotic: { name: 'Dash+', dur: 0.3, cd: 120, dash: 2, zoom: 1.4, charges: 2, line: 'Two dashes before it rests: tap where to go, with the water opened wider round you.' },
-    legendary: { name: 'Undertow', dur: 0.35, cd: 900, dash: 3, zoom: 2, charges: 3, line: 'Three dashes before it rests: tap where to go, the sea opening far round you and bending as you pass.' },
-    mythical: { name: 'Riven Heart', dur: 0.35, cd: 1200, dash: 3, zoom: 2.2, charges: 5, line: 'Five dashes before it rests: tap where to go, and again. The sea opens far round you, and tears as you pass.' },
+    exotic: { name: 'Dash+', dur: 0.3, cd: 120, dash: 2, zoom: 1.4, charges: 3, line: 'Three dashes before it rests: tap where to go, with the water opened wider round you.' },
+    legendary: { name: 'Undertow', dur: 0.35, cd: 900, dash: 3, zoom: 2.6, charges: 4, line: 'Four dashes before it rests: tap where to go, the sea opening far round you and bending as you pass.' },
+    mythical: { name: 'Riven Heart', dur: 0.35, cd: 1200, dash: 3, zoom: 2.8, charges: 5, line: 'Five dashes before it rests: tap where to go, and again. The sea opens far round you, and tears as you pass.' },
   },
   flare: {
     rare: { name: 'Flare', dur: 30, cd: 300, light: 1, line: '30 s of light 28 m round you. The thing does not see it.' },
@@ -44,10 +44,10 @@ export const ABILITY_DEFS = {
   // (7.4.19, owner) Dauntless: for its time the suit (or the hull) is rated deeper by its multiple, and what pressure
   // does past the old rating is that many times less. A force field round him shows how much of it he is using
   dauntless: {
-    rare: { name: 'Dauntless', dur: 25, cd: 1800, press: 1.5, airBack: [0.02, 10], line: 'For 25 s your suit takes half again its rated depth, and pressure costs you a third less below it. Air comes back, 2 % a second for its first 10 s.' },
-    exotic: { name: 'Dauntless+', dur: 30, cd: 3600, press: 2, light: 1.6, airBack: [0.03, 15], line: 'For 30 s your suit takes twice its rated depth, pressure costs you half as much below it, and light 45 m round you. Air comes back, 3 % a second for its first 15 s.' },
-    legendary: { name: 'Bathysphere', dur: 60, cd: 3600, press: 2.5, beyond: 5, light: 1.6, airBack: [0.05, 20], line: 'For 60 s your suit takes two and a half times its rated depth, with light 45 m round you. Deeper even than that, your air goes 5 times slower than the pressure would take it. Air comes back, 5 % a second for its first 20 s.' },
-    mythical: { name: 'Hadal Heart', dur: 90, cd: 3600, press: 3, beyond: 10, light: 1.6, airBack: [0.1, 30], line: 'For 90 s your suit takes three times its rated depth. Deeper even than that, your air goes 10 times slower than the pressure would take it. Air comes back, 10 % a second for its first 30 s.' },
+    rare: { name: 'Dauntless', dur: 25, cd: 1800, press: 1.5, airBack: [0.02, 10], line: 'For 25 s your suit holds to 1.5 times its rated depth, and below that pressure costs you a third less air. Air comes back, 2 % a second for its first 10 s.' },
+    exotic: { name: 'Dauntless+', dur: 30, cd: 3600, press: 2, light: 1.6, airBack: [0.03, 15], line: 'For 30 s your suit holds to twice its rated depth, below that pressure costs you half the air, and you have light 45 m round you. Air comes back, 3 % a second for its first 15 s.' },
+    legendary: { name: 'Bathysphere', dur: 60, cd: 3600, press: 2.5, beyond: 5, light: 1.6, airBack: [0.05, 20], line: 'For 60 s your suit holds to 2.5 times its rated depth, with light 45 m round you. Deeper still, pressure takes your air 5 times slower. Air comes back, 5 % a second for its first 20 s.' },
+    mythical: { name: 'Hadal Heart', dur: 90, cd: 3600, press: 3, beyond: 10, light: 1.6, airBack: [0.1, 30], line: 'For 90 s your suit holds to 3 times its rated depth. Deeper still, pressure takes your air 10 times slower. Air comes back, 10 % a second for its first 30 s.' },
   },
   // (7.6.5, owner) the pure families (docs/PLAN_SKILLS.md): one number each, pushed further than any Heart in that lane;
   // rarer (a third as likely anywhere) and stopping at legendary. pure: true marks them
@@ -62,9 +62,9 @@ export const ABILITY_DEFS = {
     legendary: { name: 'Splintering Gale', pure: true, dur: 30, cd: 3600, speed: 4.2, line: '×4.2 speed for 30 s: faster than anything else in the sea.' },
   },
   temper: {
-    rare: { name: 'Temper', pure: true, dur: 30, cd: 900, heat: true, press: 1.5, line: 'For 30 s your suit takes half again its rated depth.' },
-    exotic: { name: 'Temper+', pure: true, dur: 45, cd: 1800, heat: true, press: 2, line: 'For 45 s your suit takes twice its rated depth.' },
-    legendary: { name: 'Adamant', pure: true, dur: 90, cd: 3600, heat: true, press: 3.5, line: 'For 90 s your suit takes three and a half times its rated depth: deeper than any Heart.' },
+    rare: { name: 'Temper', pure: true, dur: 30, cd: 900, heat: true, press: 1.5, line: 'For 30 s your suit holds to 1.5 times its rated depth.' },
+    exotic: { name: 'Temper+', pure: true, dur: 45, cd: 1800, heat: true, press: 2, line: 'For 45 s your suit holds to twice its rated depth.' },
+    legendary: { name: 'Adamant', pure: true, dur: 90, cd: 3600, heat: true, press: 3.5, line: 'For 90 s your suit holds to 3.5 times its rated depth: deeper than any Heart.' },
   },
   plunge: {
     rare: { name: 'Plunge', pure: true, dur: 10, cd: 300, sink: 3.2, line: 'An anchor drops and pulls you down for 10 s. Stick up to hold against it.' },
@@ -85,9 +85,9 @@ export const ABILITY_DEFS = {
     legendary: { name: 'Dragnet', dur: 4, cd: 1800, cast: { range: 15, r: 2.2 }, line: 'Tap where to throw: a great net flies far and fast, and draws shut round a whole group.' },
   },
   snatch: {
-    rare: { name: 'Snatch', dur: 30, cd: 300, snatch: 3, snBonus: 0, line: 'For 30 s, tap three fish on screen: each is caught by your net\'s own chance.' },
-    exotic: { name: 'Snatch+', dur: 30, cd: 900, snatch: 5, snBonus: 0.2, line: 'For 30 s, tap five fish on screen, with fewer misses.' },
-    legendary: { name: 'Talon', dur: 45, cd: 2400, snatch: 8, snBonus: 0.35, zoom: 1.15, light: 1, line: 'For 45 s, tap eight fish on screen, rarely missing, the view a little wider and lit.' },
+    rare: { name: 'Snatch', dur: 30, cd: 300, snatch: 3, snBonus: 0, line: 'For 30 s, tap three fish on screen: each one is caught, every time.' },
+    exotic: { name: 'Snatch+', dur: 30, cd: 900, snatch: 5, snBonus: 0.2, line: 'For 30 s, tap five fish on screen: each one is caught, every time.' },
+    legendary: { name: 'Talon', dur: 45, cd: 2400, snatch: 8, snBonus: 0.35, zoom: 1.15, light: 1, line: 'For 45 s, tap eight fish on screen: each one is caught, every time. The view is a little wider, and lit.' },
   },
   ironskin: { legendary: { name: 'Ironskin', special: true, maxLoad: 3, dur: 30, cd: 3600, iron: true, line: 'Every injury healed at once; for 30 s no animal can hurt you. Not the thing\'s jaws.' } },
   calm: { legendary: { name: 'Calm', special: true, maxLoad: 3, dur: 30, cd: 7200, calm: true, line: 'While it is not hunting you: the mark is gone, and for 30 s the thing cannot notice you.' } },
@@ -123,8 +123,8 @@ export const ABILITY_DEFS = {
     legendary: { name: 'Kraken', pure: true, dur: 1.4, cd: 1800, siphon: { dist: 100, sp: 'colossal', len: 5.5, light: 1.6, eyes: true }, line: 'Tap a way: you become the colossal squid, eyes burning, and jet 100 m through a cloud of ink, the water round you lit.' },
   },
   tidewarden: {
-    legendary: { name: 'Tidewarden', maxLoad: 1, dur: 4, cd: 28800, ward: true, tide: true, line: 'When the water round you turns red: a wave of blue, it freezes, fades, and is gone for 5 minutes.' },
-    mythical: { name: 'Warden Heart', maxLoad: 1, dur: 4, cd: 10800, ward: true, tide: true, any: true, line: 'Any time. In red water: a wave of blue, it freezes, fades, and is gone for 5 minutes. Marked, the mark is washed off you.' },
+    legendary: { name: 'Tidewarden', maxLoad: 1, dur: 4, cd: 28800, ward: true, tide: true, line: 'When the water round you turns red: a wave of blue drives the thing off, and it stays away 5 minutes.' },
+    mythical: { name: 'Warden Heart', maxLoad: 1, dur: 4, cd: 10800, ward: true, tide: true, any: true, line: 'Works any time. In red water, a wave of blue drives the thing off for 5 minutes; if you are marked, the mark washes off.' },
   },
 };
 // (7.4.15, owner) mythical: above legendary, only from three legendaries of the same scroll combined. Each has its own

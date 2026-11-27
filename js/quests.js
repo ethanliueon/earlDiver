@@ -186,7 +186,7 @@ function firstBoard(P) {
   const until = Date.now() + QUEST_HOURS.common * 3600000, b = { rarity: 'common', prog: 0, until, fresh: false };
   P.traps = P.traps || {}; P.traps.pot = Math.max(1, P.traps.pot || 0);
   return [
-    { ...b, key: 'depth200', kind: 'depth', d: 200, n: 1, pay: 150, text: 'Take the sub below 200 m' },
+    { ...b, key: 'depth200', kind: 'depth', d: 200, n: 1, pay: 150, sub: true, text: 'Take the sub below 200 m' },
     { ...b, key: 'liveup100', kind: 'liveup', d: 100, n: 1, pay: 150, text: 'Bring up a live animal from below 100 m' },
     { ...b, key: 'traphaul', kind: 'traphaul', n: 1, pay: 80, text: 'Set a trap and empty it' },
   ];
@@ -269,7 +269,7 @@ export function questTick(g, P) {
   // (4.8.0) the board's challenges read off the game: a depth reached, every chamber full
   if (!tutorialOn(P)) for (const q of S.board) {
     if (q.prog >= q.n || q.claimed) continue;
-    if (q.kind === 'depth' && Math.max(e.y, e.inSub ? g.sub.y : 0) >= q.d) { q.prog = 1; ch = true; }
+    if (q.kind === 'depth' && (q.sub || /\bsub\b/i.test(q.text || '') ? g.sub && !g.sub.docked && g.sub.y : Math.max(e.y, e.inSub ? g.sub.y : 0)) >= q.d) { q.prog = 1; ch = true; } // (7.7.2, owner) a sub quest counts the sub's depth, not the diver's
     if (q.kind === 'chambers' && g.chambersFull) { q.prog = 1; ch = true; }
     if (q.kind === 'liveup' && g.subTank.some((s) => s.safe && s.cond > 0.05 && (s.from || 0) >= q.d)) { q.prog = 1; ch = true; } // (6.8.0) alive at the surface
   }

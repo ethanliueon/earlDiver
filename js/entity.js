@@ -473,6 +473,21 @@ export class Entity {
   }
 
   // give up on him for a while: head far off, away from (fx, fy), and deeper
+  // (7.7.2, owner) put it at the edge of his radar, R metres off, from below where the sea floor allows (Bloodmoon, a revive)
+  placeFar(e, R = 1000) {
+    let best = null;
+    for (let i = 0; i < 24; i++) {
+      const a = Math.PI / 2 + (this.rng() - 0.5) * (i < 12 ? 1.6 : 3.0); // straight down first, then widening to the sides
+      let x = clamp(e.x + Math.cos(a) * R, 20, 4980), y = e.y + Math.sin(a) * R;
+      const fl = this.world ? this.world.floorAt(x) - 20 : 3900; y = Math.max(SAFE_DEPTH + 30, Math.min(y, fl));
+      if (this.world && this.world.rockAt && this.world.rockAt(x, y, 10)) continue;
+      const d = Math.hypot(x - e.x, y - e.y), score = Math.abs(d - R) + (y < e.y ? 300 : 0);
+      if (!best || score < best.score) best = { x, y, score };
+    }
+    if (!best) { const x = clamp(e.x + (e.x > 2500 ? -R : R), 20, 4980); best = { x, y: Math.max(SAFE_DEPTH + 30, Math.min(e.y + 200, this.world ? this.world.floorAt(x) - 20 : 3900)) }; }
+    this.x = best.x; this.y = best.y; this.vx = this.vy = 0; this.roamX = best.x; this.roamY = best.y; this.roamT = 0;
+    this.dist = Math.hypot(this.x - e.x, this.y - e.y); this.hunt = null; this.ap = null; this.slip = null;
+  }
   goAway(fx, fy, bandLo, T = null) {
     if (this.ap) this.ap.phase = null;
     const side = Math.sign(this.x - fx) || (this.rng() < 0.5 ? -1 : 1);

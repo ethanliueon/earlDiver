@@ -1339,6 +1339,9 @@ export class Renderer {
     // Silverstorm is six oversized whipnose anglers whose lures light the water. When it ends the school swims off
     if (g.mode === 'play' && g.shoalFx) { const F = g.shoalFx, e = g.earl, m = e.inSub ? g.sub : e, fade = Math.min(1, F.t / 0.15), out = Math.max(0, F.t - F.dur), outK = Math.min(1, out / 3.5), n = [0, 16, 28, 6][F.lv], big = F.lv >= 3, now = g.time, dt = Math.min(0.05, Math.max(0, now - (F.rt ?? now))); F.rt = now;
       if (F.cx == null) { const side = -(e.facing || 1); F.cx = m.x + side * (this.W / 2 / ppm + 4); F.cy = m.y + 1.5; F.vx = -side * 9; F.vy = -0.4; F.hd = Math.atan2(0, F.vx); } /* (7.6.19, owner) the school rushes in from off the screen behind him, never appearing out of nowhere */
+      // (7.7.2, owner) when he shoots off (a squid's jet, a dash) the school is carried along with him, not flung after him:
+      // whatever part of his move is faster than a fish can swim (4 m/s) moves the whole school with him
+      { const mx = m.x, my = m.y; if (F.mx != null && dt > 0) { const ddx = mx - F.mx, ddy = my - F.my, sp0 = Math.hypot(ddx, ddy) / dt; if (sp0 > 4) { const k = (sp0 - 4) / sp0, cx = ddx * k, cy = ddy * k; F.cx += cx; F.cy += cy; if (F.fishN) for (const f of F.fishN) { f.x += cx; f.y += cy; } } } F.mx = mx; F.my = my; }
       const orb = (e.inSub ? 5.5 : 2.4) * (1 + F.lv * 0.1), th = F.t * 0.33 + Math.sin(F.t * 0.21) * 1.2, tx = m.x + Math.cos(th) * orb * 1.3, ty = m.y + Math.sin(th) * orb * 0.45 - 0.4;
       F.vx += ((tx - F.cx) * 2.6 - F.vx * 1.5) * dt; F.vy += ((ty - F.cy) * 2.6 - F.vy * 1.5) * dt; F.cx += F.vx * dt; F.cy += F.vy * dt;
       const want = Math.atan2(F.vy * 0.6, F.vx), dh = Math.atan2(Math.sin(want - F.hd), Math.cos(want - F.hd)); F.hd += dh * Math.min(1, dt * 3); const turn = Math.min(1, Math.abs(dh) * 2.2);
@@ -1364,9 +1367,11 @@ export class Renderer {
         for (const o of FF) { if (o === f) continue; const dx = f.x - o.x, dy = f.y - o.y, d2 = dx * dx + dy * dy; if (d2 < sep * sep && d2 > 1e-6) { const d = Math.sqrt(d2), k = (sep - d) / sep * 6; ax += dx / d * k; ay += dy / d * k; } }
         f.vx += ax * dt; f.vy += ay * dt; const spd = Math.hypot(f.vx, f.vy), mx2 = Math.max(Math.hypot(F.vx, F.vy) * 1.6 + 1.2, ringK * (thr ? 7 : 3.2)); if (spd > mx2) { f.vx *= mx2 / spd; f.vy *= mx2 / spd; } f.x += f.vx * dt; f.y += f.vy * dt; }
       ctx.save(); for (const f of FF) { const x = S(f.x), y = Sy(f.y), fh = Math.atan2(f.vy * 0.7, f.vx), right = Math.cos(fh) >= 0, angf = clamp(Math.atan2(Math.sin(fh), Math.abs(Math.cos(fh))), -0.6, 0.6);
-          if (big) { const lb = 0.75 + 0.25 * Math.sin(F.t * 2.1 + f.ph * 3); glowPts.push([x + (right ? 1 : -1) * Lp * 0.55, y - Lp * 0.32, '#f2dca6', ppm * 3.4, 0.9 * fade * (1 - outK) * lb, Math.max(1.2, ppm * 0.09)]); } // (7.6.32, owner) each angler's lure lights the water round it
-          ctx.save(); ctx.translate(x, y); ctx.globalAlpha = fade * (1 - outK); if (right) { ctx.rotate(angf); ctx.scale(-1, 1); } else ctx.rotate(-angf); drawSpecies(ctx, sp, Lp * f.sz, F.t * 4 + f.ph, 1, f.ph); ctx.restore();
-          const fl = turn * (0.5 + 0.5 * Math.sin(f.ph * 3 + F.t * 5)); if (fl > 0.35) { ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = fade * Math.min(1, (fl - 0.35) * 2.5); const fg = ctx.createRadialGradient(x, y, 0, x, y, Lp * 0.45); fg.addColorStop(0, 'rgba(236,244,244,0.85)'); fg.addColorStop(1, 'rgba(236,244,244,0)'); ctx.fillStyle = fg; ctx.beginPath(); ctx.ellipse(x, y, Lp * 0.45, Lp * 0.16, -fh, 0, TAU); ctx.fill(); ctx.restore(); } }
+          ctx.save(); ctx.translate(x, y); ctx.globalAlpha = fade * (1 - outK); if (right) { ctx.rotate(angf); ctx.scale(-1, 1); } else ctx.rotate(-angf); const org = drawSpecies(ctx, sp, Lp * f.sz, F.t * 4 + f.ph, 1, f.ph); ctx.restore();
+          // (7.7.2, owner) an angler's light is its own lure, where the drawing puts it: small and dim (no second bead beside it)
+          if (big && Array.isArray(org)) { const lb = 0.75 + 0.25 * Math.sin(F.t * 2.1 + f.ph * 3), a2 = right ? angf : -angf, cr = Math.cos(a2), sr = Math.sin(a2), Ld2 = Lp * f.sz;
+            for (const [lx0, ly, sz = 1] of org) { const lx = right ? -lx0 : lx0, rx = lx * cr - ly * sr, ry = lx * sr + ly * cr; glowPts.push([x + rx, y + ry, '#cfe6dc', Math.max(2, (Ld2 * 0.08 + ppm * 0.25) * sz), 0.55 * fade * (1 - outK) * lb, Math.max(0.7, (Ld2 * 0.012 + 0.4) * sz)]); } }
+          const fl = big ? 0 : turn * (0.5 + 0.5 * Math.sin(f.ph * 3 + F.t * 5)); if (fl > 0.35) { /* (7.7.2, owner) the flash of scales as a school turns is for silver fish; anglers have none */ ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = fade * Math.min(1, (fl - 0.35) * 2.5); const fg = ctx.createRadialGradient(x, y, 0, x, y, Lp * 0.45); fg.addColorStop(0, 'rgba(236,244,244,0.85)'); fg.addColorStop(1, 'rgba(236,244,244,0)'); ctx.fillStyle = fg; ctx.beginPath(); ctx.ellipse(x, y, Lp * 0.45, Lp * 0.16, -fh, 0, TAU); ctx.fill(); ctx.restore(); } }
       ctx.restore(); }
     // ================= LIGHTING =================
     // (3.0.26) a cap on the living lights a frame: those off screen dropped, and past 90 the small ones thinned
@@ -1388,7 +1393,7 @@ export class Renderer {
       const wash = ctx.createRadialGradient(bx, by, 0, bx, by, Rb * 0.75); wash.addColorStop(0, `rgba(255,238,210,${((0.1 + 0.22 * pul) * fl).toFixed(3)})`); wash.addColorStop(0.6, `rgba(255,232,200,${((0.05 + 0.12 * pul) * fl).toFixed(3)})`); wash.addColorStop(1, 'rgba(255,232,200,0)');
       ctx.fillStyle = wash; ctx.fillRect(0, 0, W, H);
       // (7.6.31, owner) the old beams kept (owner: a light, not a beam of light); Pharos Heart's only for its first 10 s (g.beamK)
-      if (bK > 0.01) for (const off of [0, Math.PI]) { const a2 = rot + off, gb = ctx.createRadialGradient(bx, by, 0, bx, by, Rb); gb.addColorStop(0, `rgba(255,240,214,${((0.12 + 0.1 * pul) * fl * bK).toFixed(3)})`); gb.addColorStop(0.55, `rgba(255,236,206,${((0.06 + 0.05 * pul) * fl * bK).toFixed(3)})`); gb.addColorStop(1, 'rgba(255,236,206,0)');
+      if (bK > 0.01) for (const off of (g.abilLight >= 3 ? [0, TAU / 3, TAU * 2 / 3] : [0, Math.PI])) { /* (7.7.2) Pharos Heart's three beams, as its card says */ const a2 = rot + off, gb = ctx.createRadialGradient(bx, by, 0, bx, by, Rb); gb.addColorStop(0, `rgba(255,240,214,${((0.12 + 0.1 * pul) * fl * bK).toFixed(3)})`); gb.addColorStop(0.55, `rgba(255,236,206,${((0.06 + 0.05 * pul) * fl * bK).toFixed(3)})`); gb.addColorStop(1, 'rgba(255,236,206,0)');
         ctx.fillStyle = gb; for (const [w, al] of [[0.38, 0.22], [0.31, 0.28], [0.24, 0.32], [0.17, 0.36], [0.1, 0.4]]) { ctx.globalAlpha = al; ctx.beginPath(); ctx.moveTo(bx, by); ctx.arc(bx, by, Rb, a2 - w, a2 + w); ctx.closePath(); ctx.fill(); } ctx.globalAlpha = 1; } // five widths laid over each other: a beam with soft edges, brightest down its middle
       ctx.restore(); ctx.globalCompositeOperation = 'lighter'; }
     if (!(this.skip && this.skip.light)) this.drawDeepRim(g, S, Sy, ppm); // (7.0.2) the deep's shapes, after the dark
@@ -1907,9 +1912,16 @@ export class Renderer {
     // heartbeat, until only a small circle round him is left
     // (5.9.3) on a phone the colour drains too, but by the browser's own filter on the game's canvas (done on the GPU when
     // it composites the page), in steps of 5%, instead of a 'saturation' fill over every pixel (too slow on an iPhone)
-    if (this.phone) {
-      const want = g.noAir && g.mode === 'play' ? Math.round((1 - 0.85 * clamp(g.noAir / 15, 0, 1)) * 20) / 20 : 1;
-      if (want !== (this.satNow ?? 1)) { this.satNow = want; this.c.style.filter = want < 1 ? `saturate(${want})` : ''; }
+    // (7.7.2, owner) the thing's red is done the same way, on every screen: the picture recoloured red (sepia, turned
+    // to red and deepened), a little dimmer; black stays black, and only what is lit shows the red
+    {
+      const want = this.phone && g.noAir && g.mode === 'play' ? Math.round((1 - 0.85 * clamp(g.noAir / 15, 0, 1)) * 20) / 20 : 1;
+      const red = g.mode === 'menu' ? 0 : Math.round(clamp(fx.redTint || 0, 0, 1) * 20) / 20;
+      const key = want + ':' + red;
+      if (key !== this.filtKey) { this.filtKey = key; const f = [];
+        if (red > 0) f.push(`sepia(${Math.min(1, 1.5 * red).toFixed(2)})`, `hue-rotate(${(-40 * Math.min(1, 1.5 * red)).toFixed(0)}deg)`, `saturate(${(1 + 3.2 * red).toFixed(2)})`, `brightness(${(1 - 0.08 * red).toFixed(2)})`);
+        if (want < 1) f.push(`saturate(${want})`);
+        this.filterExtra = f.join(' '); } // main.js puts it on the canvas, with the dread grade and the wake's blur (one writer)
     }
     if (g.noAir && g.mode === 'play') {
       const k = clamp(g.noAir / 15, 0, 1), hb = Math.pow(Math.max(0, Math.sin(g.time * Math.PI * (1.6 - 0.8 * k))), 6);
@@ -1927,13 +1939,9 @@ export class Renderer {
       // too dark), and everything already drawn pulled toward red first: skill light, beams, motes and lamps no longer
       // stay white over red water, they are reddened and dimmed with it, more the deeper the red
       const k = fx.redTint, cx = this.W / 2, cy = this.H / 2;
-      ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.globalCompositeOperation = 'multiply';
-      ctx.fillStyle = `rgba(255,96,84,${(0.6 * k).toFixed(3)})`; ctx.fillRect(0, 0, this.W, this.H);
-      ctx.globalCompositeOperation = 'screen';
-      const rg = ctx.createRadialGradient(cx, cy, Math.min(this.W, this.H) * 0.1, cx, cy, Math.max(this.W, this.H) * 0.75);
-      rg.addColorStop(0, `rgba(110,4,10,${(0.42 * k).toFixed(3)})`); rg.addColorStop(1, `rgba(150,6,12,${(0.62 * k).toFixed(3)})`);
-      ctx.fillStyle = rg; ctx.fillRect(0, 0, this.W, this.H);
-      ctx.restore();
+      // (7.7.2, owner) a tint in the water, never a light: only multiplied, so black water stays black and only what is
+      // lit (lamps, the shallows, every fish's own light) turns red, a little dimmer. Nothing is added over the dark
+      void cx; void cy; void k; // (the recolouring itself is the canvas's filter, set with the drowning's below)
     }
     // (7.6.7, owner) the burst that opens every skill: no drawn circle but a lens rolling out from him. In a band round
     // its front the water is magnified, as through thick glass (the frame already drawn, copied and scaled up about him,
@@ -2255,7 +2263,7 @@ export class Renderer {
   lampAngle(g, e, head) {
     const natural = e.facing > 0 ? e.angle + head.beamA : Math.PI - e.angle - head.beamA;
     // (7.4.26, owner) the lamp turned by the right hand: eased toward where the finger is, never behind him
-    if (g.aim == null && (g.lampK || 0) > 0.001 && g.lampA != null) { const fwd = e.facing > 0 ? 0 : Math.PI; let d = ((g.lampA - fwd + Math.PI * 3) % (Math.PI * 2)) - Math.PI; d = e.facing > 0 ? clamp(d, -Math.PI / 2, 0.7) : clamp(d, -0.7, Math.PI / 2); /* (7.5.0, owner) from straight up to just below the net's angle, never behind him */ const want = fwd + d; let dd = ((want - natural + Math.PI * 3) % (Math.PI * 2)) - Math.PI; return natural + dd * g.lampK; }
+    if (g.aim == null && (g.lampK || 0) > 0.001 && g.lampA != null) { const fwd = e.facing > 0 ? 0 : Math.PI; let d = ((g.lampA - fwd + Math.PI * 3) % (Math.PI * 2)) - Math.PI; d = clamp(d, -Math.PI / 2, Math.PI / 2); /* (7.7.2, owner) the whole half in front of him, straight up to straight down: the finger reaches below where the lamp rests when let go */ /* (7.5.0, owner) from straight up to just below the net's angle, never behind him */ const want = fwd + d; let dd = ((want - natural + Math.PI * 3) % (Math.PI * 2)) - Math.PI; return natural + dd * g.lampK; }
     if (g.aim == null) return natural;
     let a = g.aim;
     const fwd = e.facing > 0 ? 0 : Math.PI;
@@ -3328,12 +3336,17 @@ export class Renderer {
     // the canyon's current: silt streaming down and out toward the deep
     const cx = (CANYON.x0 + CANYON.x1) / 2;
     if (inView(cx, this.cam.y, 80) && this.cam.y > CANYON.top - 40) {
-      ctx.save(); ctx.strokeStyle = 'rgba(170,160,130,0.16)'; ctx.lineWidth = 1;
-      for (let k = 0; k < 70; k++) {
-        const q = (t * 0.05 + k * 0.6180339) % 1;
-        const x = CANYON.x1 - q * (CANYON.x1 - CANYON.x0), y = this.cam.y - this.cam.h / 2 + ((k * 0.381966 + q * 0.12) % 1) * this.cam.h;
+      // (7.7.2, owner) silt, not lines: each a fine grain with a short tail fading behind it, wobbling as it drifts, and
+      // seen only where there is light (the long even strokes of before read as streaks on the screen)
+      ctx.save(); ctx.lineCap = 'round';
+      for (let k = 0; k < 46; k++) {
+        const q = (t * 0.05 * (0.7 + (k * 0.137) % 0.6) + k * 0.6180339) % 1;
+        const x = CANYON.x1 - q * (CANYON.x1 - CANYON.x0), y = this.cam.y - this.cam.h / 2 + ((k * 0.381966 + q * 0.12) % 1) * this.cam.h + Math.sin(t * 0.7 + k) * 0.25;
         if (y < CANYON.top || y > W.floorAt(x) - 1) continue;
-        ctx.beginPath(); ctx.moveTo(S(x), Sy(y)); ctx.lineTo(S(x + 1.4), Sy(y - 0.4)); ctx.stroke();
+        const lit = this.litAt ? this.litAt(x, y) : 1; if (lit < 0.08) continue;
+        const a = Math.min(1, lit) * Math.min(1, q * 8, (1 - q) * 8), X = S(x), Y = Sy(y), tl = 0.35 * ppm, ty = -0.1 * ppm;
+        const gr = ctx.createLinearGradient(X, Y, X + tl, Y + ty); gr.addColorStop(0, `rgba(196,186,156,${(0.22 * a).toFixed(3)})`); gr.addColorStop(1, 'rgba(196,186,156,0)');
+        ctx.strokeStyle = gr; ctx.lineWidth = Math.max(1, 0.035 * ppm); ctx.beginPath(); ctx.moveTo(X, Y); ctx.lineTo(X + tl, Y + ty); ctx.stroke();
       }
       ctx.restore();
     }
@@ -3676,7 +3689,7 @@ export class Renderer {
       const reach = clamp((260 - ent.dist) / 230, 0, 1); // how far across the screen the ink has come
       const x0 = cx + (ux / ul) * half, y0 = cy + (uy / ul) * half, x1 = cx - (ux / ul) * half, y1 = cy - (uy / ul) * half;
       const dg = l.createLinearGradient(x0, y0, x1, y1);
-      const a0 = 0.5 * reach * (fx.safeK ?? 1), front = 0.15 + reach * 0.5;
+      const a0 = 0.3 * reach * (fx.safeK ?? 1), front = 0.15 + reach * 0.5; /* (7.7.2, owner) dimmer, never black (was 0.5) */
       dg.addColorStop(0, `rgba(0,0,0,${a0.toFixed(3)})`);
       dg.addColorStop(Math.min(0.95, front * 0.6), `rgba(0,0,0,${(a0 * 0.75).toFixed(3)})`);
       dg.addColorStop(Math.min(0.99, front), 'rgba(0,0,0,0)');
@@ -3723,7 +3736,7 @@ export class Renderer {
     };
     const e = g.earl;
     const beamCol = mixRgb(BEAM_CALM, BEAM_DREAD, fx.torchShift);
-    const flick = (fx.torchShift > 0.6 ? (Math.random() < 0.06 ? 0.3 : 1) : 1) * fx.lightPulse * (1 - 0.5 * (g.entDark || 0)) * ((g.entDark || 0) > 0.15 && Math.random() < 0.1 * g.entDark ? 0.45 : 1); // (5.16.0) weaker and flickering as its dark comes
+    const flick = (fx.torchShift > 0.6 ? (Math.random() < 0.06 ? 0.3 : 1) : 1) * fx.lightPulse * (1 - 0.25 * (g.entDark || 0)) * ((g.entDark || 0) > 0.15 && Math.random() < 0.1 * g.entDark ? 0.45 : 1); // (5.16.0) weaker and flickering as its dark comes
     if (head && e.lampOn) {
       const ang = this.lampAngle(g, e, head);
       cone(head.x, head.y, ang, 17 * ppm * (e.nightSet ? 1.5 : 1), 0.32 * (e.nightSet ? 1.2 : 1), beamCol, 0.95 * TORCH * flick); // (the Night Shift set: half as far again)

@@ -93,13 +93,13 @@ html body :is(#settings, #inventory) .set-row { font: 18px var(--o-text) !import
 
 /* ---- the one "press me": cream deck paint on a raised plate; everything else a raised olive plate */
 html body :is(#pause button:not(.gear-btn):not(.link), #confirm button, .shop button.primary, .shop .yd-plaque, #quests button[data-q]:not(.qs-info), #quests .qs-buy, #quests .qs-refresh, #chart .ce-btns button, /* (6.9.1) the chart's buttons too: no brass gold */
-  #title #continue, #title #play, .gl-lights button, .gl-catch .gl-room, #inventory .lk-acts button, .shop .shop-tabs button, #workshop .yd-tab, #inventory .inv-tabs button,
+  #title #continue, #title #play, .gl-lights button, .gl-catch .gl-room, #inventory .lk-acts button, #revive .rv-sacts button, .shop .shop-tabs button, #workshop .yd-tab, #inventory .inv-tabs button,
   .shop button[data-act="buy"]:not(.primary):not(.warn), .shop button[data-act="refresh"]:not(.primary), #workshop button.yd-price, .pay-tag, #trapset .ts-btn) {
   border: 12px solid transparent !important; border-radius: 0 !important; border-image: var(--o-btn) 28 fill / 12px stretch !important;
   background: none !important; box-shadow: none !important; clip-path: none !important; transform: none !important; filter: none !important;
   min-height: 44px; height: auto !important; padding: 0 12px 2px !important; cursor: pointer;
   font: 500 17px/1 var(--o-text) !important; letter-spacing: 0.01em !important; text-transform: none !important; color: var(--o-cream) !important; text-shadow: 0 1px 0 rgba(0, 0, 0, 0.5) !important; }
-html body :is(#pause #resume, #confirm .cf-yes, .shop button.primary, #quests button[data-q^="claim"], #quests .qs-buy, #chart .ce-btns .ce-save, #title #continue, #title #play, .gl-catch .gl-room, #inventory .lk-acts button:first-child:not(.sell),
+html body :is(#pause #resume, #confirm .cf-yes, .shop button.primary, #quests button[data-q^="claim"], #quests .qs-buy, #chart .ce-btns .ce-save, #title #continue, #title #play, .gl-catch .gl-room, #inventory .lk-acts button:first-child:not(.sell):not(.slotb), #inventory .lk-acts button.slotb.taken, #revive .rv-sacts button[data-rvs="more"],
   .shop button[data-act="buy"]:not(.primary):not(.warn), #workshop button.yd-price, .pay-tag, .gl-lights button.on, .shop .shop-tabs button.on, #inventory .inv-tabs button.on, #trapset .ts-btn.primary) {
   border-image-source: var(--o-btn1) !important; color: var(--o-ink) !important; text-shadow: 0 1px 0 rgba(255, 250, 230, 0.4) !important; }
 html body :is(#pause button, #confirm button, .shop button, #quests button, #title button, .gl-lights button, .gl-catch button, #inventory .lk-acts button, #inventory .inv-tabs button, .pay-tag, #trapset .ts-btn):hover:not(:disabled) { filter: brightness(1.08) !important; }
@@ -2241,6 +2241,7 @@ html body #inventory .ip-col .ld-btns button { font: 600 13px 'Barlow Semi Conde
 html body #inventory .ip-col .ld-btns button.ld-off { opacity: 0.5; filter: saturate(0.4); }
 html body #inventory .ip-col .ld-pad { display: inline-block; width: 11px; height: 13px; background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 26 30'%3E%3Cpath d='M7 13V9a6 6 0 0 1 12 0v4' fill='none' stroke='%23c8c4b0' stroke-width='2.6'/%3E%3Crect x='3' y='13' width='20' height='15' rx='2' fill='%23c8c4b0'/%3E%3Ccircle cx='13' cy='19.5' r='2.2' fill='%23222'/%3E%3Crect x='12' y='20' width='2' height='5' fill='%23222'/%3E%3C/svg%3E") center / contain no-repeat; opacity: 0.9; }
 html body #inventory .item-pop .lk-acts { display: flex; flex-wrap: nowrap; justify-content: center; align-items: center; gap: 10px; }
+html body #inventory .item-pop .lk-acts > button { white-space: nowrap; flex: 0 1 auto; min-width: 0; } /* (7.7.2, owner) a label never breaks over two lines */
 html body #inventory .item-pop .lk-acts .ld-row { display: none; }
 html body #inventory .ip-cols.one .ip-col:has(.ld-box) { height: auto; } /* (7.6.7) a worn scroll's card fits what it holds: no dead space */
 html body #inventory .ip-col:has(.ld-box) .ic-line { height: auto; min-height: 36px; }
@@ -2460,3 +2461,13 @@ html body #title .t-back:not(#_a):not(#_b):not(#_c) { left: 44px; top: 24px; pad
   font: 700 21px var(--o-title) !important; letter-spacing: 0.16em; text-shadow: 0 1px 2px rgba(0, 0, 0, 0.9), 0 0 10px rgba(0, 0, 0, 0.6); }
 html body #title .t-back:not(#_a):not(#_b):not(#_c):active { transform: translateY(1px); opacity: 0.8; }
 html body #title .t-gear:not(#_a):not(#_b):not(#_c) { right: 44px !important; top: 22px !important; width: 56px !important; height: 56px !important; background-size: 100% 100% !important; }
+
+/* (7.7.2, owner) a revive with too few pearls: a small card over it, No thanks / Get more; the pearl shop opens above the revive */
+#revive .rv-short { position: absolute; inset: -26px; display: grid; place-items: center; background: rgba(2, 3, 3, 0.6); z-index: 3; }
+#revive .rv-sbox { width: min(420px, 80vw); box-sizing: border-box; border: 22px solid transparent; border-image: url("../assets/ui/olive/panel.png") 60 fill / 22px stretch; text-align: center; color: #e6dcc0; }
+#revive .rv-sbox h5 { margin: 0 0 8px; font: 600 22px var(--o-text, "Barlow Semi Condensed", sans-serif); color: #efe6cc; }
+#revive .rv-sbox p { margin: 0 0 14px; font: 500 16px var(--o-text, "Barlow Semi Condensed", sans-serif); color: #cfc5ab; }
+#revive .rv-sbox p .rv-pearl { width: 16px; height: 16px; vertical-align: -3px; margin: 0 2px; }
+#revive .rv-sacts { display: flex; gap: 12px; justify-content: center; }
+#revive .rv-sacts button { min-width: 130px; }
+body:has(#revive:not([hidden])) #store:not([hidden]) { z-index: 85 !important; }

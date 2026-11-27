@@ -419,7 +419,8 @@ export class UI {
       + (o.list.length > 6 ? `<div class="rv-more">+${o.list.length - 6} more</div>` : '');
     // (7.3.9, owner) a revive costs fifty pearls: the pearl and the figure on the button; greyed when he has fewer
     const pc = o.pearls || 100, have = Math.floor((this.h.getProfile && this.h.getProfile().pearls) || 0), enough = have >= pc;
-    const way = `<button class="rv-go${enough ? '' : ' short'}" data-rv="${enough ? 'pearls' : 'short'}"${enough ? '' : ' disabled'}>Revive <span class="rv-price"><img class="rv-pearl" src="assets/ui/icons/pearl.png" alt="">${pc}</span></button>`;
+    // (7.7.2, owner) never greyed: with too few pearls a press says so, and offers the pearl shop
+    const way = `<button class="rv-go" data-rv="pearls">Revive <span class="rv-price"><img class="rv-pearl" src="assets/ui/icons/pearl.png" alt="">${pc}</span></button>`;
     el.innerHTML = `<div class="rv-box"><p class="rv-cause">${o.cause}</p>${heart}<h4>Revive</h4>
       <div class="rv-list">${rows}</div>
       <p class="rv-haul"><span>Haul</span><b>${money(o.value)}</b></p>
@@ -427,7 +428,14 @@ export class UI {
     el.hidden = false;
     let busy = false;
     el.onclick = (ev) => {
-      if (busy) return; const b2 = ev.target.closest('[data-rv]'); if (!b2) return; busy = true; const how = b2.dataset.rv;
+      if (busy) return;
+      if (ev.target.closest('[data-rvs="no"]')) { const m = el.querySelector('.rv-short'); if (m) m.remove(); return; }
+      if (ev.target.closest('[data-rvs="more"]')) { const m = el.querySelector('.rv-short'); if (m) m.remove(); this.toggleStore(true); this.storeTab = 'pearls'; const st = $('store'); if (st && this.pearlPage) st.innerHTML = this.pearlPage(); return; }
+      const b2 = ev.target.closest('[data-rv]'); if (!b2) return;
+      if (b2.dataset.rv === 'pearls' && Math.floor((this.h.getProfile && this.h.getProfile().pearls) || 0) < pc) { // (7.7.2, owner) too few pearls: said, with the way to more
+        if (!el.querySelector('.rv-short')) el.querySelector('.rv-box').insertAdjacentHTML('beforeend', `<div class="rv-short"><div class="rv-sbox"><h5>Not enough pearls</h5><p>This revive needs <img class="rv-pearl" src="assets/ui/icons/pearl.png" alt="">${pc}; you have ${Math.floor((this.h.getProfile && this.h.getProfile().pearls) || 0)}.</p><div class="rv-sacts"><button data-rvs="no">No thanks</button><button data-rvs="more">Get more</button></div></div></div>`);
+        this.h.click && this.h.click(); return; }
+      busy = true; const how = b2.dataset.rv;
       if (how !== 'no') el.classList.add('wait');
       Promise.resolve(done(how)).finally(() => { el.hidden = true; el.classList.remove('wait'); });
     };
@@ -1563,6 +1571,8 @@ export class UI {
     const btn = (k, label) => top && n < mx ? `<button data-lk="${k}:${q.u}">${label}</button>` : `<button class="ld-off" data-lk="${n < mx ? 'loadlock' : 'loadfull-done'}:${q.u}">${n < mx ? '<i class="ld-pad"></i>' : ''}${label}</button>`;
     return `<div class="ld-box${n >= mx ? ' ld-full' : ''}" style="--full:${full.toFixed(2)}"><div class="ld-head"><span>Charges</span>${n < mx ? (this.h.getProfile && bagSlotOf(kitOf(this.h.getProfile()), q.u) ? `<small class="ld-next">Next ${fmtLeft(Math.ceil(nextCharge(q) / 1000))}</small>` : '<small class="ld-next">Recharges only when equipped</small>') : ''}<b>${n} / ${mx}</b></div><div class="ld-notches" style="grid-template-columns:repeat(${mx}, 1fr)">${Array.from({ length: mx }, (_, i) => `<i class="${i < n ? 'on' : ''}${i < n && i >= fresh ? ' fresh' : ''}" style="--i:${i - fresh}"></i>`).join('')}</div><div class="ld-btns lk-acts">${btn('load', `Load ${pl}${pr}`)}${btn('loadfull', `Fill ${pl}${pr * Math.max(1, mx - n)}`)}</div></div>`;
   }
+  // (7.7.2, owner) a slot button is white when that slot already holds a scroll; pressing it then asks first (main.js)
+  slotBtn(K, n, q, label) { const k = slotKey(K, n), taken = K.on[k] && K.on[k] !== q.u; return `<button class="slotb${taken ? ' taken' : ''}" data-lk="slot:${n}:${q.u}">${label}</button>`; }
   chargeCol(P, q, head) { let c = this.itemCol(P, q, head); const it = ITEMS[q.id]; if (it && it.kind === 'ability') { const cut = c.lastIndexOf('</div>'); c = c.slice(0, cut) + this.chargeBox(q) + c.slice(cut); } return c; }
   // the pop-up: the thing on its own (if he has it on), or side by side with what he has on of that kind
   itemPop(P, g, free) {
@@ -1575,13 +1585,13 @@ export class UI {
     let body, acts = '';
     if (it.kind === 'chest') { // (6.4.0) a chest in the locker: its card, and Open (with room in the locker for all it can give)
       { const col = this.itemCol(P, q, 'Chest'), odds = chestOddsHtml(String(it.id).replace(/^chest_/, '')), cut = col.lastIndexOf('</div>'); body = `<div class="ip-cols one">${cut > 0 ? col.slice(0, cut) + odds + col.slice(cut) : col + odds}</div>`; } acts += `<button data-lk="open:${q.u}">Open</button>`; // (7.4.1, owner) its odds in the card's empty space
-      if (seller) acts += `<button class="sell" data-lk="sellgear:${q.u}">Sell, ${money(sellValue(q), false)}</button>`;
+      if (seller) acts += `<button class="sell" data-lk="sellgear:${q.u}">Sell ${money(sellValue(q), false)}</button>`;
       return `<div class="item-pop"><div class="ip-box r-${it.rarity}"><button class="ip-close" aria-label="Close">×</button>${body}<div class="lk-acts">${acts}</div></div></div>`;
     }
     if (on) {
       body = `<div class="ip-cols one">${this.chargeCol(P, q, 'You have it on')}</div>`;
       const starter = it.kind === 'net' ? null : FREE_IDS[it.kind]; // (6.9.1) a net unequipped leaves the hands empty, the hand net too
-      if (free && scr && !myth) for (const n of [1, 2, 3]) if (n !== bsl) acts += `<button data-lk="slot:${n}:${q.u}">${SLOT_NAME[n]}</button>`; // (7.6.71, owner) a worn scroll moves to another of the three slots (a Heart stays in the mythic slot)
+      if (free && scr && !myth) for (const n of [1, 2, 3]) if (n !== bsl) acts += this.slotBtn(K, n, q, SLOT_NAME[n]); // (7.6.71, owner) a worn scroll moves to another of the three slots (a Heart stays in the mythic slot)
       if (free && !(starter && q.id === starter)) acts += `<button data-lk="off:${scr ? slotKey(K, bsl || 1) : it.kind}">Unequip${starter ? ` <small>(${ITEMS[starter].name} back on)</small>` : ''}</button>`;
     } else {
       // the numbers, a row each: his now, this one, which is better
@@ -1598,9 +1608,9 @@ export class UI {
       body = `<div class="ip-cols">${cur ? this.chargeCol(P, curQ, 'Equipped') : `<div class="ip-col empty"><h5>Equipped</h5><p>Nothing in that slot.</p></div>`}<div class="ip-arrow">→</div>${this.chargeCol(P, q, 'Selected')}</div>`
         + (rows ? `<table class="ip-vs"><thead><tr><th></th><td>${cur ? cur.name : '—'}</td><td>${it.name}</td></tr></thead><tbody>${rows}</tbody></table>` : '');
       if (free && !scr) acts += `<button data-lk="on:${q.u}">Put it on</button>`;
-      if (free && scr) for (const n of myth ? [1] : [1, 2, 3]) acts += `<button data-lk="slot:${n}:${q.u}">${myth ? 'Equip' : SLOT_NAME[n]}</button>`; // (7.6.71, owner) a scroll into one of the three slots; a Heart only into the mythic slot
+      if (free && scr) for (const n of myth ? [1] : [1, 2, 3]) acts += this.slotBtn(K, n, q, myth ? 'Equip' : SLOT_NAME[n]); // (7.6.71, owner) a scroll into one of the three slots; a Heart only into the mythic slot
       // (7.4.11, owner) three of the same scroll at the same rarity, none of them on: they combine into one of the next rarity
-      if (seller) acts += it.kind === 'ability' ? `<button class="sell" data-lk="sellscroll:${q.u}">Sell, <img class="st-pearl" src="assets/ui/icons/pearl.png" alt="">${scrollSellPearls(q.id).toLocaleString('en-US')}</button>` /* (7.6.2, owner) scrolls sell for pearls */ : `<button class="sell" data-lk="sellgear:${q.u}">Sell, ${money(sellValue(q), false)}</button>`;
+      if (seller) acts += it.kind === 'ability' ? `<button class="sell" data-lk="sellscroll:${q.u}">Sell <img class="st-pearl" src="assets/ui/icons/pearl.png" alt="">${scrollSellPearls(q.id).toLocaleString('en-US')}</button>` /* (7.6.2, owner) scrolls sell for pearls */ : `<button class="sell" data-lk="sellgear:${q.u}">Sell ${money(sellValue(q), false)}</button>`;
       else acts += '<small>Sell it on the Margaret, at the station, or to Dave.</small>';
     }
     // (7.6.3, owner) charges: a notch for each one loaded, then Load (one) and Load full, priced in pearls; only at the surface

@@ -32,7 +32,7 @@ import { DAVE_FINDS, DAVE_RATE } from './dave.js';
 import { STATION_COLLAR } from './station_draw.js';
 import { oldStock, overTable, leftOf, nearLure } from './oldone.js';
 import { CHESTS } from './chests.js';
-import { giveRolled, wornInst, putOn2, equipScroll, slotKey, bagSlotOf, fixMythSlot, SLOT_HOOK } from './items.js';
+import { giveRolled, wornInst, putOn2, equipScroll, slotKey, bagSlotOf, fixMythSlot, SLOT_HOOK, SLOT_KEYS } from './items.js';
 // (7.6.71) when two skill slots trade scrolls, their running states trade too
 SLOT_HOOK.trade = (m, n) => { if (!g) return; const a = m === 1 ? 'abil' : 'abil' + m, b = 'abil' + n; [g[a], g[b]] = [g[b] || null, g[a] || null]; if (!g.abil) g.abil = { activeT: 0, maxT: 0, def: null, charges: null, fx: 0 }; };
 import { abilityOf, abilityState, whyNot, ALL_ABILITIES, cooldownLeft, minLeft, MIN_CD, skipCost, fmtLeft, MYTH, NEXT_TIER, maxLoad, chargePrice, growCharges, withSlot, slotNow } from './abilities.js';
@@ -1021,7 +1021,15 @@ function buy(kind) {
       if (P.wish === it.id) P.wish = null;
     }
   } else if (kind.startsWith('slot:')) { // (7.6.71, owner) a scroll into skill slot n (1 the mythic slot, 2, 3); worn elsewhere, it moves
-    const [, n, u] = kind.split(':'), r = equipScroll(P, u, +n);
+    const [, n, u, sure] = kind.split(':');
+    { // (7.7.2, owner) that slot already holds a scroll: asked first, replace (or swap, when this one is worn in another slot)
+      const K = kitOf(P), q = instOf(P, u), there = K.on[slotKey(K, +n)], tq = there && there !== u && instOf(P, there);
+      if (!sure && q && tq && ITEMS[q.id] && ITEMS[tq.id]) { const a = ITEMS[q.id], b = ITEMS[tq.id], m = bagSlotOf(K, u), SN = (k) => 'Ability ' + k;
+        const also = m ? null : SLOT_KEYS.map((k2) => K.on[k2] && K.on[k2] !== there && instOf(P, K.on[k2])).find((o) => o && ITEMS[o.id] && ITEMS[o.id].fam === a.fam);
+        if (m) ui.confirm(`Swap ${b.name} and ${a.name}?`, `${a.name} goes into ${SN(n)}, ${b.name} into ${SN(m)}.`, 'Swap', 'Cancel', () => { buy(`slot:${n}:${u}:ok`); ui.renderInventory && ui.renderInventory(); });
+        else ui.confirm(`Replace ${b.name}?`, `${a.name} goes into ${SN(n)}; ${b.name} goes back to the locker.` + (also ? ` ${ITEMS[also.id].name} comes off too: one scroll of a family at a time.` : ''), 'Replace', 'Cancel', () => { buy(`slot:${n}:${u}:ok`); ui.renderInventory && ui.renderInventory(); });
+        return false; } }
+    const r = equipScroll(P, u, +n);
     if (r === 'mythic') { hud.toast("Can't put it there: a mythical skill only goes in Ability 1", 'warn'); return false; }
     if (r !== 'ok') return false; ok = true; normAbil(); saveProfile(P);
   } else if (kind.startsWith('moveslot:')) { // (7.6.36, owner) a worn scroll to the bag's other slot. (7.6.48, owner) slot 1 alone takes a Heart
@@ -1807,7 +1815,7 @@ function placeOnDeck(dt) {
 // beside it again. The nearest under the finger wins, with a generous reach for small ones
 function tapFish(x, y) {
   if (!g || g.mode !== 'play' || g.aboard || !g.fauna || !renderer.cam || g.kill) return false;
-  const e = g.earl, cm = renderer.cam, kk = innerWidth / renderer.c.width, M = e.inSub ? g.sub : e, reach = e.inSub ? 7 : 3.5;
+  const e = g.earl, cm = renderer.cam, kk = innerWidth / renderer.c.width, M = e.inSub ? g.sub : e, reach = e.inSub ? 14 : 9; /* (7.7.2, owner) any fish he can see near him, not only one at arm's length (was 3.5 m) */
   const sx = (wx) => ((wx - cm.x) * cm.ppm + renderer.c.width / 2) * kk, sy = (wy) => ((wy - cm.y) * cm.ppm + renderer.c.height / 2) * kk, fing = 34 * (window.__fingerK || 1);
   const lit = (wx, wy) => Math.max(1 - wy / 300, renderer.litAt ? renderer.litAt(wx, wy) : 1) > 0.3;
   let best = null, bd = Infinity;
@@ -1891,7 +1899,7 @@ function promptFor(t) {
     else if (t.kind === 'kelp') p = 'F  Cut a kelp blade';
     else if (t.kind === 'creature' && t.c && t.c.pet) p = `${t.c.pet.name || 'Your ' + t.sp.name.toLowerCase()}${t.c.pet.famous ? ' ★' : ''} · released here, from your aquarium`;
     else if (t.kind === 'guardian') p = 'F  Guardian jellyfish';
-    else if (t.kind === 'creature') { p = g.journal.has(t.sp.id) ? `${t.sp.name}` : 'F  Observe'; if (g.journal.has(t.sp.id)) { const R = rarityOf(t.sp); g.promptName = { text: t.sp.name, col: R ? R.col : null, legend: !!(R && R.id === 'legendary') || LEGENDARY.has(t.sp.id) }; } } // (4.12.0) its name in its rarity's colour
+    else if (t.kind === 'creature') { p = g.journal.has(t.sp.id) ? null : 'F  Observe'; /* (7.7.2, owner) a known fish's name is not put up for being near it */ } // (4.12.0) its name in its rarity's colour
   }
   { const pi = !e.inSub && !g.sub.imploded ? patchNear() : -1; g.repairNear = pi >= 0; // a damaged patch within reach: hold R (the hand becomes the spanner, hud.js)
     if (pi >= 0) p = g.repair && g.repair.i === pi ? (g.promptBar = g.repair.t / REPAIR_TIME, 'Repairing') : (p ? p + '   ·   ' : '') + 'Hold R  Repair';
@@ -2251,7 +2259,7 @@ function revive(kind) {
   e.o2 = e.o2Max * 0.3; g.noAir = 0; g.injury = 0; g.kill = null; e.vx = e.vy = 0;
   const safe = (e.pressStart || 300) - 5; if (e.y > safe) e.y = Math.max(2, safe); // not straight back under the pressure that killed him
   if (sub.imploded || kind === 'implode') { sub.imploded = false; g.imploded = false; sub.failing = null; sub.hull = 1; sub.docked = false; sub.x = clamp(e.x + 9, 6, 4994); sub.y = Math.max(2, Math.min(e.y, g.world.floorAt(sub.x) - 3)); }
-  if (ent) { ent.faceLock = null; ent.hunt = null; ent.ap = null; ent.slip = null; if (ent.goAway) ent.goAway(e.x, e.y, ent.band(g)[0], 20); } // it draws off for a while; the mark stays
+  if (ent) { ent.faceLock = null; ent.placeFar(e, 1000); if (ent.goAway) ent.goAway(e.x, e.y, ent.band(g)[0], 30); } // (7.7.2, owner) it is gone from beside him: back at the radar's edge, 1,000 m off and below, and it keeps off a while; the mark stays
   g.rebirthT = 3; g.wake = { t: 0, eaten: false, plain: true }; ui.closeAll && ui.closeAll(); audio.ready && audio.drop && audio.drop();
 }
 function die(cause, kind = 'normal', declined = false) {
@@ -2388,7 +2396,7 @@ function useAbility() {
   if (A.revel) g.revelFx = { t: 0, lv: A.revel, dur: A.dur };
   if (A.echo) { g.echoT = A.dur; g.echoLv = A.echo; g.echoAt = g.time; g.echoSweep = 0; const m0 = g.earl.inSub ? g.sub : g.earl, sh = [0.4, 0.6, 0.8, 1][Math.min(4, A.echo) - 1]; g.echoC = g.fauna.echoContacts(m0.x, m0.y, 1000 * sh, Math.round(4 + 10 * sh), [0.01, 0.015, 0.025, 0.035][Math.min(4, A.echo) - 1]); } // (7.6.30, owner) far contacts by the sea's own rules // (5.16.0) the screen-wide sweep (render.js), then the marks on the radar (hud.js)
   if (A.tide) { // (7.4.15) The Last Tide: any time. In red water as Tidewarden; marked, the mark washed off; else only its light and air
-    const red = (g.fx && (g.fx.redTint || 0) > 0.03) || (g.entity && g.entity.dist < 160 && (g.entity.marked || g.entity.state === 'hunt' || g.entity.state === 'stalk'));
+    const red = g.bloodT > 0 || (g.fx && (g.fx.redTint || 0) > 0.03) || (g.entity && g.entity.dist < 160 && (g.entity.marked || g.entity.state === 'hunt' || g.entity.state === 'stalk'));
     if (red || !A.any) g.tideFx = { t: 0 };
     else if (g.entity && g.entity.marked) { g.entity.marked = false; g.markWashFx = { t: 0 }; hud.toast('The mark is washed off you', 'note'); }
   }
@@ -2424,12 +2432,12 @@ function skillCatch(c, x, y) {
 }
 function snatchAt(wx, wy) {
   const N = g.snatch; if (!N || N.left <= 0 || !(abilityState(g).activeT > 0 || (g.abil2 && g.abil2.activeT > 0) || (g.abil3 && g.abil3.activeT > 0))) return false;
-  let best = null, bd = 2.2; for (const c of g.fauna.list) { if (c.dead || c.pet || c.companion) continue; const d = Math.hypot(c.x - wx, c.y - wy) - (c.len || 0) * 0.5; if (d < bd) { bd = d; best = c; } }
+  let best = null, bd = 2.2 + 40 / Math.max(10, (renderer.cam && renderer.cam.ppm) || 40); for (const c of g.fauna.list) { if (c.dead || c.pet || c.companion) continue; /* (7.7.2) a finger width of slack on top */ const d = Math.hypot(c.x - wx, c.y - wy) - (c.len || 0) * 0.5; if (d < bd) { bd = d; best = c; } }
   if (!best) return false; N.left--; const net = gear(profile, 'net') || {}, maxLen = net.maxLen || 0.6;
   g.snatchFx = { x0: g.earl.x, y0: g.earl.y, x1: best.x, y1: best.y, t: 0, tier: N.def.tier }; for (let i = 0; i < 8; i++) g.bubbles.push({ x: best.x + (Math.random() - 0.5) * 0.4, y: best.y + (Math.random() - 0.5) * 0.4, r: 0.02 + Math.random() * 0.06, w: Math.random() * 6, t: -0.2 - Math.random() * 0.1 }); // (7.6.8) the bite: a puff of bubbles where the hook takes it
   if (best.len > maxLen * 1.1) say('Too big for the net');
   else if (bagUsed(g) >= bagSlots(g)) say('The bag is full');
-  else if (Math.random() < Math.min(0.97, 0.62 + N.bonus)) skillCatch(best, best.x, best.y); else { say('Missed'); best.flee = 1; }
+  else skillCatch(best, best.x, best.y); // (7.7.2, owner) a snatch never misses
   if (N.left <= 0) g.snatch = null; return true;
 }
 // (7.6.7, owner) the fish come in from just past the screen's edges on every side, rush to him and mill round him while
@@ -2443,7 +2451,7 @@ function callFish(A) {
 }
 function bloodmoon(A) { // the water to blood; the thing just past the radar's reach, marking him, hunting him
   const e = g.earl, ent = g.entity; g.bloodT = A.dur; g.echoT = A.dur; g.echoLv = 2; // (7.6.7) the radar's marks only, no sweep drawn across the water
-  if (ent) { const a = Math.random() * TAU; ent.x = e.x + Math.cos(a) * 220; ent.y = Math.max(40, e.y + Math.sin(a) * 60); ent.marked = true; if (ent.state !== 'hunt') ent.state = 'search'; ent.attn = 1; }
+  if (ent) { ent.placeFar(g.earl.inSub ? g.sub : e, 1000); ent.marked = true; ent.state = 'search'; ent.lastX = e.x; ent.lastY = e.y; ent.attn = 1; } // (7.7.2, owner) it comes from the edge of the radar, 1,000 m off, from below: never beside him
   hud.toast("It's here. Catch what you can.", 'warn'); audio.ready && audio.scare && audio.scare();
 }
 // (7.6.7, owner) every skill opens with a burst: a lens of light rolling out from him, bending the water as it passes, by
@@ -2452,11 +2460,12 @@ function bloodmoon(A) { // the water to blood; the thing just past the radar's r
 // the radar but not closer than 100 m (red water or not); the mark stays. Never Bloodmoon, which calls it
 const BURST = { rare: { reach: 5, dur: 1.0, mag: 0.08 }, exotic: { reach: 11, dur: 1.4, mag: 0.11, second: true }, legendary: { reach: 0, dur: 2.0, mag: 0.14, second: true }, mythical: { reach: 0, dur: 2.6, mag: 0.19, second: true, pull: 0.3 } }; // (7.6.15, owner) longer and stronger
 function fireBurst(A) {
+  audio.ready && audio.skill && audio.skill(A); // (7.7.2, owner) every skill has its sound
   const e = g.earl, m = e.inSub ? g.sub : e, B = BURST[A.tier] || BURST.rare;
   (g.bursts || (g.bursts = [])).push({ t: 0, x: m.x, y: m.y, tier: A.tier, fam: A.fam || '', ...B });
   if (g.bursts.length > 3) g.bursts.shift();
   if (A.tier === 'mythical') { g.radarRipple = { t: 0 };
-    const ent = g.entity; if (ent && !A.blood && !g.kill && !ent.frozen && !(ent.sleepT > 0) && ent.dist >= 100 && ent.dist <= 200) {
+    const ent = g.entity; if (ent && !A.blood && !g.kill && !ent.frozen && !(ent.sleepT > 0) && ent.dist >= 100 && ent.dist <= 1000) { /* (7.7.2) on the radar: now its 1,000 m */
       const dx = ent.x - m.x, dy = ent.y - m.y, d = Math.hypot(dx, dy) || 1, k = (d + 200) / d;
       ent.x = m.x + dx * k; ent.y = clamp(m.y + dy * k * 0.5, 40, g.world.floorAt(ent.x) - 10); ent.vx = 0; ent.vy = 0; ent.dist = d + 200;
       if (ent.state === 'hunt' || ent.state === 'charge') ent.state = 'search'; g.pushFx = { t: 0, x: ent.x, y: ent.y }; } }
@@ -2492,6 +2501,7 @@ function dashTo1(wx, wy) {
     else { S.charges = A.charges - 1; S.chargeT = 20; P.abilReadyAt = 0; if (A.tier === 'mythical') mythFire(A); fireBurst(A); }
   } else { coolAfter(P, A.dur + A.cd); fireBurst(A); }
   saveProfile(P);
+  if (S.charges !== A.charges - 1) audio.ready && audio.jet && audio.jet(A.tier); /* (7.7.2) each later dash its own rush (the first has the skill's sound) */
   g.dashMove = { x0: M.x, y0: M.y, x1, y1, t: 0, dur: A.dur, tier: A.dash };
   g.dashFx = { x0: M.x, y0: M.y, x1, y1, t: 0, tier: A.dash };
   e.facing = Math.sign(x1 - M.x) || e.facing; if (e.inSub) g.sub.facing = e.facing;
@@ -2576,7 +2586,7 @@ function tickAbility(dt) {
     if (L0 >= 2 && !(g.lhOn)) g.lhAt = g.time; g.lhOn = L0 >= 2;
     // (7.6.31, owner) Pharos Heart (light 3 and over): its beams sweep and the light pulses for its first 10 s only, then
     // both ease away (a second and a half) and its steady light stays to the end; the Lighthouse keeps both throughout
-    { const since = g.time - (g.lhAt ?? g.time), k3 = (g.abilLightHold || L0) >= 3 ? 1 - smoothstep(10, 11.5, since) : 1; g.beamK = k3; g.pulseK = k3; }
+    { const since = g.time - (g.lhAt ?? g.time), k3 = (g.abilLightHold || L0) >= 3 ? 1 - smoothstep(9, 14, since) : 1; /* (7.7.2, owner) the beams fade away slowly, over five seconds, never cut */ g.beamK = k3; g.pulseK = k3; }
     if (L0 >= (g.abilLightHold || 0)) { g.abilLightHold = L0; g.abilOutK = 1; g.abilLight = L0; }
     else { g.abilOutK = Math.max(0, (g.abilOutK ?? 1) - dt / 1.5); g.abilLight = g.abilLightHold; if (g.abilOutK <= 0) { g.abilLightHold = L0; g.abilLight = L0; g.abilOutK = 1; } } }
   { const lh = !!(anyW((D) => D.light >= 2) && (g.lightFade ?? 1) > 0.5); if (document.documentElement.classList.contains('lighthouse') !== lh) document.documentElement.classList.toggle('lighthouse', lh); } /* (5.16.0) Lighthouse: the HUD comes to life */
@@ -2600,6 +2610,7 @@ function tickAbility(dt) {
   // Tidewarden: the red washes to blue, the thing's light turns blue, it freezes, fades, and is gone for 5 minutes
   if (g.tideFx) { const T = g.tideFx, ent = g.entity; T.t += dt;
     if (ent) { ent.frozen = T.t < 3.2; ent.fade = Math.max(0, 1 - Math.max(0, T.t - 1.6) / 1.4); ent.tideBlue = Math.min(1, T.t / 1.2); }
+    if (T.t >= 1.2 && g.bloodT > 2) g.bloodT = 2; /* (7.7.2, owner) the blue wave ends Bloodmoon's red too (it fades out over 2 s) */
     if (T.t >= 3.2 && !T.sent && ent) { T.sent = true; ent.sleepT = 300; ent.marked = false; ent.x = clamp(e.x + (e.x > 2500 ? -2600 : 2600), 80, 4920); ent.y = 2600; }
     if (T.t >= 4.2) { if (ent) { ent.frozen = false; ent.tideBlue = 0; } g.tideFx = null; } }
 }
@@ -3054,7 +3065,7 @@ function update(dt) {
     // Once observed, its name; Space before it only until the Log has taught the net, then a small net mark when
     // it is in reach
     const known = ct && g.journal.has(ct.sp.id), taught = learned(profile, 'net');
-    g.capPrompt = ct && known ? (ct.ok ? (taught ? ct.name : `Space  ${ct.name}`) : `${ct.sp.name}: ${ct.why}`) : null;
+    g.capPrompt = ct && known ? (ct.ok ? (taught ? null : `Space  ${ct.name}`) : ct.why.replace(/^./, (m) => m.toUpperCase())) : null; // (7.7.2, owner) no name comes up just for being near: a name shows only when the fish is tapped
     g.capIcon = ct && known && ct.ok && taught ? 'net' : null;
     // what the net or slurp gun will go for: marked on screen (in plain white while it is unknown)
     g.catchTarget = ct && ct.ok ? { c: ct.c, x: ct.x, y: ct.y, len: ct.len, col: known ? rarityOf(ct.sp).col : '#d8e2de' } : null;
@@ -3243,7 +3254,7 @@ function update(dt) {
       if (ev === 'marked') {
         // something has noticed him: a deep sound, a pulse through the screen, a line in the journal
         g.fx.shake = Math.max(g.fx.shake, 1.0); g.fx.markPulse = 1;
-        audio.ready && (audio.tone(38, 4, 0.7, 'sine', 0, 24), audio.groan(0.18));
+        audio.ready && (audio.tone(38, 4, 0.7, 'sine', 0, 24), audio.groan(0.18), audio.creak(0.7), setTimeout(() => audio.creak(0.5), 900)); /* (7.7.2, owner) noticed: the hull strains */
         hud.toast('Something noticed you.', 'note'); // (2.9.1) back
         g.notes = (g.notes ? g.notes + '\n' : '') + `[${formatTime(g.survival)}, ${Math.round(e.y)} m] Something noticed me.`;
       } else if (ev === 'appeased') { hud.toast('The water feels lighter.', 'note');
@@ -3251,9 +3262,9 @@ function update(dt) {
       }
       else if (ev === 'pass') {
         // it sweeps by, close: the water shoves the sub, a long low rush
-        g.fx.shake = Math.max(g.fx.shake, 1.4); audio.ready && (audio.whoosh(), audio.thud(0.45));
+        g.fx.shake = Math.max(g.fx.shake, 1.4); audio.ready && (audio.whoosh(), audio.thud(0.45), audio.creak(0.6));
         if (e.inSub) { g.sub.vx += (Math.random() - 0.5) * 3; g.sub.vy += 1.2; }
-      } else if (ev === 'windup') { g.fx.markPulse = 1; audio.ready && audio.swell(); }
+      } else if (ev === 'windup') { g.fx.markPulse = 1; audio.ready && (audio.swell(), audio.creak(0.5)); }
       else if (ev === 'strike') { audio.ready && (audio.whoosh(), audio.heartbeat(0.6)); }
       else if (ev === 'tailbump') { // the first approach: its tail strikes the hull out of the dark
         if (e.inSub) { g.sub.hull = Math.max(0, g.sub.hull - 0.06); g.subHit = true; }
@@ -3314,7 +3325,7 @@ function update(dt) {
   // out over 3 s (their time keeps running, and what is left comes back over 3 s if it goes), and the lamp and the
   // floodlight weaken, flicker and slide from amber toward red with the water
   g.entDark = g.mode === 'menu' || !(ent.dist < 260) ? 0 : clamp((260 - ent.dist) / 230, 0, 1) * (fx.safeK ?? 1);
-  g.lightFade = clamp((g.lightFade ?? 1) + (g.entDark > 0.04 || (fx.redTint || 0) > 0.03 ? -dt / 1 : dt / 3), 0, 1); // (6.0.5) once the water round him reddens, the lights the thing ignores (Flare, Lighthouse, glow sticks) go out over a second
+  g.lightFade = clamp((g.lightFade ?? 1) + (g.entDark > 0.04 || (fx.redTint || 0) > 0.03 ? -dt / 1.5 : dt / 0.8), 0.45, 1); /* (7.7.2, owner) dimmed, never out, and back within a second once clear (a jump away no longer leaves him dark for 3 s) */ // (6.0.5) once the water round him reddens, the lights the thing ignores (Flare, Lighthouse, glow sticks) go out over a second
   fx.torchShift = Math.max(fx.torchShift, g.entDark);
   // in the safe zone you still hear and sense it (sonar, heartbeat), but the water stays the water
   const deepK = clamp((e.y - 100) / 60, 0, 1);
@@ -3443,7 +3454,7 @@ function updateBubbles(dt) {
 
 // ---------------- loop ----------------
 let last = performance.now();
-let filterKey = '';
+let wakeBlur = '', filterKey = '';
 let frameEma = 1 / 60, qualityT = 0, hudDt = 0;
 function adaptQuality(realDt) {
   frameEma = lerp(frameEma, realDt, 0.05);
@@ -3612,9 +3623,9 @@ function frame(now) {
   // (6.0.0) the wake after a Rebirth: black, then the eyes open (hud.wakeFx) while the world comes back into focus;
   // after being eaten, his one line follows as the eyes clear
   if (g.wake) { const W0 = g.wake; W0.t += dt; const b = W0.t < 1.4 ? 10 : Math.max(0, 10 * (1 - (W0.t - 1.4) / 2.2));
-    canvas.style.filter = b > 0.05 ? `blur(${b.toFixed(1)}px)` : '';
+    wakeBlur = b > 0.05 ? `blur(${b.toFixed(1)}px)` : '';
     if (W0.t > 3.3 && !W0.said) { W0.said = true; if (W0.eaten) g.earlSay = { text: "What happened? I'm still here.", t: 0 }; else say('The sea gives you back', 'earl'); }
-    if (W0.t > 4.2) { g.wake = null; canvas.style.filter = ''; document.documentElement.classList.remove('waking'); } } else if (canvas.style.filter) { canvas.style.filter = ''; document.documentElement.classList.remove('waking'); }
+    if (W0.t > 4.2) { g.wake = null; wakeBlur = ''; document.documentElement.classList.remove('waking'); } } else if (wakeBlur) { wakeBlur = ''; document.documentElement.classList.remove('waking'); }
   if (g.earlSay) { g.earlSay.t += dt; if (g.earlSay.t > 5.6) g.earlSay = null; }
   if (g.says && g.says.length) { for (const m of g.says) m.t += dt; g.says = g.says.filter((m) => m.t < 4); }
   beacon.update(g, dt, !!(ui.tankOpen && ui.tankOpen())); // (4.0.2) always: the alarm keeps going whatever panel is open // (3.3.0) the alarm beacon (not over the locker)
@@ -3627,7 +3638,8 @@ function frame(now) {
   const blurPx = Math.round(blurAmp * Math.pow(Math.max(0, Math.sin(g.time * 1.3)), 3) * 4) / 4;
   const f = `saturate(${(1 - fx.dread * 0.65 - fx.pressure * 0.25 - (g.injury >= 4 ? 0.45 : g.injury >= 3 ? 0.15 : 0)).toFixed(2)}) contrast(${(1 + fx.dread * 0.18).toFixed(2)})${blurPx > 0.25 ? ` blur(${blurPx.toFixed(1)}px)` : ''}`;
   const f2 = (fx.dread < 0.01 && fx.pressure < 0.01 && blurPx <= 0.25 && g.injury < 3) || (renderer.lite && fx.dread < 0.5 && blurPx <= 0.25) ? 'none' : f; // (5.3) lite: no full-screen filter for a faint grade
-  if (f2 !== filterKey) { canvas.style.filter = f2; filterKey = f2; }
+  // (7.7.2) one writer for the canvas's filter: the dread grade, the thing's red and the drowning (render.js), the wake's blur
+  { const f3 = [wakeBlur, f2 === 'none' ? '' : f2, renderer.filterExtra || ''].filter(Boolean).join(' ') || 'none'; if (f3 !== filterKey) { canvas.style.filter = f3; filterKey = f3; } }
   pressed.clear();
   noteWork(performance.now() - workFrom, Math.min(0.1, realDt));
   requestAnimationFrame(frame);

@@ -702,6 +702,13 @@ function emblemMask2(fam, tier, size) {
   emblemTier(x, fam, tier);
   const d = x.getImageData(0, 0, size, size), a = d.data;
   for (let i = 0; i < a.length; i += 4) { const lum = (a[i] + a[i + 1] + a[i + 2]) / 3, al = a[i + 3] / 255; a[i + 3] = Math.round((lum > 128 ? al : 0) * 255); a[i] = a[i + 1] = a[i + 2] = 255; }
-  x.putImageData(d, 0, 0); return c;
+  x.putImageData(d, 0, 0);
+  // (7.7.2, owner) every emblem the same size on its coin: fitted by what it actually covers (a small net and a long
+  // harpoon came out a size apart), its longer side to 62 % of the coin, centred
+  let x0 = size, y0 = size, x1 = -1, y1 = -1; for (let yy = 0; yy < size; yy++) for (let xx = 0; xx < size; xx++) if (a[(yy * size + xx) * 4 + 3] > 40) { if (xx < x0) x0 = xx; if (xx > x1) x1 = xx; if (yy < y0) y0 = yy; if (yy > y1) y1 = yy; }
+  if (x1 < x0) return c;
+  const bw = x1 - x0 + 1, bh = y1 - y0 + 1, k = size * 0.62 / Math.max(bw, bh * 1.05), o = document.createElement('canvas'); o.width = o.height = size;
+  const ox = o.getContext('2d'); ox.imageSmoothingQuality = 'high'; ox.drawImage(c, x0, y0, bw, bh, (size - bw * k) / 2, (size - bh * k) / 2, bw * k, bh * k); return o;
 }
-export function drawTierEmblemMask(fam, tier, size) { return emblemMask2(fam, tier, size); }
+const EMB2 = new Map();
+export function drawTierEmblemMask(fam, tier, size) { const key = fam + tier + size; if (!EMB2.has(key)) EMB2.set(key, emblemMask2(fam, tier, size)); return EMB2.get(key); }

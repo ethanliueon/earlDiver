@@ -44,7 +44,7 @@ import { SETTINGS } from './settings.js';
 import { toolIcon, netLook } from './tools_draw.js';
 import { bagSlots, bagUsed, tankSlots, pressSlots, NETS_SUB, TOW_MAX, netKinds, netsOf, tankUsed, BIG, hasBigTank, bigIn } from './capture.js';
 import { SPECIES_BY_ID } from './species.js';
-import { drawSpecies } from './creatures_draw.js';
+import { drawSpecies, speciesBox } from './creatures_draw.js';
 
 // (7.2.8) the tutorial's pointing glove (painted by tools/action_icons.py point()), pointing down in its picture, the
 // fingertip at 0.451, 0.883 of it
@@ -269,7 +269,8 @@ export class Hud {
       ctx.fillStyle = over ? `rgba(240,84,72,${(0.75 + 0.25 * Math.sin(g.time * 6)).toFixed(3)})` : '#efe8d2'; ctx.fillText(txt, x0 + sz + 8 * s, wy + 1 * s);
       const P2 = this.bagPop; if (P2 && SPECIES_BY_ID[P2.sp.id]) { P2.t += dt; const k = P2.t < 0.25 ? P2.t / 0.25 : P2.t > 1.6 ? Math.max(0, 1 - (P2.t - 1.6) / 0.4) : 1;
         if (k <= 0) this.bagPop = null; else { ctx.shadowBlur = 0; ctx.globalAlpha = k; ctx.translate(x0 + sz + 8 * s + tw + 34 * s, wy); ctx.scale(0.8 + 0.2 * k, 0.8 + 0.2 * k);
-          try { drawSpecies(ctx, SPECIES_BY_ID[P2.sp.id], 44 * s, g.time * 2, 1, 0); } catch (err) { /* only the count, then */ } } }
+          // (7.7.2, owner) centred on the bag's line by what the drawing covers: a jelly's bell no longer rides above it
+          try { const sp2 = SPECIES_BY_ID[P2.sp.id], B = speciesBox(sp2), L2 = Math.min(44 * s, 30 * s / Math.max(0.05, B.h)) / 1; ctx.translate(-(B.x0 + B.w / 2) * L2, -(B.y0 + B.h / 2) * L2); drawSpecies(ctx, sp2, L2, g.time * 2, 1, 0); } catch (err) { /* only the count, then */ } } }
       ctx.restore();
       if (this.hots) this.hots.push({ x: (x0 + this.safeL) * (window.innerWidth / this.c.width), y: (wy - sz / 2 + this.safeT) * (window.innerWidth / this.c.width), w: (sz + 8 * s + tw) * (window.innerWidth / this.c.width), h: sz * (window.innerWidth / this.c.width), key: 'b' }); // a tap opens the bag
     }
@@ -1143,7 +1144,7 @@ e.inSub ? [
     if (sg) { sg.addColorStop(0, 'rgba(160,200,120,0)'); sg.addColorStop(0.17, 'rgba(160,200,120,0.3)'); sg.addColorStop(0.175, 'rgba(160,200,120,0)'); ctx.fillStyle = sg; ctx.fillRect(rcx - rr, rcy - rr, rr * 2, rr * 2);
       ctx.strokeStyle = 'rgba(196,226,150,0.65)'; ctx.lineWidth = 1.6 * s; ctx.beginPath(); ctx.moveTo(rcx, rcy); ctx.lineTo(rcx + Math.cos(this.sweep) * rr, rcy + Math.sin(this.sweep) * rr); ctx.stroke(); }
     // (7.6.30, owner) the radar's range: 200 m, drawn out to 1,000 m while an Echo skill runs (eased both ways, never a jump)
-    { const want = g.echoT > 0 ? 1000 : 200; this.radarRange = this.radarRange || 200; this.radarRange += (want - this.radarRange) * Math.min(1, dt * 2.5); }
+    { const want = 1000; this.radarRange = this.radarRange || 1000; /* (7.7.2, owner) the radar reaches 1,000 m: the thing shows at its edge long before it is near */ this.radarRange += (want - this.radarRange) * Math.min(1, dt * 2.5); }
     const RR = this.radarRange;
     // his traps: small amber marks where their lines are
     for (const tr of g.traps || []) {
@@ -1330,7 +1331,7 @@ e.inSub ? [
 
     // ---------- in its grip: what can still get him free, and how little time is left ----------
     const K = g.kill;
-    if (K && K.window && !K.esc && K.t > K.window[0] && K.t < K.window[1] && g.mode === 'play') {
+    if (K && K.window && !K.esc && K.t > K.window[0] && K.t < K.window[1] && g.mode === 'play' && this.killTide) { // (7.7.2, owner) nothing is written when there is nothing left to try
       const opts = [];
       if (this.killTide) opts.push(['1', 'TIDEWARDEN']); // (5.10.8) no lamp: the Tidewarden
       const left = 1 - (K.t - K.window[0]) / (K.window[1] - K.window[0]);
