@@ -88,6 +88,7 @@ export function drawEarl(ctx, L, kick, moving, lampCol, rim, gear) {
   [SUIT, SUIT_HI, SUIT_PANEL, SUIT_SEAM, GLOVE] = look;
   const m = moving;
   const s1 = Math.sin(kick);
+  const stK = 1 - 0.55 * Math.min(1, (gear && gear.stiff) || 0); // (7.9.1, owner) in thick water: short, stiff strokes
 
   // ---------- legs (drawn far leg first) ----------
   // Knees only ever bend backwards (towards -y), and the legs stay close to the line of the body.
@@ -96,8 +97,8 @@ export function drawEarl(ctx, L, kick, moving, lampCol, rim, gear) {
     const s = Math.sin(kick + phase);
     // Local frame: +y is his front, -y his back. A thigh angle just under PI swings the knee
     // slightly forward; the shin then bends back from the knee (angle increases), like a real leg.
-    let thighA = Math.PI - (1 - m) * 0.14 - 0.02 + s * (0.04 + 0.15 * m);
-    let bend = (1 - m) * 0.26 + m * (0.04 + Math.max(0, -s) * 0.26);      // knee flexion, on the up-stroke
+    let thighA = Math.PI - (1 - m) * 0.14 - 0.02 + s * (0.04 + 0.15 * m) * stK;
+    let bend = (1 - m) * 0.26 + m * (0.04 + Math.max(0, -s) * 0.26 * stK);      // knee flexion, on the up-stroke
     if (gear && gear.walk != null) {
       // walking on deck (2.5.0): the thigh swings forward and back; the knee bends as the foot comes
       // through, and the leg is nearly straight while it carries his weight
@@ -195,8 +196,8 @@ export function drawEarl(ctx, L, kick, moving, lampCol, rim, gear) {
   const arm = (phase, near, pose) => {
     const sc = Math.sin(kick * 0.7 + phase);
     const shX = 27 * u, shY = near ? 2 * u : -0.5 * u;
-    let upA = (1 - m) * (Math.PI - 0.32 + sc * 0.12) + m * (Math.PI * 0.7);
-    let foreA = (1 - m) * (Math.PI - 0.95 + sc * 0.25) + m * (Math.PI * 0.12);
+    let upA = (1 - m) * (Math.PI - 0.32 + sc * 0.12 * stK) + m * (Math.PI * 0.7);
+    let foreA = (1 - m) * (Math.PI - 0.95 + sc * 0.25 * stK) + m * (Math.PI * 0.12);
     if (restArms && !pose) { upA = Math.PI - 0.5 + sc * 0.06; foreA = Math.PI - 0.22 + sc * 0.08; } /* (7.4.26, owner) hands held a little below the body, sculling, so they show: laid flat along his sides they vanished into the suit */
     if (gear && gear.walk != null && !pose) { const sw = Math.sin(kick + phase) * 0.38 * gear.walk; upA = Math.PI - 0.06 + sw; foreA = upA - 0.18 - Math.max(0, -sw) * 0.5; } // swinging against the legs
     if (gear && gear.climb != null && !pose) { const r = Math.sin(gear.climb + phase + Math.PI) * 0.5 + 0.5; upA = 0.55 - r * 0.5; foreA = upA - 0.35 + r * 0.25; } // reaching up for the rungs, one hand then the other

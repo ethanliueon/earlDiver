@@ -2192,18 +2192,29 @@ function drawSeapig(ctx, L, v, t) {
 }
 
 function drawBasket(ctx, L, v, t) {
-  ctx.strokeStyle = rgba(v.c[0], 0.85);
-  const branch = (x, y, a, len, depth) => {
-    if (depth <= 0 || len < 1) return;
-    const ex = x + Math.cos(a) * len, ey = y + Math.sin(a) * len;
-    ctx.lineWidth = Math.max(0.5, depth * 0.5);
-    ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(ex, ey); ctx.stroke();
-    const sw = Math.sin(t * 0.8 + depth) * 0.1;
-    branch(ex, ey, a - 0.45 + sw, len * 0.72, depth - 1);
-    branch(ex, ey, a + 0.45 + sw, len * 0.72, depth - 1);
+  // (7.9.1, owner) a basket star as it is: five arms from a small disc, each forking again and again, every fork a
+  // little uneven and every branch bending, the finest tips curled in, the whole a loose basket held up into the
+  // current (it was a straight-line fractal tree: too regular, read as drawn by a program)
+  const c0 = v.c[0], c1 = v.c[1] || v.c[0], hs = (n) => { const q = Math.sin(n * 91.7 + 13.1) * 43758.5453; return q - Math.floor(q); };
+  ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+  const arm = (x, y, a, len, d, seed, curl) => {
+    const bend = curl * (0.22 + 0.3 * hs(seed)) + Math.sin(t * 0.6 + seed) * 0.05;
+    const mx = x + Math.cos(a + bend * 0.5) * len * 0.55, my = y + Math.sin(a + bend * 0.5) * len * 0.55;
+    const ea = a + bend, ex = x + Math.cos(ea) * len, ey = y + Math.sin(ea) * len;
+    ctx.strokeStyle = d > 3 ? c0 : c1; ctx.globalAlpha = d > 2 ? 0.9 : 0.75;
+    ctx.lineWidth = Math.max(0.5, L * 0.0016 * d * d * 0.5 + L * 0.0012); ctx.beginPath(); ctx.moveTo(x, y); ctx.quadraticCurveTo(mx, my, ex, ey); ctx.stroke();
+    if (d <= 1) { // the tip: a small tendril curled in on itself
+      const r = len * (0.12 + 0.16 * hs(seed + 7)), ca = ea + curl * Math.PI / 2, cx = ex + Math.cos(ca) * r, cy = ey + Math.sin(ca) * r;
+      ctx.lineWidth = Math.max(0.4, L * 0.0014); ctx.beginPath(); ctx.arc(cx, cy, r, ca + Math.PI, ca + Math.PI + curl * (2.2 + 2 * hs(seed + 8)), curl < 0); ctx.stroke(); return;
+    }
+    const sp = 0.3 + 0.28 * hs(seed + 1), lop = 0.62 + 0.18 * hs(seed + 2);
+    arm(ex, ey, ea - sp, len * lop, d - 1, seed * 2 + 1, curl);
+    arm(ex, ey, ea + sp * (0.7 + 0.5 * hs(seed + 3)), len * (1.42 - lop), d - 1, seed * 2 + 2, curl);
   };
-  for (let k = 0; k < 5; k++) branch(0, -L * 0.05, -PI / 2 + (k - 2) * 0.5, L * 0.15, 5);
-  ctx.fillStyle = v.c[0]; ctx.beginPath(); ctx.ellipse(0, -L * 0.04, L * 0.08, L * 0.04, 0, 0, TAU); ctx.fill();
+  for (let k = 0; k < 5; k++) { const a = -Math.PI / 2 + (k - 2) * (0.42 + 0.06 * hs(k + 9)); arm(0, -L * 0.05, a, L * (0.13 + 0.03 * hs(k + 4)), 5, k * 37 + 5, k < 2 ? 1 : k > 2 ? -1 : (hs(k) < 0.5 ? 1 : -1)); }
+  ctx.globalAlpha = 1; ctx.fillStyle = c0; ctx.beginPath(); ctx.ellipse(0, -L * 0.04, L * 0.045, L * 0.024, 0, 0, TAU); ctx.fill();
+  ctx.fillStyle = 'rgba(0,0,0,0.25)'; ctx.beginPath(); ctx.ellipse(0, -L * 0.03, L * 0.04, L * 0.012, 0, 0, Math.PI); ctx.fill();
+  ctx.lineCap = 'butt';
 }
 
 // ---------- plants / corals / sessile ----------

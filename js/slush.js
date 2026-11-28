@@ -72,6 +72,31 @@ export class Slush {
       const dx = q.x - e.x, dy = q.y - e.y;
       if (dx * dx + dy * dy > 49 || q.y > g.world.floorAt(q.x) - 0.05) this.spawn(q, e, true);
     }
+    this.stir(g, e, dt, v);
+  }
+  // (7.9.1, owner) what he stirs up: each stroke of his fins and each sweep of the net throws out a puff of the fine
+  // ice it passes through, which the thick water stops within a hand's breadth and lets settle again; the pieces
+  // close to a fin are pushed aside by the stroke. A small fixed pool, nothing when the water is clear
+  stir(g, e, dt, v) {
+    const F = this.fx || (this.fx = []);
+    for (let i = F.length - 1; i >= 0; i--) { const f = F[i]; f.age += dt; if (f.age > f.life) { F[i] = F[F.length - 1]; F.pop(); continue; }
+      const dk = Math.exp(-dt * 5); f.vx *= dk; f.vy = f.vy * dk + 0.03 * (1 - dk); f.x += f.vx * dt; f.y += f.vy * dt; f.rot += f.rv * dt; }
+    if (v < 0.08) return;
+    const r = this.rnd.bind(this), sp = Math.hypot(e.vx || 0, e.vy || 0), dx = sp > 0.05 ? e.vx / sp : e.facing || 1, dy = sp > 0.05 ? e.vy / sp : 0;
+    const emit = (x, y, vx, vy, n) => { for (let k = 0; k < n && F.length < 70; k++) F.push({ x: x + (r() - 0.5) * 0.25, y: y + (r() - 0.5) * 0.25, vx: vx * (0.5 + r()) + (r() - 0.5) * 0.25, vy: vy * (0.5 + r()) + (r() - 0.5) * 0.25, age: 0, life: 1.2 + r() * 1.6, sz: 0.025 + r() * 0.05, sp: Math.floor(r() * 8), rot: r() * 6.3, rv: (r() - 0.5) * 2 }); };
+    // a stroke of the fins: each half kick, behind him
+    const half = Math.floor((e.kick || 0) / Math.PI);
+    if (this.lastHalf !== undefined && half !== this.lastHalf && (e.labour || 0) > 0.05) {
+      const fx = e.x - dx * 1.05, fy = e.y - dy * 1.05 + 0.15, n = Math.round(2 + 5 * v);
+      emit(fx, fy, -dx * 0.5 + (r() - 0.5) * 0.3, -dy * 0.5 + (r() - 0.5) * 0.3, n);
+      for (const q of this.p) { const qx = q.x - fx, qy = q.y - fy, d2 = qx * qx + qy * qy; if (d2 < 1.4 && d2 > 1e-4) { const d = Math.sqrt(d2), f = 0.35 * (1 - d / 1.2); q.vx += (qx / d) * f; q.vy += (qy / d) * f; } }
+    }
+    this.lastHalf = half;
+    // the net's sweep: along its arc in front of him, while it moves
+    const C = g.capture; if (C && C.kind === 'net' && !C.done && C.dur > 0) {
+      const p = Math.min(1, C.t / C.dur), fc = e.facing || 1; this.netAcc = (this.netAcc || 0) + dt * (10 + 22 * v);
+      while (this.netAcc > 1) { this.netAcc -= 1; const a = -1.1 + 2.0 * p, nx = e.x + fc * (0.5 + 1.0 * Math.cos(a)), ny = e.y + 1.0 * Math.sin(a); emit(nx, ny, fc * -Math.sin(a) * 0.6 * -1, Math.cos(a) * 0.6, 1); }
+    } else this.netAcc = 0;
   }
   // the far layers, faded in by depth in thin bands; then the near pieces. ctx in screen space
   draw(ctx, g, S, Sy, ppm, W, H, t, camX, camY, camH, lampA) {
@@ -95,7 +120,7 @@ export class Slush {
     ctx.save();
     const amt = (y) => slushAmount(AREA2.edge + 1, y);
     layer(this.far, 8, 0.03, 0.4, (y) => Math.min(0.9, amt(y) * 2.6), 'pFar');
-    if (!this.lite) layer(this.soft, 13, 0.06, 0.7, (y) => Math.min(0.55, amt(y) * 1.3), 'pSoft');
+    if (!this.lite) layer(this.soft, 13, 0.06, 0.7, (y) => Math.min(0.3, amt(y) * 0.8), 'pSoft'); // (7.9.1) fainter: thick, the big soft flakes read as clouds
     layer(this.mush, 6, 0.012, 0.15, (y) => 0.85 * ss(0.3, 1, amt(y)), 'pMush');
     ctx.globalAlpha = 1;
     // the near pieces
@@ -110,6 +135,11 @@ export class Slush {
         ctx.rotate(q.rot); ctx.globalAlpha = (q.blur ? 0.55 : 0.85) * Math.min(1, 0.35 + this.v * 1.6);
         ctx.drawImage(A, q.sp * 64, row * 64, 64, 64, -s / 2, -s / 2, s, s); ctx.restore();
       }
+      // the puffs he stirred up: fine, soft, out of focus, fading as they settle
+      if (this.fx) for (const f of this.fx) { const px = S(f.x), py = Sy(f.y); if (px < x0 - 20 || px > W + 20 || py < -20 || py > H + 20) continue;
+        const s = Math.max(3, f.sz * ppm * 7), k = f.age / f.life; ctx.save(); ctx.translate(px, py); ctx.rotate(f.rot);
+        ctx.globalAlpha = 0.7 * Math.min(1, f.age * 6) * (1 - k * k) * Math.min(1, 0.4 + this.v * 1.5);
+        ctx.drawImage(A, f.sp * 64, 128, 64, 64, -s / 2, -s / 2, s, s); ctx.restore(); }
     }
     ctx.restore();
   }
@@ -118,18 +148,22 @@ export class Slush {
   // smooth gradient (no bands), the same milky colour as the mush, then the mush's own grain over it. Like the rest of the
   // slush it is drawn before the light map: it shows only where a light falls
   drawBody(ctx, S, Sy, ppm, W, H, t, camY) {
-    const A = AREA2, top = A.ice - 10, yA = Sy(top); if (yA >= H) return;
+    // (7.9.1, owner) thickening over 150 m, not 10: within any one screen it changes too little to see as a layer, and
+    // over the last 12 m it is whole, so the floor is never seen at all
+    const A = AREA2, top = A.ice - 160, full = A.ice - 12, yA = Sy(top); if (yA >= H) return;
     const xa = Math.max(0, Math.floor(S(A.drop2 + 4))), xb = Math.min(W, Math.ceil(S(A.cliff - 470))); if (xb <= xa) return;
-    const yB = Sy(A.ice - 0.3), y0 = Math.max(0, Math.floor(yA));
+    const y0 = Math.max(0, Math.floor(yA)), alphaAt = (y) => { const u = Math.min(1, Math.max(0, (y - top) / (full - top))); return Math.pow(u * u * (3 - 2 * u), 1.4); };
     ctx.save();
-    const gr = ctx.createLinearGradient(0, yA, 0, yB);
-    for (let k = 0; k <= 8; k++) { const u = k / 8, a = Math.pow(u * u * (3 - 2 * u), 1.6); gr.addColorStop(u, `rgba(190,203,210,${a.toFixed(3)})`); }
+    const gr = ctx.createLinearGradient(0, yA, 0, Sy(full));
+    for (let k = 0; k <= 12; k++) { const u = k / 12; gr.addColorStop(u, `rgba(190,203,210,${alphaAt(top + u * (full - top)).toFixed(3)})`); }
     ctx.fillStyle = gr; ctx.fillRect(xa, y0, xb - xa, H - y0);
     const im = this.mush; if (im.ok) {
       const k = 6 * ppm / im.width, pat = this.pBody || (this.pBody = ctx.createPattern(im, 'repeat'));
       pat.setTransform(new DOMMatrix([k, 0, 0, k, (S(0) + Math.sin(t * 0.05 + 6) * 0.15 * ppm) % (im.width * k), (Sy(0) + t * 0.012 * ppm) % (im.height * k)]));
       ctx.fillStyle = pat;
-      for (let py = y0; py < H; py += 4) { const wy = camY + (py + 2 - H / 2) / ppm, a = 0.75 * ss(top, A.ice - 1, wy); if (a < 0.004) continue; ctx.globalAlpha = a; ctx.fillRect(xa, py, xb - xa, Math.min(4, H - py)); }
+      const aT = 0.3 * alphaAt(camY - H / 2 / ppm), aB = 0.3 * alphaAt(camY + H / 2 / ppm);
+      if (Math.abs(aT - aB) < 0.01) { ctx.globalAlpha = (aT + aB) / 2; ctx.fillRect(xa, y0, xb - xa, H - y0); }
+      else for (let py = y0; py < H; py += 4) { const wy = camY + (py + 2 - H / 2) / ppm, a = 0.3 * alphaAt(wy); if (a < 0.004) continue; ctx.globalAlpha = a; ctx.fillRect(xa, py, xb - xa, Math.min(4, H - py)); }
     }
     ctx.restore();
   }

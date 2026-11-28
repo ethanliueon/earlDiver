@@ -150,9 +150,15 @@ export function updateEarl(g, dt, inp) {
     // he turns only when the player steers left or right
     if (Math.abs(inp.x) > 0.15) e.facing = inp.x > 0 ? 1 : -1; // (2.6.8) a real push left or right: the mouse straight above or below him gives only a flicker of x, which used to flip him back and forth many times a second
     else if (Math.abs(e.vx) > 1.2) e.facing = e.vx > 0 ? 1 : -1; // pushed hard (e.g. knocked) - rare
-    const moving = e.speedNow > 0.6;
+    e.toiling = (e.slush || 1) > 1.4 && Math.hypot(inp.x || 0, inp.y || 0) > 0.2 && e.speedNow > 0.02; // (7.9.1) in the mush: swimming hard (the stick held) though barely moving; drifting is not swimming
+    const moving = e.speedNow > 0.6 || e.toiling;
+    // (7.9.1, owner) how hard the water makes him work, 0..1: from its thickness alone (not the pressure), more while he
+    // swims than while he hangs still; eased, so it builds and settles over a second or two. His breathing and heart
+    // quicken with it (main.js), he draws more air, and his limbs move stiffly (earl_draw.js)
+    e.labour = (e.labour || 0) + ((1 - 1 / Math.sqrt(e.resK || 1)) * (moving ? 1 : 0.5) - (e.labour || 0)) * (1 - Math.exp(-dt * 1.5));
     let target;
-    if (moving) target = Math.atan2(e.vy, Math.abs(e.vx) + 0.001) * 0.85;
+    if (e.toiling && e.speedNow < 0.6) target = Math.atan2(inp.y || 0, Math.abs(inp.x || 0) + 0.001) * 0.85; // (7.9.1) in the mush: along the way he is pushing, not the slow drift
+    else if (moving) target = Math.atan2(e.vy, Math.abs(e.vx) + 0.001) * 0.85;
     else target = e.y < 1 ? -1.25 : -1.15; // upright, a little forward
     const st = e.struggle || 0;
     if (st > 0) target += Math.sin(g.time * 1.3) * 0.22 * st + Math.sin(g.time * 3.1) * 0.06 * st; // body rolls and lurches
@@ -173,7 +179,7 @@ export function updateEarl(g, dt, inp) {
       e.surfacing = Math.min(1, e.surfacing + dt);
     } else {
       e.surfacing = 0;
-      e.o2 -= dt * (1 + (diverDrainMult(e.y, e.pressStart || 300) - 1) * (e.pressRes ?? 1) / (e.pressMul || 1)) / (e.pressBeyond && e.y > e.pressStart ? e.pressBeyond : 1) * (inp.sprint && e.speedNow > 1 ? (e.sprintAir ?? 2) : 1) * e.o2Mul * (g.airMul || 1) * (e.abilNoAir ? 0 : 1); // (5.9.0) Riptide: no air used // (2.8.0: Resilience, the Harbour Patrol set)
+      e.o2 -= dt * (1 + (diverDrainMult(e.y, e.pressStart || 300) - 1) * (e.pressRes ?? 1) / (e.pressMul || 1)) / (e.pressBeyond && e.y > e.pressStart ? e.pressBeyond : 1) * (inp.sprint && e.speedNow > 1 ? (e.sprintAir ?? 2) : 1) * e.o2Mul * (g.airMul || 1) * (e.abilNoAir ? 0 : 1) * (1 + 0.6 * (e.labour || 0)); // (7.9.1) heavy going in thick water costs breath // (5.9.0) Riptide: no air used // (2.8.0: Resilience, the Harbour Patrol set)
     }
     if (e.o2 <= 0) { e.o2 = 0; return 'o2'; }
   }

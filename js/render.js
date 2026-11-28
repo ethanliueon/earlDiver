@@ -514,7 +514,7 @@ export class Renderer {
       const S2 = this.slush || (this.slush = new Slush()), now = performance.now() / 1000, dts = Math.min(0.05, Math.max(0, now - (this.slushT || now))); this.slushT = now;
       S2.lite = !!(this.lite || this.phone); S2.update(g, dts);
       S2.draw(ctx, g, S, Sy, ppm, this.W, this.H, t, cam.x, cam.y, cam.h, g.earl.facing > 0 ? 0 : Math.PI);
-      if (S2.v > 0.04) this.slushHalo = { x: S(g.earl.x), y: Sy(g.earl.y), r: (1.6 + 3 * S2.v * S2.v) * ppm, a: 0.12 * S2.v + 0.36 * S2.v * S2.v * S2.v }; else this.slushHalo = null; // the lamp's light thrown back by the ice round him
+      this.slushHalo = S2.v > 0.04 ? { v: S2.v } : null; // the lamp's light thrown back by the ice round him
     } else this.slushHalo = null;
     this.drawFloorCached(g, S, Sy, ppm);
     this.drawFloorLife(g, ctx, S, Sy, ppm, x0, x1, t);
@@ -1237,7 +1237,7 @@ export class Renderer {
       if (A0 && A0.inFrame && bf && A0.lx != null) { ctx.translate(bf.x, bf.y); ctx.rotate(bf.a); ctx.translate(A0.lx * ppm, A0.ly * ppm); } // aboard: in the boat's own frame, rocking with her
       else ctx.translate(S(e.x), Sy(e.y));
       ctx.scale(e.facing, 1); ctx.rotate(e.angle);
-      const moving = g.aboard || g.ashore ? 0 : clamp(e.speedNow / 3, 0, 1);
+      const moving = g.aboard || g.ashore ? 0 : Math.max(clamp(e.speedNow / 3, 0, 1), e.toiling ? 0.7 : 0); // (7.9.1) in the mush he swims hard (the stick held) and barely moves
       const lampCol = e.lampOn ? rgbStr(mixRgb(BEAM_CALM, BEAM_DREAD, fx.torchShift)) : null;
       // what he is holding, and what is in his bag
       let gear = null;
@@ -1263,6 +1263,7 @@ export class Renderer {
         else if (P0 === 'climb') gear.climb = g.aboard.rung || 0;
       }
       const sm0 = g.siphon && !g.siphon.sub ? siphMix(g.siphon)[0] : 1; if (sm0 < 1) { ctx.globalAlpha *= sm0; if ('filter' in ctx) ctx.filter = `grayscale(${(1 - sm0).toFixed(2)})`; } // (7.6.8) Siphon: he greys and fades
+      if (gear && !g.aboard && !g.ashore) gear.stiff = e.labour || 0; // (7.9.1) stiff, short strokes in thick water
       const h = drawEarl(ctx, (g.aboard || g.ashore ? 1.7 : EARL_H) * ppm, e.kick, moving, lampCol, amb, gear); // (standing on deck he is drawn at a man's height)
       if (sm0 < 1 && 'filter' in ctx) ctx.filter = 'none';
       // (7.6.7, owner) Temper: heat colours on his own figure, never round him. He is drawn again on a side canvas under
@@ -1455,12 +1456,13 @@ export class Renderer {
     if (!(this.skip && this.skip.light)) { this.buildLightmap(g, S, Sy, ppm, head, subLamps, glowPts, horizon, surfY);
     ctx.globalCompositeOperation = 'multiply';
     ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = this.phone ? 'low' : 'high'; // (5.3.2) 'high' scaling is very slow in Safari
-    ctx.drawImage(this.lc, 0, 0, W, H); }
+    ctx.drawImage(this.lc, 0, 0, W, H);
+    { const lc = this.lc, m = 32; ctx.drawImage(lc, 0, 0, 1, lc.height, -m, 0, m, H); ctx.drawImage(lc, lc.width - 1, 0, 1, lc.height, W, 0, m, H); ctx.drawImage(lc, 0, 0, lc.width, 1, -m, -m, W + 2 * m, m); ctx.drawImage(lc, 0, lc.height - 1, lc.width, 1, -m, H, W + 2 * m, m); } } // (7.9.1) the scene sways a few pixels with the water: the light's edge carried out past the screen's, so no unlit strip shows at an edge
     ctx.imageSmoothingQuality = 'low'; // (only the light needs the careful scaling; everything else uses the fast kind)
     ctx.globalCompositeOperation = 'lighter';
     this.drawGlows(g, S, Sy, ppm, head, subLamps, glowPts, horizon, dayEff);
     if (g.abilLight >= 2 && ((g.lightFade ?? 1) * (g.abilOutK ?? 1)) > 0.01 && g.mode === 'play') { // (7.4.9, owner) the Lighthouse over the lit scene: up to half again as bright as it pulses, and its two beams turning, brighter still where they cross the screen
-      const e2 = g.earl, bx = e2.inSub ? S(g.sub.x) : S(e2.x), by = e2.inSub ? Sy(g.sub.y) : Sy(e2.y), fl = (g.lightFade ?? 1) * (g.abilOutK ?? 1), pul = lerp(0.35, Math.pow(0.5 + 0.5 * Math.sin(g.time * 1.6), 2), g.pulseK ?? 1), rot = g.time * 0.45, Rb = Math.hypot(W, H), bK = g.beamK ?? 1;
+      const e2 = g.earl, bx = e2.inSub ? S(g.sub.x) : S(e2.x), by = e2.inSub ? Sy(g.sub.y) : Sy(e2.y), fl = (g.lightFade ?? 1) * (g.abilOutK ?? 1) * (1 - 0.55 * (this.slushHalo ? this.slushHalo.v : 0)) /* (7.9.1) in the slush its glare is the ice's: no added wash to white it out */, pul = lerp(0.35, Math.pow(0.5 + 0.5 * Math.sin(g.time * 1.6), 2), g.pulseK ?? 1), rot = g.time * 0.45, Rb = Math.hypot(W, H), bK = g.beamK ?? 1;
       ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.globalCompositeOperation = 'screen';
       { // (7.9.1) only over the water and the ground's lit skin: laid over the dark inside the ground it washed it pale (the ice's mush is lit right down)
         const cm = this.cam, Wd = g.world; ctx.beginPath(); ctx.moveTo(-10, -10);
@@ -2811,12 +2813,16 @@ export class Renderer {
     const D = this.gdC || (this.gdC = document.createElement('canvas')), dw = Math.ceil(W / 2), dh = Math.ceil(H / 2); if (D.width !== dw || D.height !== dh) { D.width = dw; D.height = dh; }
     const d = D.getContext('2d'); d.setTransform(1, 0, 0, 1, 0, 0); d.globalCompositeOperation = 'source-over'; d.globalAlpha = 1; d.clearRect(0, 0, dw, dh);
     d.fillStyle = 'rgb(6,6,7)'; d.fillRect(0, 0, dw, dh); d.setTransform(0.5, 0, 0, 0.5, 0, 0);
-    d.beginPath(); let first = true;
-    for (let x = x0 - step; x <= x1 + step * 3; x += step * 2) { const y = g.world.floorAt(x); const px = S(x), py = Sy(y); if (first) { d.moveTo(px, py); first = false; } else d.lineTo(px, py); }
+    const P = []; for (let x = x0 - step; x <= x1 + step * 3; x += step * 2) P.push([x, S(x), Sy(g.world.floorAt(x))]);
     d.globalCompositeOperation = 'destination-out'; d.lineJoin = 'round'; d.lineCap = 'round';
-    // the skin: fully clear to 0.45 m, then thinning out to 2.2 m in soft steps
-    const R0 = 0.45, R1 = 2.2, n = 9;
-    for (let i = 0; i < n; i++) { const r = R1 - (R1 - R0) * i / (n - 1); d.globalAlpha = i === n - 1 ? 1 : 0.28; d.lineWidth = 2 * r * ppm; d.stroke(); }
+    // (7.9.1, owner) the skin, never an even band (an even band read as the ground's edge curving away like a 3D
+    // shape): each soft step of it wanders, its line pushed in and out by its own slow noise and its width changing
+    // along it, so the seabed thins into the dark in patches and tongues
+    const R0 = 0.45, R1 = 2.2, n = 9, CH = 7;
+    for (let i = 0; i < n; i++) { const r = R1 - (R1 - R0) * i / (n - 1), amp = (0.15 + 0.55 * (r / R1)) * ppm; d.globalAlpha = i === n - 1 ? 1 : 0.28;
+      for (let c0 = 0; c0 < P.length - 1; c0 += CH) { const c1 = Math.min(P.length - 1, c0 + CH), mx = P[(c0 + c1) >> 1][0];
+        d.lineWidth = 2 * r * ppm * (0.7 + 0.6 * (0.5 + 0.5 * fbm1(mx / 3.7 + i * 5.3, 2, 17)));
+        d.beginPath(); for (let q = c0; q <= c1; q++) { const [wx, px, py] = P[q], j = fbm1(wx / 2.3 + i * 7.1, 3, 29) * amp; if (q === c0) d.moveTo(px, py + j); else d.lineTo(px, py + j); } d.stroke(); } }
     d.globalAlpha = 1; d.globalCompositeOperation = 'source-over';
     // the ice of the second sea's floor (and its last walls) is the mush's: no dark there
     const A = AREA2; if (x1 > A.drop2 && x0 < A.cliff - 470) { d.globalCompositeOperation = 'destination-out'; const ya = Sy(A.ice - 30); if (ya < H) { const gr = d.createLinearGradient(0, ya, 0, Sy(A.ice - 10)); gr.addColorStop(0, 'rgba(0,0,0,0)'); gr.addColorStop(1, 'rgba(0,0,0,1)'); d.fillStyle = gr; d.fillRect(S(A.drop2 + 4), ya, S(A.cliff - 470) - S(A.drop2 + 4), H - ya); } d.globalCompositeOperation = 'source-over'; }
@@ -3957,7 +3963,9 @@ export class Renderer {
     const flick = (fx.torchShift > 0.6 ? (Math.random() < 0.06 ? 0.3 : 1) : 1) * fx.lightPulse * (1 - 0.25 * (g.entDark || 0)) * ((g.entDark || 0) > 0.15 && Math.random() < 0.1 * g.entDark ? 0.45 : 1); // (5.16.0) weaker and flickering as its dark comes
     if (head && e.lampOn) {
       const ang = this.lampAngle(g, e, head);
-      cone(head.x, head.y, ang, 17 * ppm * (e.nightSet ? 1.5 : 1), 0.32 * (e.nightSet ? 1.2 : 1), beamCol, 0.95 * TORCH * flick); // (the Night Shift set: half as far again)
+      const sv = this.slushHalo ? this.slushHalo.v : 0; // (7.9.1) in the slush the ice scatters the beam: it reaches less far and spreads wider, its edges lost
+      cone(head.x, head.y, ang, 17 * ppm * (e.nightSet ? 1.5 : 1) * (1 - 0.5 * sv), 0.32 * (e.nightSet ? 1.2 : 1) * (1 + 0.8 * sv), beamCol, 0.95 * TORCH * flick * (1 - 0.3 * sv)); // (the Night Shift set: half as far again)
+      if (sv > 0.05) cone(head.x, head.y, ang, 12 * ppm, 0.32 * (1 + 2.6 * sv), mixRgb(beamCol, [196, 210, 220], 0.5), 0.4 * sv * TORCH * flick);
       radial(head.x, head.y, 3.2 * ppm, beamCol, 0.3 * TORCH * flick); lamps.push({ x: head.x, y: head.y, r: 3.2 * ppm, a: 0.3 * TORCH * flick });
     }
     // (5.17.1) each dropped glow stick lights the water round itself, where it was let go (warm amber, about 8 m across);
@@ -4103,7 +4111,11 @@ export class Renderer {
       radial(x, y, 9 * ppm, [255, 120, 60], 0.22 + 0.06 * Math.sin(g.time * 3 + v.phase));
     }
     for (const L of this.extraLights || []) radial(L.x, L.y, L.r, L.col, L.a); this.extraLights = [];
-    if (this.slushHalo && (g.earl.lampOn || g.abilLight > 0)) { const Hh = this.slushHalo; radial(Hh.x, Hh.y, Hh.r, [196, 210, 220], Hh.a); } // (7.9.0) milky: the ice in the water scatters his light back round him // (7.9.0) the lantern, the wreck's light
+    if (this.slushHalo && head && (e.lampOn || g.abilLight > 0)) { // (7.9.1, owner) the ice in the water scatters his light: one soft glow, long along the beam and fading smoothly into it (no ring, no edge between them)
+      const v = this.slushHalo.v, lamp = e.lampOn, ang = lamp ? this.lampAngle(g, e, head) : 0, R = (3 + 9 * v) * ppm, off = lamp ? R * 0.5 : 0, a = 0.04 + 0.26 * v * v;
+      l.save(); l.translate((head.x + Math.cos(ang) * off) * k, (head.y + Math.sin(ang) * off) * k); l.rotate(ang); l.scale(lamp ? 1.7 : 1, 1);
+      const gg = l.createRadialGradient(0, 0, 0, 0, 0, R * k); for (let i = 0; i <= 10; i++) { const u = i / 10; gg.addColorStop(u, rgbStr([196, 210, 220], a * Math.exp(-3.2 * u * u) * (1 - u * u))); }
+      l.fillStyle = gg; l.beginPath(); l.arc(0, 0, R * k, 0, TAU); l.fill(); l.restore(); } // (7.9.0) milky: the ice in the water scatters his light back round him // (7.9.0) the lantern, the wreck's light
     for (const p of glowPts) {
       const [x, y, col, r, gk = 1, core] = p;
       if (core === undefined) { radial(x, y, gk < 1 ? r * 2.5 : Math.max(r * 2.5, ppm * 0.8), hexToRgb(col), 0.7 * fx.bioPulse * gk); continue; }
