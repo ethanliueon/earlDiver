@@ -82,6 +82,45 @@ last desktop build is kept on the branch `desktop-4.25.5`).
 15. **Earned power is fine (7.6.71, owner).** Do not hold back strength a player has worked for (three skills at once,
    a mythic and two legendaries). The grind already gates it. Worry about clarity, not about the player being strong.
 
+## The game's direction (after 7.9.8, owner): what the game is becoming
+- **A survival collector where the sea fights back.** The calm loop (dive, catch, photograph, sell, upgrade) stays the
+  heart, but the sea has teeth: health, bleeding, poison, being dragged down, territorial and light-drawn hunters,
+  stingers unseen in the dark. The thing stays apart: the one horror that cannot be fought or out-tanked.
+- **A real mobile RPG spine:** levels 1-50 with a rank every ten (Apprentice, Adept, Master, Legendary, Abyssal Diver),
+  a visible health bar with its number, tappable status icons, a profile block with a portrait. "A real game" now
+  covers systems as well as buttons. Reference: Vampire's Fall: Origins (the quest pulls you where the world will not yet
+  let you go, and you choose to grind).
+- **The lamp is the centre:** light shows stingers and fish but draws squid and the thing; dark hides you but you swim
+  blind into tentacles. One choice ties fear, catching and survival together.
+
+## Design philosophy (after 7.9.8, owner): how to decide
+1. **Made in advance, every time (the most important rule).** If something can be baked into a PNG or a prepared
+   animation, bake it: animation sheets per species (swim, turn, attack, eat, flee), scripted moments instead of live
+   physics, hand-made routes in sections instead of improvised AI. It lowers lag, removes edge cases, adds detail and is
+   easier to change later. Efficiency of rendering everything live is not the goal; many assets are fine, loading them
+   all at once is not (load by depth or region, drop what is far behind). Code stays readable for the next Claude.
+2. **Look before you draw.** Before drawing or judging any animal, object or effect, find real visual references
+   (web search, downloaded photos into the scratchpad, training knowledge) and compare. If none can be found, say so
+   and ask the owner for pictures. Never guess a shape from memory alone. References stay out of the game.
+3. **Progress through skill and gear, never stockpiling.** No system may be beaten mainly by carrying more (air, heals).
+   Stealth, reading a hunter's tell, timing skills and better gear are the way through; an under-levelled player who
+   plays well can get through a zone. Healing items have cooldowns and carry limits.
+4. **Real behaviour is the source of ideas.** Real animal behaviour, real physics and biology first (Humboldt squid
+   dragging prey down, sperm whale clicks, the busy twilight zone, light organs in dots, red light dying first in
+   water, gravity and pressure); fantasy stands on top of it.
+5. **It must read on a phone.** Subtle detail is a reward, but the main thing on screen must be obvious (the
+   "nearly clear" ice of 7.9.7 was realistic and invisible: wrong).
+6. **The numbers must work, edge cases included.** Check that content can be reached (the second sea was not), cap
+   every repeated effect (damage per attacker per second), think through what happens if a player does the odd thing
+   (follows an animal forever, stays in a zone).
+7. **Story in the background, gritty, not wholesome:** a villain, people who use you, short lines in characters' voices,
+   paced by the grind, about 10 hours, cheap to build. Nothing paid for (the revive) carries lore.
+8. **Scope discipline.** Plan big, build in steps; big ideas wait on their own branch for their own update; end things
+   cleanly (a sign, a radio) rather than half-built.
+9. **How the owner works:** he plans everything in advance, thinks out loud and refines. Answer first, before doing
+   anything; turn ideas into concrete numbers and options, catch what breaks, push back with reasons. Plans are written
+   before building.
+
 ## The game's direction (7.6, owner)
 
 - The philosophy above is the quality bar (painted, intentional, never generated) and a description of the game as it
