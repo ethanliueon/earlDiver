@@ -1471,7 +1471,8 @@ export class Renderer {
       const wash = ctx.createRadialGradient(bx, by, 0, bx, by, Rb * 0.75); wash.addColorStop(0, `rgba(255,238,210,${((0.1 + 0.22 * pul) * fl).toFixed(3)})`); wash.addColorStop(0.6, `rgba(255,232,200,${((0.05 + 0.12 * pul) * fl).toFixed(3)})`); wash.addColorStop(1, 'rgba(255,232,200,0)');
       ctx.fillStyle = wash; ctx.fillRect(0, 0, W, H);
       // (7.6.31, owner) the old beams kept (owner: a light, not a beam of light); Pharos Heart's only for its first 10 s (g.beamK)
-      if (bK > 0.01) for (const off of (g.abilLight >= 3 ? [0, TAU / 3, TAU * 2 / 3] : [0, Math.PI])) { /* (7.7.2) Pharos Heart's three beams, as its card says */ const a2 = rot + off, gb = ctx.createRadialGradient(bx, by, 0, bx, by, Rb); gb.addColorStop(0, `rgba(255,240,214,${((0.12 + 0.1 * pul) * fl * bK).toFixed(3)})`); gb.addColorStop(0.55, `rgba(255,236,206,${((0.06 + 0.05 * pul) * fl * bK).toFixed(3)})`); gb.addColorStop(1, 'rgba(255,236,206,0)');
+      if (bK > 0.01 && ctx.createConicGradient) ctx.drawImage(this.beamLayer('post', W, H, 0.25, bx, by, rot, g.abilLight >= 3 ? [0, TAU / 3, TAU * 2 / 3] : [0, Math.PI], Rb, [255, 240, 214], 1.58 * (0.12 + 0.1 * pul) * fl * bK), 0, 0, W, H); // (7.9.3, owner) one smooth beam: no steps where layered wedges ended
+      else if (bK > 0.01) for (const off of (g.abilLight >= 3 ? [0, TAU / 3, TAU * 2 / 3] : [0, Math.PI])) { /* (7.7.2) Pharos Heart's three beams, as its card says */ const a2 = rot + off, gb = ctx.createRadialGradient(bx, by, 0, bx, by, Rb); gb.addColorStop(0, `rgba(255,240,214,${((0.12 + 0.1 * pul) * fl * bK).toFixed(3)})`); gb.addColorStop(0.55, `rgba(255,236,206,${((0.06 + 0.05 * pul) * fl * bK).toFixed(3)})`); gb.addColorStop(1, 'rgba(255,236,206,0)');
         ctx.fillStyle = gb; for (const [w, al] of [[0.38, 0.22], [0.31, 0.28], [0.24, 0.32], [0.17, 0.36], [0.1, 0.4]]) { ctx.globalAlpha = al; ctx.beginPath(); ctx.moveTo(bx, by); ctx.arc(bx, by, Rb, a2 - w, a2 + w); ctx.closePath(); ctx.fill(); } ctx.globalAlpha = 1; } // five widths laid over each other: a beam with soft edges, brightest down its middle
       ctx.restore(); ctx.globalCompositeOperation = 'lighter'; }
     if (!(this.skip && this.skip.light)) this.drawDeepRim(g, S, Sy, ppm); // (7.0.2) the deep's shapes, after the dark
@@ -2802,6 +2803,22 @@ export class Renderer {
     ctx.beginPath(); for (let x = x0; x <= x1 + step; x += step) ctx.lineTo(S(x), Sy(g.world.floorAt(x)) + 1); ctx.stroke();
   }
 
+  // (7.9.3, owner) the Lighthouse's (and Pharos Heart's) turning beams as one smooth picture: brightness across each beam
+  // follows a soft bell (a bright core in a broad shaft), out from him it fades as before. Made with an angular gradient
+  // (all the beams in one fill) times a radial one, at a quarter or half of the pixels: they were five (or two) wedges
+  // laid over each other, and every wedge's edge showed as a line. Same strength as before, no edges
+  beamLayer(key, tw, th, scale, bx, by, rot, offs, Rb, col, peak) {
+    const B = this.beamC || (this.beamC = {}), c = B[key] || (B[key] = document.createElement('canvas')), w = Math.max(1, Math.ceil(tw * scale)), h = Math.max(1, Math.ceil(th * scale));
+    if (c.width !== w || c.height !== h) { c.width = w; c.height = h; }
+    const x = c.getContext('2d'); x.setTransform(1, 0, 0, 1, 0, 0); x.globalAlpha = 1; x.globalCompositeOperation = 'source-over'; x.clearRect(0, 0, w, h);
+    const cx = bx * scale, cy = by * scale, R = Rb * scale, N = 120, cg = x.createConicGradient(rot, cx, cy);
+    const prof = (d) => 0.42 * Math.exp(-(d / 0.14) * (d / 0.14)) + 0.58 * Math.exp(-(d / 0.42) * (d / 0.42));
+    for (let i = 0; i <= N; i++) { const th0 = i / N * TAU; let f = 0; for (const o of offs) { let d = th0 - o; d -= TAU * Math.round(d / TAU); f = Math.max(f, prof(d)); } cg.addColorStop(i / N, rgbStr(col, Math.min(1, peak * f))); }
+    x.fillStyle = cg; x.fillRect(0, 0, w, h);
+    x.globalCompositeOperation = 'destination-in'; const rg = x.createRadialGradient(cx, cy, 0, cx, cy, R);
+    rg.addColorStop(0, 'rgba(0,0,0,1)'); rg.addColorStop(0.5, 'rgba(0,0,0,0.59)'); rg.addColorStop(1, 'rgba(0,0,0,0)'); x.fillStyle = rg; x.fillRect(0, 0, w, h);
+    return c;
+  }
   // (7.9.1, owner) the ground is not seen into: as in a side-on game where what lies under the surface is dark, only its
   // top skin shows (a metre or so of sediment, lit by the lamp like the rest), then it falls away into near-black. The
   // darkness is measured as the distance from the surface in every direction, not straight down, so a wall's face keeps
@@ -2812,21 +2829,21 @@ export class Renderer {
     // at a quarter of the pixels (it is a soft gradient: scaled back up it looks the same, and costs a quarter)
     const D = this.gdC || (this.gdC = document.createElement('canvas')), dw = Math.ceil(W / 2), dh = Math.ceil(H / 2); if (D.width !== dw || D.height !== dh) { D.width = dw; D.height = dh; }
     const d = D.getContext('2d'); d.setTransform(1, 0, 0, 1, 0, 0); d.globalCompositeOperation = 'source-over'; d.globalAlpha = 1; d.clearRect(0, 0, dw, dh);
-    d.fillStyle = 'rgb(6,6,7)'; d.fillRect(0, 0, dw, dh); d.setTransform(0.5, 0, 0, 0.5, 0, 0);
+    d.fillStyle = 'rgb(2,2,3)'; d.fillRect(0, 0, dw, dh); d.setTransform(0.5, 0, 0, 0.5, 0, 0);
     const P = []; for (let x = x0 - step; x <= x1 + step * 3; x += step * 2) P.push([x, S(x), Sy(g.world.floorAt(x))]);
     d.globalCompositeOperation = 'destination-out'; d.lineJoin = 'round'; d.lineCap = 'round';
     // (7.9.1, owner) the skin, never an even band (an even band read as the ground's edge curving away like a 3D
     // shape): each soft step of it wanders, its line pushed in and out by its own slow noise and its width changing
     // along it, so the seabed thins into the dark in patches and tongues
-    const R0 = 0.45, R1 = 2.2, n = 9, CH = 7;
-    for (let i = 0; i < n; i++) { const r = R1 - (R1 - R0) * i / (n - 1), amp = (0.15 + 0.55 * (r / R1)) * ppm; d.globalAlpha = i === n - 1 ? 1 : 0.28;
+    const R0 = 0.45, R1 = 3.4, n = 14, CH = 7; // (7.9.3, owner) wider and softer
+    for (let i = 0; i < n; i++) { const r = R1 - (R1 - R0) * i / (n - 1), amp = (0.15 + 0.55 * (r / R1)) * ppm; d.globalAlpha = i === n - 1 ? 1 : 0.17;
       for (let c0 = 0; c0 < P.length - 1; c0 += CH) { const c1 = Math.min(P.length - 1, c0 + CH), mx = P[(c0 + c1) >> 1][0];
         d.lineWidth = 2 * r * ppm * (0.7 + 0.6 * (0.5 + 0.5 * fbm1(mx / 3.7 + i * 5.3, 2, 17)));
         d.beginPath(); for (let q = c0; q <= c1; q++) { const [wx, px, py] = P[q], j = fbm1(wx / 2.3 + i * 7.1, 3, 29) * amp; if (q === c0) d.moveTo(px, py + j); else d.lineTo(px, py + j); } d.stroke(); } }
     d.globalAlpha = 1; d.globalCompositeOperation = 'source-over';
     // the ice of the second sea's floor (and its last walls) is the mush's: no dark there
     const A = AREA2; if (x1 > A.drop2 && x0 < A.cliff - 470) { d.globalCompositeOperation = 'destination-out'; const ya = Sy(A.ice - 30); if (ya < H) { const gr = d.createLinearGradient(0, ya, 0, Sy(A.ice - 10)); gr.addColorStop(0, 'rgba(0,0,0,0)'); gr.addColorStop(1, 'rgba(0,0,0,1)'); d.fillStyle = gr; d.fillRect(S(A.drop2 + 4), ya, S(A.cliff - 470) - S(A.drop2 + 4), H - ya); } d.globalCompositeOperation = 'source-over'; }
-    ctx.save(); ctx.globalAlpha = 0.93; ctx.imageSmoothingQuality = 'low'; ctx.drawImage(D, 0, 0, dw * 2, dh * 2); ctx.restore();
+    ctx.save(); ctx.globalAlpha = 1; ctx.imageSmoothingQuality = 'low'; ctx.drawImage(D, 0, 0, dw * 2, dh * 2); ctx.restore(); // (7.9.3, owner) fully dark: a light on it must not lift it to muddy brown
   }
   // (7.8.1, owner) the seabed on the second sea's wall, by the depth of each band of it: its colour from the same table
   // as the first sea's floor, then the painted textures (assets/textures/seabed*.png) multiplied over it in thin bands,
@@ -2941,12 +2958,30 @@ export class Renderer {
       const base = mixRgb(sampleTable(FLOOR_COL, d), [50, 48, 46], 0.55);
       const tile = x.createPattern(this.noiseTile('rock', 192, 11, 5, 1.3), 'repeat');
       drawRockArt(x, rk.poly.map((p) => [(p.x - ox) * bp, (p.y - oy) * bp]), rk.kind, d, rk.seed, bp, tile, base);
+      if (Math.min(rk.x1 - rk.x0, rk.y1 - rk.y0) > 4.5) this.rockDark(x, rk, ox, oy, bp, cw, ch); // (7.9.3, owner) a big rock is not seen into either
       C = rk._spr = { c, bp, ox, oy, cw, ch };
       const keep = this.rockSprites || (this.rockSprites = []);
       keep.push(rk); if (keep.length > 120) { const old = keep.shift(); if (old !== rk) old._spr = null; }
     }
     const k = ppm / C.bp;
     ctx.drawImage(C.c, S(C.ox), Sy(C.oy), C.cw * k, C.ch * k);
+  }
+
+  // (7.9.3, owner) the boulders, ledges and shelf of the first sea, as the floor (groundDark): only a wandering skin of rock
+  // a metre or two in from every face shows, the inside falls to near-black. Baked into the rock's own picture, once
+  rockDark(x, rk, ox, oy, bp, cw, ch) {
+    const w = Math.ceil(cw / 2), h = Math.ceil(ch / 2), D = document.createElement('canvas'); D.width = w; D.height = h;
+    const d = D.getContext('2d'); d.fillStyle = 'rgb(2,2,3)'; d.fillRect(0, 0, w, h); d.setTransform(0.5, 0, 0, 0.5, 0, 0);
+    // the outline, cut into pieces about 0.6 m long, each knowing how far round it is (for the noise)
+    const P = []; let sAcc = 0; const poly = rk.poly;
+    for (let i = 0; i < poly.length; i++) { const a = poly[i], b = poly[(i + 1) % poly.length], L = Math.hypot(b.x - a.x, b.y - a.y), n = Math.max(1, Math.ceil(L / 0.6));
+      for (let j = 0; j < n; j++) { const t = j / n; P.push([a.x + (b.x - a.x) * t, a.y + (b.y - a.y) * t, sAcc + L * t]); } sAcc += L; }
+    d.globalCompositeOperation = 'destination-out'; d.lineJoin = 'round'; d.lineCap = 'round';
+    const R0 = 0.45, R1 = 3.4, n = 14, sd = (rk.seed || 1) * 0.37; // (7.9.3, owner) wider: a ledge or overhang is nearly all skin
+    for (let i = 0; i < n; i++) { const r = R1 - (R1 - R0) * i / (n - 1), amp = (0.25 + 0.85 * (r / R1)); d.globalAlpha = i === n - 1 ? 1 : 0.17;
+      d.lineWidth = 2 * r * bp * (0.8 + 0.4 * (0.5 + 0.5 * fbm1(i * 5.3 + sd, 2, 17)));
+      d.beginPath(); P.forEach(([px, py, sp], q) => { const jx = fbm1(sp / 2.3 + i * 7.1 + sd, 3, 29) * amp, jy = fbm1(sp / 2.3 + i * 3.7 + sd + 50, 3, 31) * amp, X = (px + jx - ox) * bp, Y = (py + jy - oy) * bp; if (q) d.lineTo(X, Y); else d.moveTo(X, Y); }); d.closePath(); d.stroke(); }
+    x.save(); x.globalCompositeOperation = 'source-atop'; x.globalAlpha = 1; x.drawImage(D, 0, 0, w * 2, h * 2); x.restore();
   }
 
   bakeKelpBackdrop(world) {
@@ -4025,8 +4060,10 @@ export class Renderer {
       const e2 = g.earl, bx = (e2.inSub ? S(g.sub.x) : S(e2.x)) * k, by = (e2.inSub ? Sy(g.sub.y) : Sy(e2.y)) * k, fadeL = (g.lightFade ?? 1) * (g.abilOutK ?? 1) * (g.beamK ?? 1), pul = 0.6 + 0.4 * lerp(0.35, Math.pow(0.5 + 0.5 * Math.sin(g.time * 1.6), 2), g.pulseK ?? 1), rot = g.time * 0.45, Rb = Math.hypot(this.W, this.H) * k;
       const op = l.globalCompositeOperation; l.globalCompositeOperation = 'lighter';
       for (const off of (g.abilLight >= 3 ? [0, TAU / 3, TAU * 2 / 3] : [0, Math.PI])) { const a = rot + off; // (7.4.15) Pharos: three beams
+        if (l.createConicGradient) continue; // (7.9.3) drawn below, all at once and smooth
         const gb = l.createRadialGradient(bx, by, 0, bx, by, Rb); gb.addColorStop(0, rgbStr([255, 240, 214], 0.34 * pul * fadeL)); gb.addColorStop(0.5, rgbStr([255, 236, 206], 0.2 * pul * fadeL)); gb.addColorStop(1, rgbStr([255, 236, 206], 0));
         l.fillStyle = gb; for (const w of [0.32, 0.14]) { l.beginPath(); l.moveTo(bx, by); l.arc(bx, by, Rb, a - w, a + w); l.closePath(); l.fill(); } } // a broad beam and its brighter core
+      if (l.createConicGradient) { const lw = l.canvas.width, lh = l.canvas.height; l.drawImage(this.beamLayer('lm', lw, lh, 0.5, bx, by, rot, g.abilLight >= 3 ? [0, TAU / 3, TAU * 2 / 3] : [0, Math.PI], Rb, [255, 240, 214], 0.68 * pul * fadeL), 0, 0, lw, lh); }
       l.globalCompositeOperation = op; }
     if (g.legend) { // the legendary moment: a pale light comes up on it, and fades
       const c = g.legend.c, kf = Math.min(1, g.legend.t / 1.5) * Math.min(1, (8 - g.legend.t) / 2.5);
