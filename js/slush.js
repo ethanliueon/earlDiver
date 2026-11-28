@@ -88,7 +88,9 @@ export class Slush {
       const aT = alphaOf(yTop), aB = alphaOf(yBot);
       if (Math.max(aT, aB) < 0.004) return;
       if (Math.abs(aT - aB) < 0.015) { ctx.globalAlpha = (aT + aB) / 2; ctx.fillRect(x0, 0, W - x0, H); return; }
-      const bh = 10; for (let py = 0; py < H; py += bh) { const wy = camY + (py + bh / 2 - H / 2) / ppm, a = alphaOf(wy); if (a < 0.004) continue; ctx.globalAlpha = a; ctx.fillRect(x0, py, W - x0, bh + 0.5); }
+      // (7.9.1) thin bands meeting exactly, never overlapping (the half pixel of overlap drew a faint line at every seam);
+      // fine enough (4 px) that the steps between them are below what an eye can tell
+      const bh = 4, X0 = Math.floor(x0); for (let py = 0; py < H; py += bh) { const wy = camY + (py + bh / 2 - H / 2) / ppm, a = alphaOf(wy); if (a < 0.004) continue; ctx.globalAlpha = a; ctx.fillRect(X0, py, W - X0, Math.min(bh, H - py)); }
     };
     ctx.save();
     const amt = (y) => slushAmount(AREA2.edge + 1, y);
@@ -108,6 +110,26 @@ export class Slush {
         ctx.rotate(q.rot); ctx.globalAlpha = (q.blur ? 0.55 : 0.85) * Math.min(1, 0.35 + this.v * 1.6);
         ctx.drawImage(A, q.sp * 64, row * 64, 64, 64, -s / 2, -s / 2, s, s); ctx.restore();
       }
+    }
+    ctx.restore();
+  }
+  // (7.9.1, owner) no floor to be seen at the bottom: over its last ten metres the mush thickens until it is the ice. Drawn
+  // after the floor and what lies on it, so the floor's line, its colour and anything on it are lost in the mush; a
+  // smooth gradient (no bands), the same milky colour as the mush, then the mush's own grain over it. Like the rest of the
+  // slush it is drawn before the light map: it shows only where a light falls
+  drawBody(ctx, S, Sy, ppm, W, H, t, camY) {
+    const A = AREA2, top = A.ice - 10, yA = Sy(top); if (yA >= H) return;
+    const xa = Math.max(0, Math.floor(S(A.drop2 + 4))), xb = Math.min(W, Math.ceil(S(A.cliff - 470))); if (xb <= xa) return;
+    const yB = Sy(A.ice - 0.3), y0 = Math.max(0, Math.floor(yA));
+    ctx.save();
+    const gr = ctx.createLinearGradient(0, yA, 0, yB);
+    for (let k = 0; k <= 8; k++) { const u = k / 8, a = Math.pow(u * u * (3 - 2 * u), 1.6); gr.addColorStop(u, `rgba(190,203,210,${a.toFixed(3)})`); }
+    ctx.fillStyle = gr; ctx.fillRect(xa, y0, xb - xa, H - y0);
+    const im = this.mush; if (im.ok) {
+      const k = 6 * ppm / im.width, pat = this.pBody || (this.pBody = ctx.createPattern(im, 'repeat'));
+      pat.setTransform(new DOMMatrix([k, 0, 0, k, (S(0) + Math.sin(t * 0.05 + 6) * 0.15 * ppm) % (im.width * k), (Sy(0) + t * 0.012 * ppm) % (im.height * k)]));
+      ctx.fillStyle = pat;
+      for (let py = y0; py < H; py += 4) { const wy = camY + (py + 2 - H / 2) / ppm, a = 0.75 * ss(top, A.ice - 1, wy); if (a < 0.004) continue; ctx.globalAlpha = a; ctx.fillRect(xa, py, xb - xa, Math.min(4, H - py)); }
     }
     ctx.restore();
   }

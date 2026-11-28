@@ -140,7 +140,7 @@ def mush(size=512):
         img = Image.fromarray((big * 255).astype(np.uint8)).resize((size * 3, size * 3), Image.BICUBIC).crop((size, size, size * 2, size * 2))
         return np.array(img).astype(np.float32) / 255
     body = 0.6 * tile_noise(128, 1) + 0.4 * tile_noise(40, 2)
-    a = (54 + body * 46).astype(np.uint8)                   # 54-100 of 255: an even veil, barely mottled
+    a = (68 + body * 20).astype(np.uint8)                   # (7.9.1) 68-88 of 255: an even veil; more read as clouds of smoke
     rgb = np.zeros((size, size, 3), np.uint8); rgb[..., 0] = 196; rgb[..., 1] = 210; rgb[..., 2] = 218
     im = Image.fromarray(np.dstack([rgb, a]), 'RGBA')
     S = size * SS

@@ -358,11 +358,24 @@ export class Renderer {
     if (g.mode === 'menu') { const T = g.time - (g.menuT0 ?? g.time), k = smoothstep(6, 62, T); tx = BOAT.x - 7 + Math.sin(g.time * 0.05) * 3 + k * 10; ty = lerp(5.5, 78, k); }
     if (g.helm) { tx = BOAT.x + 3 * Math.cos(BOAT.yaw || 0) + clamp(g.boatV || 0, -5, 5) * 1.6; ty = -2.5; } // at the wheel: the whole Margaret and the sub in her cradle, looking a little ahead the way she goes
     if (lk > 0 && g.legend && g.legend.c) { const q = 0.35 * lk; tx = lerp(tx, g.legend.c.x, q); ty = lerp(ty, g.legend.c.y, q); this.legendAt = g.legend.c; }
+    // (7.9.1, owner) the view leans toward the water: by the floor or a wall the ground never fills more than about a fifth
+    // of the screen (it showed half of it, a big cut through the seabed). Up: the view is kept high enough that the floor
+    // under him (the deepest of it close by, so a wall beside him never lifts the view) sits at most a fifth of the screen
+    // from its bottom. Sideways: the view moves away from the side the ground fills, in proportion. Both through the same
+    // easing as the rest of the camera, so it glides; he is allowed a little lower on the screen for it (below)
+    if (g.mode === 'play' && !g.helm && !(lk > 0)) {
+      const Wd = g.world, GROUND = 0.2, near = e.inSub ? 4 : 1.6;
+      const under = Math.max(Wd.floorAt(e.x - near), Wd.floorAt(e.x), Wd.floorAt(e.x + near));
+      ty = Math.min(ty, under - (0.5 - GROUND) * cam.h);
+      const bot = ty + cam.h / 2, cov = (x) => clamp((bot - Wd.floorAt(x)) / cam.h, 0, 1);
+      let L = 0, R = 0; for (let i = 0; i < 4; i++) { L += cov(tx - cam.w * (0.5 - i * 0.08)); R += cov(tx + cam.w * (0.5 - i * 0.08)); }
+      tx += (L - R) / 4 * cam.w * 0.22;
+    }
     // a jump (new dive, respawn) cuts straight there instead of sweeping across the map
     if (Math.hypot(cam.x - tx, cam.y - ty) > 80) { cam.x = tx; cam.y = ty; }
     const k = 1 - Math.exp(-dt * (g.mode === 'menu' ? 0.6 : 3));
     cam.x = lerp(cam.x, tx, k); cam.y = lerp(cam.y, ty, k);
-    if (g.mode === 'play' && !g.helm && !(lk > 0)) { const mX = cam.w * 0.25, mY = cam.h * 0.25; cam.x = clamp(cam.x, e.x - mX, e.x + mX); cam.y = clamp(cam.y, Math.max(e.y, -1e9) - mY, e.y + mY); } // (7.6.26)
+    if (g.mode === 'play' && !g.helm && !(lk > 0)) { const mX = cam.w * 0.25, mY = cam.h * 0.25; cam.x = clamp(cam.x, e.x - mX, e.x + mX); cam.y = clamp(cam.y, Math.max(e.y, -1e9) - cam.h * 0.3, e.y + mY); } // (7.6.26) // (7.9.1) he may sit a little lower, for the view's lean off the floor
     cam.x = clamp(cam.x, SEA_X0 + cam.w / 2 - 20, WORLD_W - cam.w / 2 + 25);
   }
 
@@ -536,6 +549,7 @@ export class Renderer {
       if (s.variant === 'crimson') glowPts.push([S(s.x), Sy(s.y) - L * 0.3, '#ff3018', Math.max(ppm * 0.6, L * 0.6), 1]);
       if (r && glowOf(s)) glowPts.push([S(s.x), Sy(s.y), glowOf(s), L]);
     }
+    if (this.slush && cam.y + cam.h / 2 > AREA2.ice - 12 && x1 > AREA2.drop2 && x0 < AREA2.cliff - 470) this.slush.drawBody(ctx, S, Sy, ppm, this.W, this.H, t, cam.y); // (7.9.1, owner) the mush becomes the ice: no floor line
     // ---- fauna ----
     // Fish are drawn nose at -x, so a fish heading right (+x) is mirrored, and the tilt is negated
     // so the nose follows the direction of travel (a fish swimming down points down).
@@ -1448,6 +1462,10 @@ export class Renderer {
     if (g.abilLight >= 2 && ((g.lightFade ?? 1) * (g.abilOutK ?? 1)) > 0.01 && g.mode === 'play') { // (7.4.9, owner) the Lighthouse over the lit scene: up to half again as bright as it pulses, and its two beams turning, brighter still where they cross the screen
       const e2 = g.earl, bx = e2.inSub ? S(g.sub.x) : S(e2.x), by = e2.inSub ? Sy(g.sub.y) : Sy(e2.y), fl = (g.lightFade ?? 1) * (g.abilOutK ?? 1), pul = lerp(0.35, Math.pow(0.5 + 0.5 * Math.sin(g.time * 1.6), 2), g.pulseK ?? 1), rot = g.time * 0.45, Rb = Math.hypot(W, H), bK = g.beamK ?? 1;
       ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.globalCompositeOperation = 'screen';
+      { // (7.9.1) only over the water and the ground's lit skin: laid over the dark inside the ground it washed it pale (the ice's mush is lit right down)
+        const cm = this.cam, Wd = g.world; ctx.beginPath(); ctx.moveTo(-10, -10);
+        for (let px = -10; px <= W + 22; px += 12) { const wx = cm.x + (px - W / 2) / ppm, fy = Wd.floorAt(clamp(wx, 0, WORLD_W - 1)); ctx.lineTo(px, fy > AREA2.ice - 40 && wx > AREA2.drop2 ? H + 10 : Sy(fy) + ppm * 0.9); }
+        ctx.lineTo(W + 22, -10); ctx.closePath(); ctx.clip(); }
       const wash = ctx.createRadialGradient(bx, by, 0, bx, by, Rb * 0.75); wash.addColorStop(0, `rgba(255,238,210,${((0.1 + 0.22 * pul) * fl).toFixed(3)})`); wash.addColorStop(0.6, `rgba(255,232,200,${((0.05 + 0.12 * pul) * fl).toFixed(3)})`); wash.addColorStop(1, 'rgba(255,232,200,0)');
       ctx.fillStyle = wash; ctx.fillRect(0, 0, W, H);
       // (7.6.31, owner) the old beams kept (owner: a light, not a beam of light); Pharos Heart's only for its first 10 s (g.beamK)
@@ -2704,7 +2722,7 @@ export class Renderer {
     ctx.lineTo(S(x1 + step), H + 20); ctx.closePath();
     const midD = V ? V.midD : g.world.floorAt(this.cam.x);
     const fg = ctx.createLinearGradient(0, Sy(midD - 6), 0, Sy(midD + 30));
-    const c = midD > AREA2.ice - 1500 ? [168, 196, 212] : sampleTable(FLOOR_COL, midD); /* (7.8.0, owner) the second sea's floor is ice VI: pale, glassy */
+    const c = midD > AREA2.ice - 1500 ? [190, 203, 210] : sampleTable(FLOOR_COL, midD); /* (7.8.0, owner) the second sea's floor is ice VI: pale, glassy */
     fg.addColorStop(0, rgbStr(c)); fg.addColorStop(0.15, rgbStr(mixRgb(c, [40, 36, 30], 0.35))); fg.addColorStop(1, rgbStr(mixRgb(c, [10, 10, 10], 0.75)));
     ctx.fillStyle = fg; ctx.fill();
     // grain texture
@@ -2728,7 +2746,7 @@ export class Renderer {
       const k = 3.2 * ppm / 512, alpha = 0.85 - 0.5 * smoothstep(20, 600, V ? V.midD : camY), sw = Math.max(6, Math.round(W / 90));
       ctx.save(); ctx.globalCompositeOperation = 'multiply';
       for (let zi = 0; zi < ZT.length; zi++) { const Z = ZT[zi]; if (!Z.im.ok) continue; if (!Z.pat) Z.pat = ctx.createPattern(Z.im, 'repeat'); Z.pat.setTransform(new DOMMatrix([k, 0, 0, k, S(0) % (512 * k), Sy(0)])); ctx.fillStyle = Z.pat;
-        for (let px = 0; px < W; px += sw) { const wx = x0 + (px + sw / 2) / ppm, w = wts(wx)[zi]; if (w < 0.02) continue; ctx.globalAlpha = alpha * w; ctx.fillRect(px, 0, sw + 0.5, H); } }
+        for (let px = 0; px < W; px += sw) { const wx = x0 + (px + sw / 2) / ppm, w = wts(wx)[zi]; if (w < 0.02) continue; ctx.globalAlpha = alpha * w; ctx.fillRect(px, 0, Math.min(sw, W - px), H); } /* (7.9.1) strips meet exactly: an overlap multiplied twice drew a faint seam */ }
       ctx.restore(); }
     // (7.8.1, owner) the second sea's wall is the same seabed carried down: sand at the top, turning by depth (not by
     // the floor below, which there is 11 km down) to the slope's silt, the ooze and the trench's rock, from the same
@@ -2775,12 +2793,35 @@ export class Renderer {
     }
     // (7.8.0, owner) the second sea's rock: the cliff, the plain's bed and the far wall painted as stone, the floor of the
     // abyss as ice, instead of the sand and silt of the first sea
+    if (V) this.groundDark(g, ctx, S, Sy, ppm, x0, x1, step, W, H);
     ctx.restore();
     // lit edge
     ctx.strokeStyle = 'rgba(255,250,235,0.16)'; ctx.lineWidth = Math.max(1, ppm * 0.06);
     ctx.beginPath(); for (let x = x0; x <= x1 + step; x += step) ctx.lineTo(S(x), Sy(g.world.floorAt(x)) + 1); ctx.stroke();
   }
 
+  // (7.9.1, owner) the ground is not seen into: as in a side-on game where what lies under the surface is dark, only its
+  // top skin shows (a metre or so of sediment, lit by the lamp like the rest), then it falls away into near-black. The
+  // darkness is measured as the distance from the surface in every direction, not straight down, so a wall's face keeps
+  // its skin as the floor does: a dark sheet with the surface line rubbed out of it by soft strokes of shrinking width.
+  // Baked with the floor (only when the floor's picture is made), so it costs nothing per frame. Not at the ice, which
+  // is lost in the mush instead
+  groundDark(g, ctx, S, Sy, ppm, x0, x1, step, W, H) {
+    // at a quarter of the pixels (it is a soft gradient: scaled back up it looks the same, and costs a quarter)
+    const D = this.gdC || (this.gdC = document.createElement('canvas')), dw = Math.ceil(W / 2), dh = Math.ceil(H / 2); if (D.width !== dw || D.height !== dh) { D.width = dw; D.height = dh; }
+    const d = D.getContext('2d'); d.setTransform(1, 0, 0, 1, 0, 0); d.globalCompositeOperation = 'source-over'; d.globalAlpha = 1; d.clearRect(0, 0, dw, dh);
+    d.fillStyle = 'rgb(6,6,7)'; d.fillRect(0, 0, dw, dh); d.setTransform(0.5, 0, 0, 0.5, 0, 0);
+    d.beginPath(); let first = true;
+    for (let x = x0 - step; x <= x1 + step * 3; x += step * 2) { const y = g.world.floorAt(x); const px = S(x), py = Sy(y); if (first) { d.moveTo(px, py); first = false; } else d.lineTo(px, py); }
+    d.globalCompositeOperation = 'destination-out'; d.lineJoin = 'round'; d.lineCap = 'round';
+    // the skin: fully clear to 0.45 m, then thinning out to 2.2 m in soft steps
+    const R0 = 0.45, R1 = 2.2, n = 9;
+    for (let i = 0; i < n; i++) { const r = R1 - (R1 - R0) * i / (n - 1); d.globalAlpha = i === n - 1 ? 1 : 0.28; d.lineWidth = 2 * r * ppm; d.stroke(); }
+    d.globalAlpha = 1; d.globalCompositeOperation = 'source-over';
+    // the ice of the second sea's floor (and its last walls) is the mush's: no dark there
+    const A = AREA2; if (x1 > A.drop2 && x0 < A.cliff - 470) { d.globalCompositeOperation = 'destination-out'; const ya = Sy(A.ice - 30); if (ya < H) { const gr = d.createLinearGradient(0, ya, 0, Sy(A.ice - 10)); gr.addColorStop(0, 'rgba(0,0,0,0)'); gr.addColorStop(1, 'rgba(0,0,0,1)'); d.fillStyle = gr; d.fillRect(S(A.drop2 + 4), ya, S(A.cliff - 470) - S(A.drop2 + 4), H - ya); } d.globalCompositeOperation = 'source-over'; }
+    ctx.save(); ctx.globalAlpha = 0.93; ctx.imageSmoothingQuality = 'low'; ctx.drawImage(D, 0, 0, dw * 2, dh * 2); ctx.restore();
+  }
   // (7.8.1, owner) the seabed on the second sea's wall, by the depth of each band of it: its colour from the same table
   // as the first sea's floor, then the painted textures (assets/textures/seabed*.png) multiplied over it in thin bands,
   // each weighted by depth exactly as the first sea's floor is (sand above 30-70 m, the slope's silt to 300-520 m, the
@@ -2799,7 +2840,7 @@ export class Renderer {
       const wts = (d) => { const shelf = 1 - ss(30, 70, d), slope = ss(30, 70, d) * (1 - ss(300, 520, d)), oz = ss(300, 520, d) * (1 - ss(2000, 2900, d)), tr = ss(2000, 2900, d) * (1 - ss(A.ice - 5000, A.ice - 1000, d)), sm = shelf + slope + oz + tr || 1; return [shelf / sm, slope / sm, oz / sm, tr / sm]; };
       ctx.globalCompositeOperation = 'multiply';
       for (let n = 0; n < zi2.length; n++) { const Z = ZT[zi2[n]]; if (!Z || !Z.im.ok) continue; if (!Z.pat) Z.pat = ctx.createPattern(Z.im, 'repeat'); Z.pat.setTransform(new DOMMatrix([k, 0, 0, k, S(0) % (512 * k), Sy(0) % (512 * k)])); ctx.fillStyle = Z.pat;
-        for (let py = Y0; py < Y1; py += bh) { const wy = ya + (py + bh / 2 - Y0) / ppm, w = wts(wy)[n]; if (w < 0.02) continue; ctx.globalAlpha = (0.85 - 0.5 * ss(20, 600, wy)) * w; ctx.fillRect(X0, py, X1 - X0, bh + 0.5); } } }
+        for (let py = Math.floor(Y0); py < Y1; py += bh) { const wy = ya + (py + bh / 2 - Y0) / ppm, w = wts(wy)[n]; if (w < 0.02) continue; ctx.globalAlpha = (0.85 - 0.5 * ss(20, 600, wy)) * w; ctx.fillRect(X0, py, X1 - X0, Math.min(bh, Math.ceil(Y1) - py)); } /* (7.9.1) bands meet exactly, no seams */ } }
     ctx.restore();
     if (!this.phone) this.texture(ctx, 'rock', 19, 0.22 + 0.25 * ss(30, 400, (ya + yb) / 2), 'soft-light', S(0), Sy(0), [X0, Y0, X1 - X0, Y1 - Y0]);
   }
@@ -3793,7 +3834,7 @@ export class Renderer {
     const surf = Sy(0), TW = W * 1.1, TH = H * 1.1;
     // the seabed's line on screen, a column every 24 px, once a frame
     const step = 24, cols = Math.ceil(W / step) + 1, floorY = this.snowFloor || (this.snowFloor = new Float32Array(cols + 1));
-    for (let i = 0; i <= cols; i++) floorY[i] = Sy(g.world.floorAt(clamp(cam.x + (i * step - W / 2) / ppm, 0, WORLD_W - 1)));
+    for (let i = 0; i <= cols; i++) { const fx = clamp(cam.x + (i * step - W / 2) / ppm, 0, WORLD_W - 1), fy = g.world.floorAt(fx); floorY[i] = Sy(fy > AREA2.ice - 40 && fx > AREA2.drop2 ? fy + 1e4 : fy); } // (7.9.1) at the ice the snow goes on into the mush
     const sz = clamp(ppm / 24, 0.8, 1.1) * 0.6; /* (6.1.9) never swelling with the zoom. (7.6.0, owner) smaller: specks, not discs */
     ctx.save(); ctx.fillStyle = '#dfe6e8';
     this.snowL.forEach((L, li) => {
@@ -4167,7 +4208,7 @@ export class Renderer {
       const sx = S(wx), fy = Wd.floorAt(wx), sy = Sy(fy);
       if (pw !== null && (sy > -30 || py > -30) && (sy < H + 30 || py < H + 30)) {
         const d = deep(fy);
-        if (d > 0) { const lit = this.litAt(wx, fy - 0.6), a = d * (0.05 + 0.55 * lit);
+        if (d > 0 && !(fy > AREA2.ice - 40 && wx > AREA2.drop2)) { const lit = this.litAt(wx, fy - 0.6), a = d * (0.05 + 0.55 * lit); /* (7.9.1) no edge at the ice: lost in the mush */
           if (a > 0.008) { seg(psx, py, sx, sy, a * 0.22, Math.max(3, ppm * 0.3)); seg(psx, py, sx, sy, a, Math.max(1, ppm * 0.05)); }
           if (lit > 0.04) for (let c = Math.ceil(pw * 6); c <= Math.floor(wx * 6); c++) { const h1 = hsh(c), h2 = hsh(c + 0.37), h3 = hsh(c + 0.71), gx = c / 6 + h1 * 0.16, gy = Wd.floorAt(gx) + 0.04 + h2 * h2 * 0.9;
             ctx.fillStyle = h3 < 0.65 ? `rgba(196,186,160,${(lit * d * (0.25 + 0.35 * h3)).toFixed(3)})` : `rgba(120,108,86,${(lit * d * 0.35).toFixed(3)})`; ctx.beginPath(); ctx.arc(S(gx), Sy(gy), Math.max(0.6, ppm * (0.015 + 0.025 * h1)), 0, TAU); ctx.fill(); } }
