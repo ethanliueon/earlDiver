@@ -27,7 +27,8 @@ import { makeVariantSprite } from './variants.js';
 import { SPECIES_BY_ID } from './species.js';
 import { LEGENDARY } from './specimens.js';
 import { glint, ember, ACCENT } from './scrolls.js'; // (7.4.3) the legendary sparkle, for a legendary pet
-import { BOAT, WORLD_W, EAST, CAVE, ANGLER, CANYON, SAIL, WHALE_FALL, ISLE, yardX, SIGN, KEEPER, AREA2 } from './world.js';
+import { Slush } from './slush.js';
+import { BOAT, WORLD_W, EAST, CAVE, ANGLER, CANYON, SAIL, WHALE_FALL, ISLE, yardX, SIGN, SIGN2, WRECK2, KEEPER, AREA2 } from './world.js';
 import { bargePicture, BARGE } from './barge_draw.js';
 import { LANTERN_RADIUS } from './entity.js';
 import { Clouds } from './clouds.js';
@@ -214,6 +215,50 @@ function godRay(ctx, rc, x, y, len, w, tilt, col, a, t, seed) {
   bx.fillStyle = bg; bx.fillRect(0, 0, RAY_TW, RAY_TH);
   bx.globalCompositeOperation = 'source-in'; bx.fillStyle = `rgb(${col[0]},${col[1]},${col[2]})`; bx.fillRect(0, 0, RAY_TW, RAY_TH);
   ctx.save(); ctx.translate(x, y); ctx.rotate(tilt); ctx.globalAlpha = Math.min(1, a); ctx.drawImage(rc, -w / 2, 0, w, len); ctx.restore();
+}
+// (7.9.0, owner) the crushed submersible on the second sea's plain, painted once onto its own canvas (a picture, not
+// shapes drawn every frame): a small research sub of the kind with a crew sphere at the front inside a moulded fairing.
+// The pressure hull gave way and the sphere is crushed in on itself; the fairing, once yellow, is torn back in plates and
+// faded to a dirty cream, streaked with rust from its bolts; one skid snapped, a cable trailing; sediment heaped along its
+// downslope side. Sits pointing left; its own lights are drawn live over it
+function bakeWreck2() {
+  const W = 920, H = 400, c = document.createElement('canvas'); c.width = W; c.height = H; const x = c.getContext('2d');
+  let sd = 7; const rnd = () => { sd = (sd * 16807) % 2147483647; return sd / 2147483647; };
+  const jag = (pts, amt) => pts.map(([px, py]) => [px + (rnd() - 0.5) * amt, py + (rnd() - 0.5) * amt]);
+  const poly = (pts) => { x.beginPath(); pts.forEach(([px, py], i) => (i ? x.lineTo(px, py) : x.moveTo(px, py))); x.closePath(); };
+  // the frame and skids under it, the aft skid snapped
+  x.strokeStyle = '#2b2a26'; x.lineCap = 'round'; x.lineWidth = 12; x.beginPath(); x.moveTo(170, 330); x.lineTo(470, 336); x.stroke();
+  x.beginPath(); x.moveTo(540, 334); x.lineTo(700, 352); x.lineTo(728, 372); x.stroke();
+  x.lineWidth = 7; for (const sx of [220, 330, 430, 610]) { x.beginPath(); x.moveTo(sx, 300); x.lineTo(sx + 8, 332); x.stroke(); }
+  // the fairing: the after body, torn open at the top, its plates peeled back
+  const body = jag([[300, 150], [420, 120], [560, 112], [690, 128], [790, 168], [840, 222], [836, 270], [790, 300], [640, 316], [470, 318], [330, 310], [300, 250]], 6);
+  const bg = x.createLinearGradient(0, 110, 0, 320); bg.addColorStop(0, '#c9b98a'); bg.addColorStop(0.45, '#a89668'); bg.addColorStop(1, '#5e5440');
+  poly(body); x.fillStyle = bg; x.fill(); x.save(); x.clip();
+  for (let i = 0; i < 26; i++) { const rx = 300 + rnd() * 540, ry = 120 + rnd() * 200, g2 = x.createRadialGradient(rx, ry, 0, rx, ry, 20 + rnd() * 50); g2.addColorStop(0, `rgba(${60 + rnd() * 30},${48 + rnd() * 20},${30},${0.18 + rnd() * 0.2})`); g2.addColorStop(1, 'rgba(60,48,30,0)'); x.fillStyle = g2; x.fillRect(rx - 80, ry - 80, 160, 160); } // grime
+  x.strokeStyle = 'rgba(40,32,20,0.55)'; x.lineWidth = 2.5; for (const sx of [420, 540, 660, 770]) { x.beginPath(); x.moveTo(sx, 110); x.quadraticCurveTo(sx + 6, 210, sx - 4, 320); x.stroke(); } // panel seams
+  x.fillStyle = 'rgba(40,32,22,0.7)'; for (const sx of [420, 540, 660, 770]) for (let yy = 140; yy < 310; yy += 22) { x.beginPath(); x.arc(sx + 7, yy, 2.4, 0, TAU); x.fill(); } // bolts
+  for (let i = 0; i < 14; i++) { const sx = 400 + rnd() * 420, sy = 140 + rnd() * 120, len = 30 + rnd() * 80, wd = 2 + rnd() * 3, g3 = x.createLinearGradient(sx, sy, sx, sy + len); g3.addColorStop(0, 'rgba(120,58,26,0.45)'); g3.addColorStop(1, 'rgba(120,58,26,0)'); x.fillStyle = g3; x.beginPath(); x.moveTo(sx - wd, sy); x.quadraticCurveTo(sx + wd * 0.4, sy + len * 0.5, sx + (rnd() - 0.5) * 4, sy + len); x.quadraticCurveTo(sx + wd * 1.4, sy + len * 0.5, sx + wd, sy); x.closePath(); x.fill(); } // rust running down from the bolts, tapering
+  x.restore();
+  // the tear across its top: a dark split with plate edges bent outward
+  const tear = jag([[470, 118], [520, 150], [575, 140], [610, 176], [660, 158], [700, 186], [690, 132], [640, 120], [560, 110]], 5); poly(tear); x.fillStyle = '#16140f'; x.fill();
+  x.strokeStyle = '#d4c597'; x.lineWidth = 2; x.beginPath(); x.moveTo(470, 118); x.lineTo(520, 150); x.lineTo(575, 140); x.lineTo(610, 176); x.lineTo(660, 158); x.lineTo(700, 186); x.stroke();
+  poly(jag([[700, 186], [760, 150], [778, 104], [740, 126], [690, 132]], 3)); x.fillStyle = '#9d8d62'; x.fill(); x.strokeStyle = 'rgba(30,26,18,0.6)'; x.lineWidth = 2; x.stroke(); // a plate peeled up and back
+  // the crew sphere at the front: crushed in on itself, a crumpled dark mass with bright creased edges, the port starred
+  const sph = []; for (let k = 0; k < 28; k++) { const a = k / 28 * TAU, r = 118 * (0.72 + 0.28 * Math.abs(Math.sin(a * 2.3 + 1))) * (a > 0.6 && a < 2.4 ? 0.7 : 1); sph.push([230 + Math.cos(a) * r * 1.05, 210 + Math.sin(a) * r * 0.92]); }
+  poly(jag(sph, 10)); const sg2 = x.createRadialGradient(200, 160, 10, 230, 210, 140); sg2.addColorStop(0, '#76725f'); sg2.addColorStop(0.6, '#4a4739'); sg2.addColorStop(1, '#22211b'); x.fillStyle = sg2; x.fill();
+  x.save(); x.clip(); x.strokeStyle = 'rgba(214,206,176,0.55)'; x.lineWidth = 2.2; for (let i = 0; i < 9; i++) { const a = rnd() * TAU, r0 = 30 + rnd() * 40; x.beginPath(); x.moveTo(230 + Math.cos(a) * r0, 210 + Math.sin(a) * r0); x.lineTo(230 + Math.cos(a + 0.4) * 120, 210 + Math.sin(a + 0.4) * 110); x.stroke(); } // creases, lit along their edges
+    x.strokeStyle = 'rgba(0,0,0,0.5)'; x.lineWidth = 4; for (let i = 0; i < 7; i++) { const a = rnd() * TAU; x.beginPath(); x.moveTo(230, 210); x.lineTo(230 + Math.cos(a) * 130, 210 + Math.sin(a) * 120); x.stroke(); } x.restore();
+  const vx = 168, vy = 196; x.fillStyle = '#2a2822'; x.beginPath(); x.ellipse(vx, vy, 40, 34, -0.2, 0, TAU); x.fill(); x.strokeStyle = '#8a836c'; x.lineWidth = 6; x.stroke(); // the port's ring, squeezed oval
+  x.fillStyle = '#0d1012'; x.beginPath(); x.ellipse(vx, vy, 30, 25, -0.2, 0, TAU); x.fill();
+  x.strokeStyle = 'rgba(200,208,214,0.45)'; x.lineWidth = 1.1; for (let k = 0; k < 5; k++) { const a = k * 1.3 + rnd() * 0.5, m = 0.4 + rnd() * 0.3; x.beginPath(); x.moveTo(vx + 6, vy - 4); x.lineTo(vx + 6 + Math.cos(a) * 30 * m, vy - 4 + Math.sin(a) * 25 * m + (rnd() - 0.5) * 6); x.lineTo(vx + Math.cos(a + 0.15) * 30, vy + Math.sin(a + 0.15) * 25); x.stroke(); } // the port starred from one blow, a few broken cracks
+  // the thruster cowl at the stern, knocked askew; a cable trailing from it to the sand
+  x.save(); x.translate(840, 230); x.rotate(0.35); const tg = x.createLinearGradient(0, -34, 0, 34); tg.addColorStop(0, '#4f4c42'); tg.addColorStop(1, '#25241f'); x.fillStyle = tg; x.fillRect(-10, -34, 52, 68); x.strokeStyle = '#191814'; x.lineWidth = 3; x.strokeRect(-10, -34, 52, 68); x.restore();
+  x.strokeStyle = '#1d1c18'; x.lineWidth = 5; x.beginPath(); x.moveTo(860, 262); x.bezierCurveTo(900, 300, 860, 360, 905, 392); x.stroke();
+  // the status lamp's housing and the strobe's dome (lit live)
+  x.fillStyle = '#2b2924'; x.fillRect(352, 122, 24, 18); x.fillStyle = '#c8d4d8'; x.beginPath(); x.ellipse(364, 122, 11, 9, 0, Math.PI, 0); x.fill(); // the strobe's dome, on the hull's top
+  // and a dusting of it on every upward face
+  x.globalCompositeOperation = 'source-atop'; const dg = x.createLinearGradient(0, 100, 0, 180); dg.addColorStop(0, 'rgba(150,142,120,0.35)'); dg.addColorStop(1, 'rgba(150,142,120,0)'); x.fillStyle = dg; x.fillRect(0, 60, W, 140);
+  return c;
 }
 export class Renderer {
   constructor(canvas) {
@@ -450,15 +495,25 @@ export class Renderer {
     for (const w of g.world.wrecks) if (Math.abs(w.x - cam.x) < cam.w / 2 + w.len && visible(w.x, w.y, w.len * 0.6)) this.drawWreck(ctx, w, S, Sy, ppm);
     if (!(this.skip && this.skip.kelp)) this.drawKelp(g, S, Sy, ppm, 0, x0, x1);
     for (const v of g.world.vents) if (inView(v.x, v.y, 30)) this.drawVent(ctx, v, S, Sy, ppm, t);
+    // (7.9.0, owner) the ice V slush of the second sea's deepest water (slush.js): before the floor, which hides what is
+    // behind it, and before the light map, which shows only what a light falls on
+    if (g.mode === 'play' && g.earl && !g.earl.inSub && cam.y + cam.h / 2 > 34900 && S(AREA2.edge) < this.W) {
+      const S2 = this.slush || (this.slush = new Slush()), now = performance.now() / 1000, dts = Math.min(0.05, Math.max(0, now - (this.slushT || now))); this.slushT = now;
+      S2.lite = !!(this.lite || this.phone); S2.update(g, dts);
+      S2.draw(ctx, g, S, Sy, ppm, this.W, this.H, t, cam.x, cam.y, cam.h, g.earl.facing > 0 ? 0 : Math.PI);
+      if (S2.v > 0.04) this.slushHalo = { x: S(g.earl.x), y: Sy(g.earl.y), r: (1.6 + 3 * S2.v * S2.v) * ppm, a: 0.12 * S2.v + 0.36 * S2.v * S2.v * S2.v }; else this.slushHalo = null; // the lamp's light thrown back by the ice round him
+    } else this.slushHalo = null;
     this.drawFloorCached(g, S, Sy, ppm);
     this.drawFloorLife(g, ctx, S, Sy, ppm, x0, x1, t);
     if (x1 > ISLE.x0 - 10) this.drawIsland(g, ctx, S, Sy, ppm, t, dayEff); // (7.4.17)
     { const L = g.world.lip; if (L && x1 > L.x0 && x0 < L.x1 && y1 > L.y0 && y0 < L.y1) { ctx.save(); ctx.beginPath(); L.poly.forEach((p, i) => (i ? ctx.lineTo(S(p.x), Sy(p.y)) : ctx.moveTo(S(p.x), Sy(p.y)))); ctx.closePath(); ctx.clip(); this.paintWallSeabed(ctx, S, Sy, ppm, L.x0 - 1, L.x1 + 1, L.y0 - 1, L.y1, true); ctx.restore(); } } // (7.8.1) the wall's overhanging lip: the same seabed as the wall
-    if (x1 > SIGN.x - 6 && x0 < KEEPER.x + 6) this.drawEdgeKeeper(g, ctx, S, Sy, ppm, t); // (7.8.0)
     for (const rk of g.world.rocks) if (rk.kind !== 'oldone' && !rk.hidden && rk.x1 > x0 && rk.x0 < x1 && rk.y1 > y0 && rk.y0 < y1 && visible((rk.x0 + rk.x1) / 2, (rk.y0 + rk.y1) / 2, Math.max(rk.x1 - rk.x0, rk.y1 - rk.y0) * 0.6)) this.drawRock(ctx, rk, S, Sy, ppm);
     this.drawDeepPlaces(g, ctx, S, Sy, ppm, t, inView);
     // statics on the floor
-    const glowPts = [];
+    const glowPts = []; this.extraLights = [];
+    if (x1 > SIGN.x - 6 && x0 < KEEPER.x + 6) this.drawEdgeKeeper(g, ctx, S, Sy, ppm, t); // (7.8.0)
+    if (x1 > WRECK2.x - 30 && x0 < SIGN2.x + 6) { this.drawWreck2(g, ctx, S, Sy, ppm, t); this.drawSign(ctx, S, Sy, ppm, SIGN2.x, g.world.floorAt(SIGN2.x), ['WARNING', 'DROP-OFF AHEAD'], t, { reflect: true, lean: 0.03 }); } // (7.9.0)
+    if (x1 > AREA2.cliff - 4) this.drawEastCliff(g, ctx, S, Sy, ppm, t); // (7.9.0)
     // Seabed life and animals are drawn straight onto the scene with the water's tint built into
     // their stored pictures (one per depth band). Only what is still drawn live (rare forms, jellies,
     // eels, the great whales...) goes through a layer, and only when one is on screen.
@@ -2454,7 +2509,7 @@ export class Renderer {
       const k = ppm * par, stepW = Math.pow(2, Math.round(Math.log2(Math.max(0.25, 20 / k)))), f0 = Math.floor((cam.x + (-10 - W / 2) / k) / stepW) * stepW, f1 = cam.x + (W + 20 - W / 2) / k + stepW;
       for (let fx = f0; fx <= f1; fx += stepW) {
         const sx = W / 2 + (fx - cam.x) * k;
-        const d = g.world.floorAt(clamp(fx, 0, WORLD_W)) - off + fbm1(fx / 40, 3, 99) * 25;
+        const d = fx > AREA2.edge + 15 ? 1e6 : g.world.floorAt(clamp(fx, 0, WORLD_W)) - off + fbm1(fx / 40, 3, 99) * 25; // (7.9.0) no far seabed over the second sea: open water, as it would be over a hole that deep
         const sy = H / 2 + (d - cam.y) * ppm * par;
         ctx.lineTo(sx, Math.max(Sy(0) + 4, sy));
       }
@@ -3599,19 +3654,70 @@ export class Renderer {
 
   // (7.8.0, owner) the edge of the first sea: a weathered wooden sign where the beach goes into the water, and the old
   // diver who sits on a stone at the beach's end in a brass helmet and a patched canvas suit, his back to the drop
+  // (7.9.0, owner) a warning sign on the seabed: a weathered post driven into the sand, a board of planks with its words
+  // stencilled on; a hurricane lantern hung from the first (a small warm light at night), a strip of reflective paint
+  // round the second's board (it flares only where a lamp falls on it: the light map does that)
+  drawSign(ctx, S, Sy, ppm, x, gy, words, t, o = {}) {
+    const px = S(x), base = Sy(gy), bw = 1.55 * ppm, bh = 0.66 * ppm, by = Sy(gy - 1.75), top = Sy(gy - 2.15), lean = o.lean || -0.035;
+    ctx.save(); ctx.lineCap = 'round';
+    const pw = Math.max(2, 0.13 * ppm), pg = ctx.createLinearGradient(px - pw, 0, px + pw, 0); pg.addColorStop(0, '#3a2a1a'); pg.addColorStop(0.5, '#5a4128'); pg.addColorStop(1, '#2e2114');
+    ctx.strokeStyle = pg; ctx.lineWidth = pw; ctx.beginPath(); ctx.moveTo(px, base + 0.15 * ppm); ctx.lineTo(px + lean * (base - top), top); ctx.stroke(); // the post, a little out of true
+    ctx.fillStyle = 'rgba(20,16,10,0.25)'; ctx.beginPath(); ctx.ellipse(px, base + 0.05 * ppm, 0.35 * ppm, 0.08 * ppm, 0, 0, TAU); ctx.fill(); // sand heaped at its foot
+    ctx.translate(px + lean * (base - by), by); ctx.rotate(lean * 1.2);
+    for (let k = 0; k < 2; k++) { const y0 = -bh / 2 + k * bh / 2, wg = ctx.createLinearGradient(0, y0, 0, y0 + bh / 2); wg.addColorStop(0, k ? '#7a5c3a' : '#86673f'); wg.addColorStop(1, k ? '#5f462c' : '#6b5034');
+      ctx.fillStyle = wg; ctx.beginPath(); ctx.moveTo(-bw / 2, y0 + 0.6); ctx.lineTo(bw / 2, y0); ctx.lineTo(bw / 2 - 0.6, y0 + bh / 2 - 0.6); ctx.lineTo(-bw / 2 + 0.4, y0 + bh / 2); ctx.closePath(); ctx.fill(); } // two planks
+    ctx.strokeStyle = 'rgba(25,18,10,0.55)'; ctx.lineWidth = Math.max(0.8, 0.02 * ppm); ctx.beginPath(); ctx.moveTo(-bw / 2, 0.3); ctx.lineTo(bw / 2, 0); ctx.stroke(); // the seam
+    ctx.fillStyle = 'rgba(30,22,12,0.7)'; for (const sx of [-0.42, 0.42]) for (const sy of [-0.22, 0.22]) { ctx.beginPath(); ctx.arc(sx * bw, sy * bh, Math.max(0.8, 0.025 * ppm), 0, TAU); ctx.fill(); } // nail heads
+    if (o.reflect) { ctx.strokeStyle = 'rgba(232,226,196,0.85)'; ctx.lineWidth = Math.max(1, 0.05 * ppm); ctx.strokeRect(-bw / 2 + 0.06 * ppm, -bh / 2 + 0.06 * ppm, bw - 0.12 * ppm, bh - 0.12 * ppm); }
+    ctx.fillStyle = 'rgba(236,226,200,0.92)'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.font = `700 ${Math.max(6, bh * 0.3)}px 'Barlow Semi Condensed', sans-serif`; ctx.fillText(words[0], 0, -bh * 0.2);
+    ctx.font = `600 ${Math.max(5, bh * 0.26)}px 'Barlow Semi Condensed', sans-serif`; ctx.fillText(words[1], 0, bh * 0.22);
+    ctx.restore();
+    if (o.lantern) { const hx = px + lean * (base - top) + 0.12 * ppm, hy = top + 0.12 * ppm, sw = Math.sin(t * 0.9) * 0.06, u = ppm / 40; // the lantern on its hook, swaying a little
+      ctx.save(); ctx.translate(hx, hy); ctx.rotate(sw); ctx.strokeStyle = '#2a2420'; ctx.lineWidth = Math.max(1, 1.2 * u); ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(0, 5 * u); ctx.stroke();
+      ctx.fillStyle = '#3a3128'; ctx.fillRect(-4 * u, 5 * u, 8 * u, 2 * u); ctx.fillRect(-4.5 * u, 17 * u, 9 * u, 2.2 * u);
+      const gl = ctx.createRadialGradient(0, 12 * u, 0, 0, 12 * u, 5 * u); gl.addColorStop(0, 'rgba(255,214,150,0.95)'); gl.addColorStop(1, 'rgba(200,140,70,0.35)'); ctx.fillStyle = gl; ctx.beginPath(); ctx.ellipse(0, 12 * u, 3.6 * u, 5 * u, 0, 0, TAU); ctx.fill();
+      ctx.strokeStyle = '#3a3128'; ctx.lineWidth = Math.max(0.8, 0.8 * u); for (const k of [-3.6, 3.6]) { ctx.beginPath(); ctx.moveTo(k * u, 7 * u); ctx.lineTo(k * u, 17 * u); ctx.stroke(); }
+      ctx.restore(); (this.extraLights || (this.extraLights = [])).push({ x: hx, y: hy + 12 * u, r: 5 * ppm, col: [255, 200, 130], a: 0.42 + 0.04 * Math.sin(t * 7.3) }); }
+  }
+  // (7.9.0, owner) a small submersible lying crushed on the plain beside the second sign: its hull folded in on one side,
+  // its viewport starred, a skid snapped; inside, an emergency light still flashing slowly. It lights the sign and the
+  // rock round it, the one light on the plain
+  drawWreck2(g, ctx, S, Sy, ppm, t) {
+    const x = WRECK2.x, W = g.world, gy = W.floorAt(x), ang = Math.atan2(W.floorAt(x + 3) - W.floorAt(x - 3), 6), L = 6.5 * ppm;
+    const B = this.wreck2Img || (this.wreck2Img = bakeWreck2());
+    const h = L * B.height / B.width, px = S(x), py = Sy(gy + 0.05); // its skids resting in the sediment
+    ctx.save(); ctx.translate(px, py); ctx.rotate(ang + 0.05); ctx.drawImage(B, -L / 2, -h * 0.86, L, h); ctx.restore();
+    // the strobe: a white flash every 2.6 s, short and sharp, as an emergency beacon's xenon tube; a dim red status lamp stays on
+    const sx = px + Math.cos(ang) * (-L * 0.104) - Math.sin(ang) * (-h * 0.555), sy = py + Math.sin(ang) * (-L * 0.104) + Math.cos(ang) * (-h * 0.555), ph = (t % 2.6) / 2.6, f = Math.exp(-Math.pow((ph - 0.02) / 0.018, 2));
+    if (f > 0.02) { ctx.save(); ctx.globalCompositeOperation = 'lighter'; const sg = ctx.createRadialGradient(sx, sy, 0, sx, sy, 0.9 * ppm); sg.addColorStop(0, `rgba(255,255,250,${(0.95 * f).toFixed(3)})`); sg.addColorStop(1, 'rgba(220,235,255,0)'); ctx.fillStyle = sg; ctx.beginPath(); ctx.arc(sx, sy, 0.9 * ppm, 0, TAU); ctx.fill(); ctx.restore(); }
+    const rx = px + Math.cos(ang) * (L * 0.18) - Math.sin(ang) * (-h * 0.42), ry = py + Math.sin(ang) * (L * 0.18) + Math.cos(ang) * (-h * 0.42);
+    ctx.fillStyle = 'rgba(255,60,40,0.9)'; ctx.beginPath(); ctx.arc(rx, ry, Math.max(1, 0.04 * ppm), 0, TAU); ctx.fill();
+    const EL = this.extraLights || (this.extraLights = []);
+    EL.push({ x: rx, y: ry, r: 1.4 * ppm, col: [255, 70, 50], a: 0.22 });
+    if (f > 0.01) EL.push({ x: sx, y: sy, r: 22 * ppm, col: [236, 242, 255], a: 0.75 * f });
+  }
+  // (7.9.0, owner) the far shore of the second sea: a sea cliff standing 5 m out of the water, its face sea-worn rock with a
+  // dark notch cut by the waves at the waterline and a wet band below it, and grass along its top
+  drawEastCliff(g, ctx, S, Sy, ppm, t) {
+    const W = g.world, x0 = AREA2.cliff - 2.2, x1 = 6040 + 40, step = 0.25;
+    ctx.save(); ctx.beginPath(); ctx.moveTo(S(x0), Sy(24)); for (let x = x0; x <= 6040; x += step) ctx.lineTo(S(x), Sy(Math.min(24, W.floorAt(x)))); ctx.lineTo(S(x1), Sy(W.floorAt(6039.9))); ctx.lineTo(S(x1), Sy(24)); ctx.closePath();
+    const rg = ctx.createLinearGradient(0, Sy(-5.4), 0, Sy(24)); rg.addColorStop(0, '#8c8676'); rg.addColorStop(0.18, '#77705f'); rg.addColorStop(0.22, '#3a3a34'); rg.addColorStop(0.3, '#55574f'); rg.addColorStop(1, '#3a3d3b');
+    ctx.fillStyle = rg; ctx.fill(); ctx.clip();
+    ctx.strokeStyle = 'rgba(0,0,0,0.22)'; ctx.lineWidth = Math.max(1, 0.05 * ppm); for (let y = -4.6; y < 24; y += 1.3 + 0.4 * Math.sin(y * 3.1)) { ctx.beginPath(); ctx.moveTo(S(x0), Sy(y)); for (let x = x0; x <= x1; x += 1) ctx.lineTo(S(x), Sy(y + Math.sin(x * 0.9 + y) * 0.12)); ctx.stroke(); } // bedding
+    ctx.fillStyle = 'rgba(10,12,12,0.45)'; ctx.fillRect(S(x0), Sy(-0.5), S(x1) - S(x0), Sy(0.6) - Sy(-0.5)); // the notch the waves cut
+    ctx.restore();
+    // grass along the top: a strip of turf with tufts leaning in the wind
+    const gx0 = AREA2.cliff + 0.2, top = (x) => W.floorAt(x);
+    ctx.save(); ctx.beginPath(); ctx.moveTo(S(gx0), Sy(top(gx0) + 0.35)); for (let x = gx0; x <= 6040; x += step) ctx.lineTo(S(x), Sy(top(x) - 0.04)); ctx.lineTo(S(x1), Sy(top(6039.9))); ctx.lineTo(S(x1), Sy(top(6039.9) + 0.45)); for (let x = 6040; x >= gx0; x -= step) ctx.lineTo(S(x), Sy(top(x) + 0.4)); ctx.closePath();
+    const gg = ctx.createLinearGradient(0, Sy(-5.6), 0, Sy(-4.6)); gg.addColorStop(0, '#6f8a46'); gg.addColorStop(1, '#3f5228'); ctx.fillStyle = gg; ctx.fill();
+    ctx.strokeStyle = '#59713a'; ctx.lineWidth = Math.max(1, 0.03 * ppm); const wind = Math.sin(t * 0.8) * 0.12;
+    for (let x = gx0; x < 6040; x += 0.18) { const h = 0.18 + 0.22 * Math.abs(Math.sin(x * 12.7)), y = top(x); ctx.beginPath(); ctx.moveTo(S(x), Sy(y)); ctx.quadraticCurveTo(S(x + wind * 0.5), Sy(y - h * 0.6), S(x + wind + (Math.sin(x * 7.1) * 0.05)), Sy(y - h)); ctx.stroke(); }
+    ctx.restore();
+  }
   drawEdgeKeeper(g, ctx, S, Sy, ppm, t) {
     const W = g.world;
-    { const x = SIGN.x, gy = W.floorAt(x), px = S(x), base = Sy(gy), top = Sy(-1.9), bw = 1.5 * ppm, bh = 0.62 * ppm, by = Sy(-1.55);
-      ctx.save(); ctx.lineCap = 'round';
-      ctx.strokeStyle = '#4a3622'; ctx.lineWidth = Math.max(2, 0.12 * ppm); ctx.beginPath(); ctx.moveTo(px, base); ctx.lineTo(px + 0.03 * ppm, top); ctx.stroke(); // the post
-      ctx.translate(px, by); ctx.rotate(-0.04);
-      const wg = ctx.createLinearGradient(0, -bh / 2, 0, bh / 2); wg.addColorStop(0, '#8a6a44'); wg.addColorStop(0.5, '#73563a'); wg.addColorStop(1, '#5a432c');
-      ctx.fillStyle = wg; ctx.beginPath(); ctx.moveTo(-bw / 2, -bh / 2 + 1); ctx.lineTo(bw / 2, -bh / 2); ctx.lineTo(bw / 2 - 1, bh / 2); ctx.lineTo(-bw / 2 + 1, bh / 2 + 1); ctx.closePath(); ctx.fill();
-      ctx.strokeStyle = 'rgba(30,20,10,0.5)'; ctx.lineWidth = 1; for (const k of [-0.15, 0.18]) { ctx.beginPath(); ctx.moveTo(-bw / 2 + 2, k * bh); ctx.lineTo(bw / 2 - 2, k * bh + 0.5); ctx.stroke(); } // grain
-      ctx.fillStyle = '#e9dcc0'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-      ctx.font = `700 ${Math.max(7, bh * 0.34)}px 'Barlow Semi Condensed', sans-serif`; ctx.fillText('DANGER AHEAD', 0, -bh * 0.17);
-      ctx.font = `600 ${Math.max(6, bh * 0.28)}px 'Barlow Semi Condensed', sans-serif`; ctx.fillText('TURN BACK', 0, bh * 0.22);
-      ctx.restore(); }
+    this.drawSign(ctx, S, Sy, ppm, SIGN.x, W.floorAt(SIGN.x), ['DANGER AHEAD', 'TURN BACK'], t, { lantern: true });
     { const x = KEEPER.x, gy = W.floorAt(x), px = S(x), sy = Sy(gy), u = ppm / 40, bob = Math.sin(t * 0.8) * 0.6 * u;
       ctx.save(); ctx.translate(px, sy);
       // his stone
@@ -3955,6 +4061,8 @@ export class Renderer {
       if (x < -500 || x > this.W + 500 || y < -500 || y > this.H + 500) continue;
       radial(x, y, 9 * ppm, [255, 120, 60], 0.22 + 0.06 * Math.sin(g.time * 3 + v.phase));
     }
+    for (const L of this.extraLights || []) radial(L.x, L.y, L.r, L.col, L.a); this.extraLights = [];
+    if (this.slushHalo && (g.earl.lampOn || g.abilLight > 0)) { const Hh = this.slushHalo; radial(Hh.x, Hh.y, Hh.r, [196, 210, 220], Hh.a); } // (7.9.0) milky: the ice in the water scatters his light back round him // (7.9.0) the lantern, the wreck's light
     for (const p of glowPts) {
       const [x, y, col, r, gk = 1, core] = p;
       if (core === undefined) { radial(x, y, gk < 1 ? r * 2.5 : Math.max(r * 2.5, ppm * 0.8), hexToRgb(col), 0.7 * fx.bioPulse * gk); continue; }

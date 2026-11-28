@@ -9,7 +9,7 @@ import { coinURL, tileURL } from './coins.js';
 installFatFinger();
 import { clamp, lerp, dist, makeRng, formatTime, TAU, smoothstep } from './util.js';
 import { markOf, SUB_MARKS, BOAT_U, BOAT_LADDER, BOAT_DOOR, deckLine } from './earl_draw.js';
-import { AREA2, GATE_X } from './world.js';
+import { AREA2, GATE_X, SIGN, SIGN2, waterRes } from './world.js';
 import { generateWorld, RESOURCES, BOAT, BOAT_HOME, BOAT_MIN, BOAT_MAX, WORLD_W, ISLE, CAVE, CANYON, WHALE_FALL, SEEP, TRENCH, boatDock, SAIL, SAIL_OFF, yardX } from './world.js';
 import { SPECIES, SPECIES_BY_ID } from './species.js';
 import { speciesIcon } from './creatures_draw.js';
@@ -1640,7 +1640,7 @@ function tapRectAt(x, y) { const sl = 10 * (window.__fingerK || 1); let best = n
 function wireCabinTouch() { if (cabinTouch || !ui.cabin || !ui.cabin.c) return; cabinTouch = new Touch(ui.cabin.c, { buttonAt: () => null, active: () => !!(!document.getElementById('cabin').hidden), onTap: (x) => { ui.cabin.tapAt(x); return true; } }); ui.cabin.stick = () => (touch.vec.on ? { ...touch.vec, sprint: touch.vec.sprint || !!(g && g.sprintLock) } : cabinTouch.vec); } // (5.6.8) the HUD (and its stick) is over the cabin now
 setTimeout(wireCabinTouch, 0);
 watchPage(); // (6.0.3) the page's text in the chosen units
-const touch = new Touch(hudCanvas, { onTap: (x, y) => { const pm = g.patchMarks; if (pm && renderer.cam) { const cm = renderer.cam, kk = innerWidth / renderer.c.width; for (const [wi, w] of pm.entries()) { const px = ((w.x - cm.x) * cm.ppm + renderer.c.width / 2) * kk, py = ((w.y - cm.y) * cm.ppm + renderer.c.height / 2) * kk; if (Math.hypot(x - px, y - py) < Math.max(36 * (window.__fingerK || 1), cm.ppm * 0.9 * kk)) { g.repairTap = wi; g.repairTapCount = (g.sub.patches || []).length; return true; } } } if (tapFish(x, y)) return true; /* (7.6.71, owner) a fish is observed by tapping it */ if (ui.cabinOpen && ui.cabinOpen()) { ui.cabin.tapAt(x); return true; } const tr = tapRectAt(x, y); if (tr) { touch.key(tr.key, true); setTimeout(() => touch.key(tr.key, false), 60); return true; } return false; }, buttonAt: (x, y) => hudButtonAt(x, y), aim: (x, y) => { if (g && renderer.cam && (g.castAim || (g.snatch && g.snatch.left > 0))) { const cm = renderer.cam, kk = innerWidth / renderer.c.width, wx = cm.x + (x / kk - renderer.c.width / 2) / cm.ppm, wy = cm.y + (y / kk - renderer.c.height / 2) / cm.ppm; if (g.castAim) return castTo(wx, wy); if (snatchAt(wx, wy)) return true; } /* (7.6.6) */ if (g && g.siphonAim && renderer.cam) { const cm = renderer.cam, kk = innerWidth / renderer.c.width; return siphonTo(cm.x + (x / kk - renderer.c.width / 2) / cm.ppm, cm.y + (y / kk - renderer.c.height / 2) / cm.ppm); } /* (7.6.8) */ if (!g || !g.dashAim || !renderer.cam) return false; const cm = renderer.cam, kk = innerWidth / renderer.c.width; return dashTo(cm.x + (x / kk - renderer.c.width / 2) / cm.ppm, cm.y + (y / kk - renderer.c.height / 2) / cm.ppm); }, active: () => !!(g && g.mode === 'play' && !hud.panel), onMessage: (m) => { audio.ready && audio.uiSoft(); hud.toast(m); }, onPress: (k) => { if (PLAIN_CLICK.has(k) && audio.ready) audio.click(); } });
+const touch = new Touch(hudCanvas, { onTap: (x, y) => { const pm = g.patchMarks; if (pm && renderer.cam) { const cm = renderer.cam, kk = innerWidth / renderer.c.width; for (const [wi, w] of pm.entries()) { const px = ((w.x - cm.x) * cm.ppm + renderer.c.width / 2) * kk, py = ((w.y - cm.y) * cm.ppm + renderer.c.height / 2) * kk; if (Math.hypot(x - px, y - py) < Math.max(36 * (window.__fingerK || 1), cm.ppm * 0.9 * kk)) { g.repairTap = wi; g.repairTapCount = (g.sub.patches || []).length; return true; } } } if (tapSign(x, y)) return true; /* (7.9.0) a sign is read by tapping it */ if (tapFish(x, y)) return true; /* (7.6.71, owner) a fish is observed by tapping it */ if (ui.cabinOpen && ui.cabinOpen()) { ui.cabin.tapAt(x); return true; } const tr = tapRectAt(x, y); if (tr) { touch.key(tr.key, true); setTimeout(() => touch.key(tr.key, false), 60); return true; } return false; }, buttonAt: (x, y) => hudButtonAt(x, y), aim: (x, y) => { if (g && renderer.cam && (g.castAim || (g.snatch && g.snatch.left > 0))) { const cm = renderer.cam, kk = innerWidth / renderer.c.width, wx = cm.x + (x / kk - renderer.c.width / 2) / cm.ppm, wy = cm.y + (y / kk - renderer.c.height / 2) / cm.ppm; if (g.castAim) return castTo(wx, wy); if (snatchAt(wx, wy)) return true; } /* (7.6.6) */ if (g && g.siphonAim && renderer.cam) { const cm = renderer.cam, kk = innerWidth / renderer.c.width; return siphonTo(cm.x + (x / kk - renderer.c.width / 2) / cm.ppm, cm.y + (y / kk - renderer.c.height / 2) / cm.ppm); } /* (7.6.8) */ if (!g || !g.dashAim || !renderer.cam) return false; const cm = renderer.cam, kk = innerWidth / renderer.c.width; return dashTo(cm.x + (x / kk - renderer.c.width / 2) / cm.ppm, cm.y + (y / kk - renderer.c.height / 2) / cm.ppm); }, active: () => !!(g && g.mode === 'play' && !hud.panel), onMessage: (m) => { audio.ready && audio.uiSoft(); hud.toast(m); }, onPress: (k) => { if (PLAIN_CLICK.has(k) && audio.ready) audio.click(); } });
 hud.touchRef = touch; // (5.7.0) the HUD draws the sprint button beside the stick
 // (7.2.4) no full screen asked of the browser: entering it drops the page's pinned scale (the panels and words came out
 // 1.8x too large). Full screen is the home-screen app's (manifest), as on an iPhone
@@ -1832,6 +1832,18 @@ function placeOnDeck(dt) {
 // (7.6.71, owner) observing is a tap on the animal itself, no button and no glow: one within reach (3.5 m in the water, 7 m
 // from the sub's glass) and in light. The first time it goes in the journal (as the eye did); after that its name shows
 // beside it again. The nearest under the finger wins, with a generous reach for small ones
+// (7.9.0, owner) the second sea's signs: tapped, their words in full (a first draft, to be polished)
+const SIGN_TEXT = [
+  [() => SIGN.x, 'DANGER AHEAD · TURN BACK', 'Beyond this point the seabed falls away more than ten kilometres. No sub can follow you, and no line will reach you.'],
+  [() => SIGN2.x, 'WARNING · DROP-OFF AHEAD', 'The floor below falls away again. Further down, the water turns colder than water should be, and thickens.'],
+];
+function tapSign(x, y) {
+  if (!g || g.mode !== 'play' || !renderer.cam) return false;
+  const cm = renderer.cam, kk = innerWidth / renderer.c.width, fing = 40 * (window.__fingerK || 1);
+  for (const [fx, title, body] of SIGN_TEXT) { const wx = fx(), wy = g.world.floorAt(wx) - 1.75, px = ((wx - cm.x) * cm.ppm + renderer.c.width / 2) * kk, py = ((wy - cm.y) * cm.ppm + renderer.c.height / 2) * kk;
+    if (Math.hypot(x - px, y - py) < Math.max(fing, cm.ppm * kk * 1.1) && Math.hypot(g.earl.x - wx, g.earl.y - wy) < 30) { audio.ready && audio.uiSoft && audio.uiSoft(); ui.confirm(title, body, 'OK', null, () => {}); return true; } }
+  return false;
+}
 function tapFish(x, y) {
   if (!g || g.mode !== 'play' || g.aboard || !g.fauna || !renderer.cam || g.kill) return false;
   const e = g.earl, cm = renderer.cam, kk = innerWidth / renderer.c.width, M = e.inSub ? g.sub : e, reach = e.inSub ? 14 : 9; /* (7.7.2, owner) any fish he can see near him, not only one at arm's length (was 3.5 m) */
@@ -2501,7 +2513,7 @@ const SIPH = { fo: 0.24, fi: 0.32 };
 function siphonTo(wx, wy) { const D0 = g.siphonAim; if (D0 && D0.slot > 1) return withSlot(g, profile, kitOf(profile), D0.slot, () => siphonTo1(wx, wy)); return siphonTo1(wx, wy); }
 function siphonTo1(wx, wy) {
   const D = g.siphonAim; if (!D) return false;
-  const A = D.A, e = g.earl, M = e.inSub ? g.sub : e, P = profile, dist = A.siphon.dist, r = e.inSub ? 2.2 : 0.6;
+  const A = D.A, e = g.earl, M = e.inSub ? g.sub : e, P = profile, dist = A.siphon.dist / (e.inSub ? 1 : waterRes(M.x, M.y).slush), r = e.inSub ? 2.2 : 0.6; // (7.9.0) a squid's jet goes nowhere in mush
   let dx = wx - M.x, dy = wy - M.y; const L0 = Math.hypot(dx, dy) || 1; dx /= L0; dy /= L0;
   let L = dist; for (let d = 0.5; d <= dist; d += 0.5) { const px = M.x + dx * d, py = M.y + dy * d; if (py < (e.inSub ? 3 : 0.6) || g.world.rockAt(px, py, r) || py > g.world.floorAt(px) - r) { L = Math.max(0, d - 1); break; } }
   g.siphonAim = null; renderer.aimZoom = 1.12;
@@ -2515,7 +2527,7 @@ function dashTo(wx, wy) { const D0 = g.dashAim; if (D0 && D0.slot > 1) return wi
 function dashTo1(wx, wy) {
   const D = g.dashAim; if (!D) return false;
   const A = D.A, e = g.earl, M = e.inSub ? g.sub : e, P = profile;
-  let x1 = wx, y1 = Math.max(e.inSub ? 3 : 0.5, wy); const dx = x1 - M.x, dy = y1 - M.y, L = Math.hypot(dx, dy) || 1, r = e.inSub ? 2.2 : 0.5;
+  let x1 = wx, y1 = Math.max(e.inSub ? 3 : 0.5, wy); { const k = e.inSub ? 1 : waterRes(M.x, M.y).slush; if (k > 1.01) { x1 = M.x + (x1 - M.x) / k; y1 = M.y + (y1 - M.y) / k; } } /* (7.9.0) a dash barely carries through slush */ const dx = x1 - M.x, dy = y1 - M.y, L = Math.hypot(dx, dy) || 1, r = e.inSub ? 2.2 : 0.5;
   for (let d = 0.4; d <= L; d += 0.4) { const px = M.x + dx / L * d, py = M.y + dy / L * d; if (g.world.rockAt(px, py, r) || py > g.world.floorAt(px) - r) { x1 = M.x + dx / L * Math.max(0, d - 0.8); y1 = M.y + dy / L * Math.max(0, d - 0.8); break; } }
   g.dashAim = null; renderer.aimZoom = 1;
   const S = abilityState(g); S.def = A; S.activeT = A.dur; S.maxT = A.dur; S.at = g.time;
@@ -3474,7 +3486,7 @@ function updateBubbles(dt) {
     const b = g.bubbles[i];
     b.t += dt;
     if (b.t < 0) continue;
-    b.y -= (0.7 + b.r * 12) * dt; b.x += Math.sin(b.t * 8 + b.w) * 0.25 * dt;
+    { const k = b.y > 43000 ? waterRes(b.x, b.y).k : 1; b.y -= (0.7 + b.r * 12) * dt / k; b.x += Math.sin(b.t * 8 + b.w) * 0.25 * dt / k; } // (7.9.0) slower through slush
     // bubbles burst at the actual wave surface
     const sy = g.surfY ? g.surfY(b.x) : 0;
     if (b.y < sy + 0.1 || b.t > 25) g.bubbles.splice(i, 1);

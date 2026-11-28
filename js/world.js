@@ -16,10 +16,10 @@ export const WORLD_W = 6040; // (7.4.17) 40 m more on the east: the coconut isla
 // leaning in under its own lip, down to a plain at the Challenger Deep's depth; across the plain a second drop into the
 // deep abyss, whose floor is ice VI, 44,444 m down (owner's figure; real ice VI needs about 0.63 GPa, nearer 63 km in 2 °C water). Divers
 // only: the sub stays west of the island
-export const AREA2 = { beach0: 4994, edge: 5014, plain: 10935, drop2: 5700, ice: 44444, end: 6015 }; // (7.8.3, owner) the deepest point 44,444 m, on ice VI
+export const AREA2 = { beach0: 4994, edge: 5024, plain: 10935, drop2: 5284, ice: 44444, cliff: 6018, end: 6040 }; // (7.9.0) a 30 m beach; the far side ends in a cliff 5 m above the sea // (7.8.4, owner) to the owner's drawing: the deepest point 44,444 m, on ice V
 // (7.8.0, owner) the warning sign where the beach goes into the water, and the old diver who sits at its edge and turns
 // back anyone without a signed dive log (the gate stands a few metres short of the drop: the drop can be looked over)
-export const SIGN = { x: 4997.2 }, KEEPER = { x: 5009.2 }, GATE_X = 5007.5;
+export const SIGN = { x: 5021.4 }, SIGN2 = { x: 5262 }, KEEPER = { x: 5018.4 }, GATE_X = 5016.6, WRECK2 = { x: 5251 }; // (7.8.4) the first sign at the beach's edge, the second at the plain's; (7.9.0) the crushed sub beside it // (7.8.4) the first sign at the beach's edge, the second at the plain's
 // (7.4.17, owner) the coconut island at the end of the sea: a sand bar rising 1.5 m out of the water, about 18 m long
 // above it, one coconut palm near its far end. He can wade out and walk on it (his helmet off, as on deck); the sub and
 // the boat meet it as a wall. Beyond it a small pool (about 20 m, no fish): a second ocean, for a later update. Past
@@ -133,12 +133,43 @@ export function isleDepth(x, d0 = 4) {
 }
 // (7.8.0, owner) the second sea's floor east of the beach's edge: the plain under the first wall, the drop, the ice, and
 // the far side rising again to close the sea
+// (7.8.4, owner) drawn from the owner's sketch: the first wall steep and leaning out a little as it falls, its foot
+// rounding onto the plain at 10,935 m; the plain about 180 m, rising slightly to the second sign at its edge; the second
+// wall nearly sheer to a narrow floor of ice V at 44,444 m; and the far side a long climb, steep at first, a ledge
+// around 30 km, then slope after slope back up to near the surface at the sea's end
+// (7.9.0, owner) to the owner's sketch, made natural: the wall steep and leaning out as it falls, its foot rounding onto
+// the plain; the plain about 180 m, rising slightly to the second sign; the second wall nearly sheer to a narrow floor
+// of ice V; the far side a long climb, steep at first, a ledge near 30 km, then slope after slope up to a sea cliff that
+// stands 5 m out of the water, grass on its top. Over it all, faint natural variation: long rolls, low ridges, small
+// terraces and bumps, scaled to the slope and the depth (the ice almost flat)
+const PROFILE2 = [[5024, 10], [5027, 60], [5033, 600], [5044, 2600], [5062, 6500], [5080, 9600], [5094, 10700], [5106, 10935], [5160, 10950], [5215, 10925], [5255, 10920],
+  [5272, 10918], [5282, 10950], [5290, 16000], [5302, 30000], [5313, 40000], [5323, 43700], [5336, 44444], [5522, 44444], [5538, 43900], [5580, 42040], [5622, 37646],
+  [5648, 33163], [5682, 30286], [5748, 28456], [5790, 23226], [5832, 14858], [5873, 10176], [5912, 7208], [5952, 4664], [5988, 2544], [6006, 900], [6013, 120], [6016.5, 22], [6017.4, 4],
+  [6017.9, -3.2], [6018.6, -4.8], [6021, -5.1], [6040, -5.3]];
+// (7.9.0, owner) how hard the water pushes back: { dens, slush, k } where k divides every speed. Density: seawater
+// compresses about 5 % by 11 km, 10-11 % by 30 km, 14-15 % by 44 km; drag at a diver's speed goes with density and his top
+// speed with its square root (5 % slower at 30 km, 7 % at 44 km). Slush: near the second sea's floor the water is near
+// freezing and ice V forms in it and sinks; from about 43.5 km it thickens, smoothly, to slush (about x3 by 44.2 km) and
+// a mush near the ice (about x25: 0.1 m/s with good fins) that ends in the ice itself. Only in the second sea
+export function waterRes(x, y) {
+  const d = Math.max(0, y), dens = 1 + 0.05 * Math.min(1, d / 11000) + 0.055 * clamp((d - 11000) / 19000, 0, 1) + 0.04 * clamp((d - 30000) / 14000, 0, 1);
+  let slush = 1;
+  if (x > AREA2.edge && d > 43500) { const u = clamp((d - 43500) / (AREA2.ice - 43500), 0, 1); slush = Math.exp(Math.log(25) * Math.pow(u, 3)); } // x1 -> about x3 at 44.2 km -> x25 at the ice (about 0.1 m/s with good fins)
+  return { dens, slush, k: Math.sqrt(dens) * slush };
+}
 export function area2Depth(x, seed = 1) {
-  const A = AREA2;
-  if (x <= A.edge + 0.25) return 10;
-  if (x < A.drop2) return A.plain + fbm1(x / 90, 3, seed + 51) * 30 + fbm1(x / 9, 2, seed + 52) * 3;
-  if (x < A.end) return A.ice + fbm1(x / 60, 2, seed + 53) * 4;
-  return lerp(A.ice, -40, clamp((x - A.end) / 12, 0, 1));
+  if (x <= AREA2.edge + 0.25) return 10;
+  let k = 1; while (k < PROFILE2.length - 1 && PROFILE2[k][0] < x) k++;
+  const [x0, d0] = PROFILE2[k - 1], [x1, d1] = PROFILE2[k], t = clamp((x - x0) / (x1 - x0), 0, 1), u = t * t * (3 - 2 * t) * 0.5 + t * 0.5;
+  const d = lerp(d0, d1, u);
+  if (d < 0) return d + fbm1(x / 3, 2, seed + 61) * 0.12; // the cliff's grassy top: nearly level
+  if (d >= AREA2.ice - 1) return d + fbm1(x / 45, 2, seed + 53) * 1.2 + fbm1(x / 6, 2, seed + 54) * 0.25; // the ice: barely uneven
+  const slope = Math.abs(d1 - d0) / Math.max(1, x1 - x0), steep = clamp(slope / 40, 0, 1), sc = clamp(d / 400, 0.05, 1);
+  const roll = fbm1(x / 70, 3, seed + 71) * (3.5 * sc);                                // long, gentle rolls (faint: a few metres)
+  const ridge = (0.3 - Math.abs(fbm1(x / 16, 2, seed + 73))) * (1.4 * sc);            // low ridges with soft crests
+  const step = Math.round(fbm1(x / 28, 2, seed + 75) * 2) / 2 * (0.8 * sc);            // small terraces
+  const bump = fbm1(x / 2.4, 2, seed + 77) * (0.15 + 0.35 * sc);                       // bumps under a metre
+  return d + (1 - steep) * (roll + ridge + step * 0.6) + bump * (1 - 0.5 * steep) + steep * fbm1(x / 5, 3, seed + 79) * Math.min(40, d * 0.004); // on the walls only a rough face
 }
 export function generateWorld(seed) {
   const rng = makeRng(seed);
@@ -281,11 +312,7 @@ export function generateWorld(seed) {
   // (6.1.8) the old one's body is as solid as the rock round her: Earl, the sub and the animals go round it, never into
   // it (an outline a little inside the drawing, so nothing seems to stop short of her); never drawn as rock
   { const P0 = []; for (let k = 0; k < 24; k++) { const a = (k / 24) * Math.PI * 2; P0.push({ x: ANGLER.x + Math.cos(a) * 7.2, y: ANGLER.y + Math.sin(a) * 4.4 }); } addRock(P0, 'oldone'); }
-  // (7.8.0, owner) the second sea's wall leans in: its lip juts out over the drop at the beach's edge, and the face runs
-  // back under it to stand straight about 1,500 m down (a wedge of rock on the open water's side of the edge)
-  { const E = AREA2.edge, P0 = [{ x: E - 0.5, y: 9.7 }, { x: E + 4, y: 10.1 }, { x: E + 9, y: 11.5 }, { x: E + 12.5, y: 15 }, { x: E + 13.5, y: 22 }, { x: E + 12, y: 40 },
-      { x: E + 9, y: 75 }, { x: E + 6, y: 120 }, { x: E + 3, y: 170 }, { x: E - 0.5, y: 220 }];
-    addRock(roughen(P0, 2, 0.6), 'ledge'); const rk = W.rocks[W.rocks.length - 1]; rk.hidden = true; W.lip = rk; } // (a lip about 13 m out, the face running back under it over its first 200 m; drawn by render.js paintCliff)
+  // (7.8.4, owner) the wall leans out as it falls (the drawing): no overhanging lip
   // (7.5.0) the rocks binned by 32 m of x, built again whenever the list changes: every animal asks this many times a
   // frame, and walking the whole sea's rocks each time was the costliest thing in the game's own code. Same answer as
   // before: the first rock in the list that holds the point.

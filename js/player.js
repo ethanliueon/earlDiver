@@ -1,7 +1,7 @@
 // Earl (diver) and his submersible: movement, oxygen, pressure, hull.
 import { clamp, lerp, angleLerp } from './util.js';
 import { X0 as SEA_X0 } from './mapx.js';
-import { collide, BOAT, SPAWN, WORLD_W } from './world.js';
+import { collide, BOAT, SPAWN, WORLD_W, waterRes } from './world.js';
 import { SUB_TIERS } from './economy.js';
 
 export const DIVE_SPEED = 1.68; // Earl's base swimming speed (m/s)
@@ -115,19 +115,23 @@ export function updateEarl(g, dt, inp) {
     }
   } else {
     // ---- diver ----
-    let sp = DIVE_SPEED * e.speedMul * e.finSpeed * Math.max(inp.sprint ? 1.5 : 1, lowO2 ? 1.5 : 1, e.abilSpeed || 1); // (5.9.0). (7.6.0, owner) his own speed (fins, suit, the bag's weight) times the strongest boost running, never the boosts multiplied
+    // (7.9.0, owner) the water pushes back: denser with depth, slush and mush near the second sea's floor. Boosts lose
+    // their extra in the slush first (a sprint can't be run through mush), and rising out is a quarter easier than sinking in
+    const WR = waterRes(e.x, e.y), upK = (inp.y || 0) < -0.2 ? 1.25 : 1, sl = 1 + (WR.slush - 1) / upK; e.resK = Math.sqrt(WR.dens) * sl; e.slush = WR.slush;
+    const boost = Math.max(inp.sprint ? 1.5 : 1, lowO2 ? 1.5 : 1, e.abilSpeed || 1), boostEff = 1 + (boost - 1) / sl;
+    let sp = DIVE_SPEED * e.speedMul * e.finSpeed * boostEff / e.resK; // (5.9.0). (7.6.0, owner) his own speed (fins, suit, the bag's weight) times the strongest boost running, never the boosts multiplied
     // (5.0) the camera's shutter is open: he holds still (he can still aim)
     const hold = !!g.photo;
     const mag = hold ? 0 : Math.hypot(inp.x, inp.y);
     let ix = hold ? 0 : inp.x, iy = hold ? 0 : inp.y;
     if (mag > 1) { ix /= mag; iy /= mag; }
     const tvx = ix * sp, tvy = iy * sp;
-    const acc = (hold ? 5 : mag > 0.1 ? (inp.stick ? 3.8 : 2.6) : 1.4) * (1 - (e.struggle || 0) * 0.5); // heavy, sluggish response (5.3.4: a little quicker on the stick, which has no keys' snap)
+    const acc = (hold ? 5 : mag > 0.1 ? (inp.stick ? 3.8 : 2.6) : 1.4) * (1 - (e.struggle || 0) * 0.5) / Math.sqrt(sl); // (7.9.0) slower to answer in slush // heavy, sluggish response (5.3.4: a little quicker on the stick, which has no keys' snap)
     e.vx = lerp(e.vx, tvx, 1 - Math.exp(-dt * acc));
     e.vy = lerp(e.vy, tvy, 1 - Math.exp(-dt * acc));
     // (7.6.5, owner) Plunge: the anchor drags him down at his own speed times its pull (faster than any sprint); the stick
     // held up holds him where he is against it, pushed a little further down it goes faster
-    if (e.abilSink > 0 && !hold) { const up = iy < -0.3, want = up ? 0 : DIVE_SPEED * e.speedMul * e.finSpeed * e.abilSink * (iy > 0.3 ? 1.2 : 1); e.vy = lerp(e.vy, want, 1 - Math.exp(-dt * 3)); e.sinkHold = up; } else e.sinkHold = false;
+    if (e.abilSink > 0 && !hold) { const up = iy < -0.3, want = up ? 0 : DIVE_SPEED * e.speedMul * e.finSpeed * e.abilSink * (iy > 0.3 ? 1.2 : 1) / e.resK; e.vy = lerp(e.vy, want, 1 - Math.exp(-dt * 3)); e.sinkHold = up; } else e.sinkHold = false;
     // slight negative buoyancy when idle at depth, positive near surface
     if (mag < 0.1) e.vy += (e.y < 8 ? -0.12 : 0.05) * dt;
     // losing his bearings: a slow sideways pull and a sag, applied to his drift, not his steering
@@ -138,7 +142,7 @@ export function updateEarl(g, dt, inp) {
     if (e.y < 0.35) { e.y = 0.35; if (e.vy < 0) e.vy = 0; }
     const c = collide(W, e.x, e.y, 0.28);
     if (c.hit) { e.x = c.x; e.y = c.y; e.vx *= 0.7; e.vy *= 0.5; }
-    e.x = clamp(e.x, SEA_X0 + 2, WORLD_W - 30);
+    e.x = clamp(e.x, SEA_X0 + 2, WORLD_W - 4);
     // never onto the beach
     if (W.floorAt(e.x) < 0.9) { e.x -= 0.6; e.vx = Math.min(0, e.vx); }
     e.speedNow = Math.hypot(e.vx, e.vy);
@@ -161,7 +165,7 @@ export function updateEarl(g, dt, inp) {
     const baseKick = (3.2 + DIVE_SPEED * 0.9) * 2.25;                  // plain swimming, no upgrades, no sprint
     const nowKick = (3.2 + (e.speedNow / sprintK) * 0.9) * 2.25;      // from his actual speed, sprint taken out
     const kickNow = Math.min(nowKick, baseKick * 1.5) * sprintK;
-    e.kick += dt * (moving ? kickNow : 1.65) * kickRate;
+    e.kick += dt * (moving ? kickNow : 1.65) * kickRate / Math.pow(e.resK || 1, 0.6); // (7.9.0) the fins labour in thick water: slower, never frozen
     // oxygen
     e.atSurface = e.y < 0.9;
     if (e.atSurface) {

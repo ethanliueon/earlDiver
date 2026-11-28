@@ -170,7 +170,7 @@ export function useTool(g) {
   // (6.0.16) the catch lands when the hoop arrives, two-thirds of the way through the swing (it was a third: the swing
   // speed could not be felt). A quick fish that sees it coming may dart out of reach first: small reef fish and the
   // fast swimmers react in about a third of a second, so a slow net misses them more and a fast one beats them
-  g.capture = { kind, def, tier, t: 0, dur: def.time * (g.swingMul || 1), resolveAt: kind === 'net' ? 0.6 : 0.12 /* (6.5.7) the end of the sweep */, done: false, lock: lock && lock.ok ? lock : null };
+  g.capture = { kind, def, tier, t: 0, dur: def.time * (g.swingMul || 1) * Math.pow(g.earl.resK || 1, 0.5), /* (7.9.0) a heavier swing in thick water */ resolveAt: kind === 'net' ? 0.6 : 0.12 /* (6.5.7) the end of the sweep */, done: false, lock: lock && lock.ok ? lock : null };
   if (kind === 'net' && lock && lock.ok && lock.c && !g.tutForce && !lock.c.dazed) {
     const c = lock.c, fast = FAST_IDS.has(c.sp.id), small = (c.len || 1) < 0.35, arrive = g.capture.dur * 0.6, react = 0.26 + Math.random() * 0.18, p = fast ? 0.6 : small ? 0.4 : 0.12;
     if (arrive > react && Math.random() < p * Math.min(1, (arrive - react) / 0.35) && Math.random() < ambushChance(g)) c.ambushed = true; // (7.4.0) it would have darted: Ambush held it still
