@@ -121,7 +121,7 @@ export class Slush {
     const amt = (y) => slushAmount(AREA2.edge + 1, y);
     layer(this.far, 8, 0.03, 0.4, (y) => Math.min(0.9, amt(y) * 2.6), 'pFar');
     if (!this.lite) layer(this.soft, 13, 0.06, 0.7, (y) => Math.min(0.3, amt(y) * 0.8), 'pSoft'); // (7.9.1) fainter: thick, the big soft flakes read as clouds
-    layer(this.mush, 6, 0.012, 0.15, (y) => 0.85 * ss(0.3, 1, amt(y)), 'pMush');
+    layer(this.mush, 6, 0.012, 0.15, (y) => 0.4 * ss(0.3, 1, amt(y)), 'pMush'); // (7.9.7, owner) the ice nearly clear: the mush a veil, not a milk
     ctx.globalAlpha = 1;
     // the near pieces
     const A = this.atlas; if (A.ok && this.n) {
@@ -155,15 +155,15 @@ export class Slush {
     const y0 = Math.max(0, Math.floor(yA)), alphaAt = (y) => { const u = Math.min(1, Math.max(0, (y - top) / (full - top))); return Math.pow(u * u * (3 - 2 * u), 1.4); };
     ctx.save();
     const gr = ctx.createLinearGradient(0, yA, 0, Sy(full));
-    for (let k = 0; k <= 12; k++) { const u = k / 12; gr.addColorStop(u, `rgba(190,203,210,${alphaAt(top + u * (full - top)).toFixed(3)})`); }
+    for (let k = 0; k <= 12; k++) { const u = k / 12; gr.addColorStop(u, `rgba(70,96,108,${(0.7 * alphaAt(top + u * (full - top))).toFixed(3)})`); /* (7.9.7, owner) clear ice: a dark glassy body that still hides the floor's line */ }
     ctx.fillStyle = gr; ctx.fillRect(xa, y0, xb - xa, H - y0);
     const im = this.mush; if (im.ok) {
       const k = 6 * ppm / im.width, pat = this.pBody || (this.pBody = ctx.createPattern(im, 'repeat'));
       pat.setTransform(new DOMMatrix([k, 0, 0, k, (S(0) + Math.sin(t * 0.05 + 6) * 0.15 * ppm) % (im.width * k), (Sy(0) + t * 0.012 * ppm) % (im.height * k)]));
       ctx.fillStyle = pat;
-      const aT = 0.3 * alphaAt(camY - H / 2 / ppm), aB = 0.3 * alphaAt(camY + H / 2 / ppm);
+      const aT = 0.16 * alphaAt(camY - H / 2 / ppm), aB = 0.16 * alphaAt(camY + H / 2 / ppm);
       if (Math.abs(aT - aB) < 0.01) { ctx.globalAlpha = (aT + aB) / 2; ctx.fillRect(xa, y0, xb - xa, H - y0); }
-      else for (let py = y0; py < H; py += 4) { const wy = camY + (py + 2 - H / 2) / ppm, a = 0.3 * alphaAt(wy); if (a < 0.004) continue; ctx.globalAlpha = a; ctx.fillRect(xa, py, xb - xa, Math.min(4, H - py)); }
+      else for (let py = y0; py < H; py += 4) { const wy = camY + (py + 2 - H / 2) / ppm, a = 0.16 * alphaAt(wy); if (a < 0.004) continue; ctx.globalAlpha = a; ctx.fillRect(xa, py, xb - xa, Math.min(4, H - py)); }
     }
     ctx.restore();
   }

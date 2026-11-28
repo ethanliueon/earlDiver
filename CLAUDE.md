@@ -516,4 +516,13 @@ last desktop build is kept on the branch `desktop-4.25.5`).
   narrow top, thin single rays inside a broad faint body, soft sides, fading in at the top and out below, broken along
   their length by slowly drifting bands, tinted toward the water's blue; two (Revel+) or three (Carnival), wide, swaying.
 
+- (7.9.6-7.9.7, owner) A skill coin fits only its picture (coins.js fittedAbility, scrolls.js `bare` masks); the rarity's rim
+  is drawn after at the coin's size, so exotic, legendary and mythical symbols fill the coin. Breathing (heard and the
+  helmet's bubbles) is capped at 1.8x its resting pace; the mush adds only a little (the ice's resistance, never speed).
+  The ice of the second sea's floor is nearly clear (dark glass, a veil of mush, little scatter of the lamp), not white.
+  In the mush he is held, not slowed (player.js e.ice): his push builds strain and he lurches when the ice gives, the same
+  speed on average, always escapable; each limb is caught and snaps free on its own (e.limbs, earl_draw.js gear.ice);
+  round him up to 34 slabs of clear ice are real bodies that jam, grind, crack and chip (icefloes.js); cracks, grinding
+  and the settling pack are heard (audio.js iceCrack, iceGrind) and the air leaves his helmet in uneven bursts.
+  The view's double image past a suit's limit is copied at a third of the size every other frame (render.js).
 - **Before release**: see `docs/RELEASE.md` (remove the test shop, connect real purchases, new redeem codes).

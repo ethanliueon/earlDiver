@@ -93,11 +93,14 @@ export function drawEarl(ctx, L, kick, moving, lampCol, rim, gear) {
   // ---------- legs (drawn far leg first) ----------
   // Knees only ever bend backwards (towards -y), and the legs stay close to the line of the body.
   const hipX = -7 * u;
+  // (7.9.7, owner) in the mush each limb keeps its own place in the stroke (held by the ice, then snapping back) and is
+  // shoved about by it: gear.ice is [far leg, far arm, near leg, near arm], each { off, jit }
+  const IC = gear && gear.ice, lk = (i) => (IC ? IC[i].off : 0), lj = (i) => (IC ? IC[i].jit : 0);
   const leg = (phase, near) => {
-    const s = Math.sin(kick + phase);
+    const li = near ? 2 : 0, s = Math.sin(kick + lk(li) + phase);
     // Local frame: +y is his front, -y his back. A thigh angle just under PI swings the knee
     // slightly forward; the shin then bends back from the knee (angle increases), like a real leg.
-    let thighA = Math.PI - (1 - m) * 0.14 - 0.02 + s * (0.04 + 0.15 * m) * stK;
+    let thighA = Math.PI - (1 - m) * 0.14 - 0.02 + s * (0.04 + 0.15 * m) * stK + lj(li) * 0.5;
     let bend = (1 - m) * 0.26 + m * (0.04 + Math.max(0, -s) * 0.26 * stK);      // knee flexion, on the up-stroke
     if (gear && gear.walk != null) {
       // walking on deck (2.5.0): the thigh swings forward and back; the knee bends as the foot comes
@@ -194,7 +197,7 @@ export function drawEarl(ctx, L, kick, moving, lampCol, rim, gear) {
   // With nothing in his hands, both arms lie along his sides, hands by his hips, as divers swim.
   const restArms = !gear || gear.kind === 'none';
   const arm = (phase, near, pose) => {
-    const sc = Math.sin(kick * 0.7 + phase);
+    const ai = near ? 3 : 1, sc = Math.sin(kick * 0.7 + lk(ai) + phase);
     const shX = 27 * u, shY = near ? 2 * u : -0.5 * u;
     let upA = (1 - m) * (Math.PI - 0.32 + sc * 0.12 * stK) + m * (Math.PI * 0.7);
     let foreA = (1 - m) * (Math.PI - 0.95 + sc * 0.25 * stK) + m * (Math.PI * 0.12);
@@ -202,6 +205,7 @@ export function drawEarl(ctx, L, kick, moving, lampCol, rim, gear) {
     if (gear && gear.walk != null && !pose) { const sw = Math.sin(kick + phase) * 0.38 * gear.walk; upA = Math.PI - 0.06 + sw; foreA = upA - 0.18 - Math.max(0, -sw) * 0.5; } // swinging against the legs
     if (gear && gear.climb != null && !pose) { const r = Math.sin(gear.climb + phase + Math.PI) * 0.5 + 0.5; upA = 0.55 - r * 0.5; foreA = upA - 0.35 + r * 0.25; } // reaching up for the rungs, one hand then the other
     if (pose) { upA = pose.upA; foreA = pose.foreA; }
+    if (IC) { upA += lj(ai) * 0.6; foreA += lj(ai) * 0.9; } // (7.9.7) the ice shoving the arm, the net's pose too
     const [ex, ey] = at(shX, shY, upA, 15 * u);
     const [wx, wy] = at(ex, ey, foreA, 13 * u);
     const col = near ? SUIT : '#0d0e11';

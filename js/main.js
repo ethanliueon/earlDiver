@@ -1759,6 +1759,20 @@ function ashoreInput(dt, mv) {
   if (A.hop) A.hop = Math.max(0, A.hop - dt);
   A.wade = Math.max(0, A.wade - dt);
 }
+// (7.9.7, owner) the mush heard and felt: a sharp crack each time the ice gives (player.js e.ice), a slight jolt of the
+// view on the biggest, the slabs grinding while he pushes, now and then the pack settling somewhere off; and the air
+// he pushes out comes from his helmet in short, uneven bursts while the ice holds him
+function iceSounds(dt) {
+  const e = g.earl, I = e.ice, k = e.inSub ? 0 : e.iceK || 0;
+  if (I && I.n !== g.iceN) { if (g.iceN !== undefined && k > 0) { audio.ready && audio.iceCrack && audio.iceCrack(I.snapP || 0.5); if ((I.snapP || 0) > 0.9) g.fx.shake = Math.max(g.fx.shake || 0, 0.14 * I.snapP); } g.iceN = I.n; }
+  if (k <= 0) return;
+  g.grindT = (g.grindT ?? 0.4) - dt;
+  if (g.grindT <= 0) { g.grindT = (e.toiling ? 0.5 : 2.5) + Math.random() * 1.4; if (e.toiling || Math.random() < 0.3) audio.ready && audio.iceGrind && audio.iceGrind(k * (e.toiling ? 1 : 0.4)); }
+  if (Math.random() < dt * 0.3 * k) audio.ready && audio.iceCrack && audio.iceCrack(0.15 + Math.random() * 0.25, true);
+  if (e.toiling && !e.suitQuiet) { g.heldBubT = (g.heldBubT ?? 0.6) - dt;
+    if (g.heldBubT <= 0) { g.heldBubT = (0.35 + Math.random() * 1.0) * (1.2 - 0.5 * k); const n = 2 + Math.floor(Math.random() * 4);
+      for (let i = 0; i < n; i++) g.bubbles.push({ x: e.x + e.facing * 0.6 + (Math.random() - 0.5) * 0.2, y: e.y - 0.3, r: 0.02 + Math.random() * 0.05, w: Math.random() * 6, t: -i * 0.04 }); } }
+}
 // (7.8.0, owner) the gate to the second sea: the old diver at the beach's edge. Without a dive log signed by Station 7
 // (P.wallPass, given at the end of the main story) he turns the diver back; with it, the first time over the edge the
 // view draws back over the wall
@@ -3216,6 +3230,7 @@ function update(dt) {
     }
     if (g.aboard && !g.helm) { mv.x = 0; mv.y = 0; mv.sprint = false; }
     const res = g.ashore ? null : updateEarl(g, dt, mv); // (7.4.17) on the island he walks (placeAshore)
+    iceSounds(dt);
     if (g.aboard) placeOnDeck(dt);
     if (g.ashore) placeAshore();
     // (7.4.22, owner) a sub lost while he lives: back at the surface, she is in the Margaret's cradle again
@@ -3425,7 +3440,7 @@ function update(dt) {
   e.dark = Math.sqrt(g.dayEff * Math.exp(-Math.max(0, e.y) / 140)) * (1 - fx.darken) < 0.3;
   // heart rate
   const lowO2 = !e.inSub ? clamp(1 - (e.o2 / e.o2Max) / 0.25, 0, 1) : clamp(1 - (g.sub.o2 / g.sub.o2Max) / 0.2, 0, 1);
-  const hrT = 68 + clamp(e.speedNow / 6, 0, 1) * (e.sprint ? 30 : 14) + fx.dread * 105 + lowO2 * 35 + fx.pressure * 45 + g.injury * 14 + (g.threat ? 20 : 0) + (g.noAir ? 60 : 0) + (e.inSub ? 0 : 70 * (e.labour || 0)); // (7.9.1, owner) thick water: he breathes and his heart beats faster with the work of it
+  const hrT = 68 + clamp(e.speedNow / 6, 0, 1) * (e.sprint ? 30 : 14) + fx.dread * 105 + lowO2 * 35 + fx.pressure * 45 + g.injury * 14 + (g.threat ? 20 : 0) + (g.noAir ? 60 : 0) + (e.inSub ? 0 : 20 * (e.labour || 0)); /* (7.9.7, owner) the mush quickens him only slightly */ // (7.9.1, owner) thick water: he breathes and his heart beats faster with the work of it
   e.hr = lerp(e.hr, hrT, dt * 0.6);
 
   // ----- a shape in the distance -----
@@ -3461,7 +3476,7 @@ function update(dt) {
   if (!e.inSub && e.y > 1 && g.mode === 'play' && !e.suitQuiet) {
     g.breathT -= dt;
     if (g.breathT <= 0) {
-      g.breathT = 4.2 / clamp(e.hr / 70, 0.8, 2.6);
+      g.breathT = 4.2 / Math.min(1.8, clamp(e.hr / 70, 0.8, 1.7) * (1 + 0.15 * (e.labour || 0))); // (7.9.7, owner) the same capped pace as the breath heard (audio.js)
       for (let i = 0; i < 9; i++) g.bubbles.push({ x: e.x + e.facing * 0.6 + (Math.random() - 0.5) * 0.3, y: e.y - 0.3, r: 0.03 + Math.random() * 0.07, w: Math.random() * 6, t: -i * 0.06 });
     }
   }

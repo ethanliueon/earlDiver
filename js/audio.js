@@ -477,6 +477,20 @@ export class Audio {
   click() { if (!this.clickOnce()) return; if (!this.sfx('ui_click', 0.55)) this.burst('bandpass', 2400, 3, 0.08, 0.12); }
   pickup() { this.tone(660, 0.18, 0.05, 'triangle'); this.tone(990, 0.25, 0.03, 'triangle', 0.06); }
   note() { this.tone(523, 0.5, 0.04, 'sine'); this.tone(784, 0.7, 0.03, 'sine', 0.12); }
+  // (7.9.7, owner) the mush's ice: a crack is a sharp split of noise, the high chirps ice gives as it parts, and a dull
+  // knock under them; `far` (the pack settling off somewhere) only a faint split and one chirp, muffled
+  iceCrack(p = 0.5, far = false) {
+    if (this.muted) return; const v = Math.min(1.2, p);
+    if (far) { this.burst('bandpass', 1800 + Math.random() * 1600, 3, 0.05, 0.02 * v); this.tone(1400 + Math.random() * 900, 0.09, 0.008 * v, 'sine', 0.01, 600); return; }
+    this.burst('highpass', 2600 + Math.random() * 1800, 0.8, 0.035 + 0.03 * v, 0.07 * v);
+    const n = 1 + Math.round(v * 2); for (let i = 0; i < n; i++) { const f = 2200 + Math.random() * 2400; this.tone(f, 0.05 + Math.random() * 0.07, 0.012 * v, 'sine', 0.008 + i * (0.02 + Math.random() * 0.04), f * 0.35); }
+    this.burst('lowpass', 260 + Math.random() * 140, 1.2, 0.14 + 0.1 * v, 0.06 * v, this.brown);
+  }
+  // the slabs grinding past each other as he pushes: a low, rough scrape that bends in pitch
+  iceGrind(k = 0.5) {
+    if (this.muted) return; const f = this.burst('bandpass', 260 + Math.random() * 260, 7, 0.5 + Math.random() * 0.6, 0.035 * Math.min(1, k), this.brown);
+    f.frequency.exponentialRampToValueAtTime(140 + Math.random() * 160, this.ac.currentTime + 0.7);
+  }
   creak(vol) {
     if (this.sfx('hull_creak_' + (1 + Math.floor(Math.random() * 3)), Math.min(1, vol * 1.3), 0.85 + Math.random() * 0.3)) return;
     const f = this.burst('bandpass', 180 + Math.random() * 300, 12, 0.6 + Math.random() * 0.8, vol, this.brown); f.frequency.exponentialRampToValueAtTime(90, this.ac.currentTime + 1); }
@@ -539,7 +553,7 @@ export class Audio {
     // breathing (diver only)
     if (!e.inSub && under && !g.noAir) {
       this.breathT -= dt;
-      const rate = clamp(e.hr / 70, 0.8, 2.6);
+      const rate = Math.min(1.8, clamp(e.hr / 70, 0.8, 1.7) * (1 + 0.15 * (e.labour || 0))); // (7.9.7, owner) capped: never a pant, whatever his heart does; the ice's resistance (not his speed) adds only a little
       if (this.breathT <= 0) {
         this.breathT = 4.2 / rate;
         this.burst('bandpass', 1500, 1.2, 1.1 / Math.sqrt(rate), 0.035 + fx.dread * 0.02); // inhale through regulator

@@ -29,6 +29,7 @@ import { SPECIES_BY_ID } from './species.js';
 import { LEGENDARY } from './specimens.js';
 import { glint, ember, ACCENT } from './scrolls.js'; // (7.4.3) the legendary sparkle, for a legendary pet
 import { Slush } from './slush.js';
+import { IceField } from './icefloes.js';
 import { BOAT, WORLD_W, EAST, CAVE, ANGLER, CANYON, SAIL, WHALE_FALL, ISLE, yardX, SIGN, SIGN2, WRECK2, KEEPER, AREA2 } from './world.js';
 import { bargePicture, BARGE } from './barge_draw.js';
 import { LANTERN_RADIUS } from './entity.js';
@@ -515,6 +516,8 @@ export class Renderer {
       const S2 = this.slush || (this.slush = new Slush()), now = performance.now() / 1000, dts = Math.min(0.05, Math.max(0, now - (this.slushT || now))); this.slushT = now;
       S2.lite = !!(this.lite || this.phone); S2.update(g, dts);
       S2.draw(ctx, g, S, Sy, ppm, this.W, this.H, t, cam.x, cam.y, cam.h, g.earl.facing > 0 ? 0 : Math.PI);
+      { const IF = this.ice || (this.ice = new IceField()), e = g.earl; IF.lite = S2.lite; IF.update(g, dts, (x) => g.world.floorAt(x)); // (7.9.7, owner) the slabs of the mush round him (icefloes.js)
+        IF.draw(ctx, S, Sy, ppm, this.W, this.H, S(e.x) + (e.facing || 1) * 0.45 * ppm, Sy(e.y) - 0.15 * ppm, S2.atlas); }
       this.slushHalo = S2.v > 0.04 ? { v: S2.v } : null; // the lamp's light thrown back by the ice round him
     } else this.slushHalo = null;
     this.drawFloorCached(g, S, Sy, ppm);
@@ -1265,6 +1268,7 @@ export class Renderer {
       }
       const sm0 = g.siphon && !g.siphon.sub ? siphMix(g.siphon)[0] : 1; if (sm0 < 1) { ctx.globalAlpha *= sm0; if ('filter' in ctx) ctx.filter = `grayscale(${(1 - sm0).toFixed(2)})`; } // (7.6.8) Siphon: he greys and fades
       if (gear && !g.aboard && !g.ashore) gear.stiff = e.labour || 0; // (7.9.1) stiff, short strokes in thick water
+      if (gear) gear.ice = !g.aboard && !g.ashore && !e.inSub && e.limbs && ((e.iceK || 0) > 0 || e.limbs.some((q) => q.held > 0 || Math.abs(q.off) > 0.01 || Math.abs(q.jit) > 0.005)) ? e.limbs : null; // (7.9.7, owner) limbs held by the ice
       const h = drawEarl(ctx, (g.aboard || g.ashore ? 1.7 : EARL_H) * ppm, e.kick, moving, lampCol, amb, gear); // (standing on deck he is drawn at a man's height)
       if (sm0 < 1 && 'filter' in ctx) ctx.filter = 'none';
       // (7.6.7, owner) Temper: heat colours on his own figure, never round him. He is drawn again on a side canvas under
@@ -2080,10 +2084,12 @@ export class Renderer {
     if (fx.ghost > 0.01) {
       // double vision
       // the second image is copied at half resolution: a quarter of the work, and it is a ghost anyway
-      const gw = Math.ceil(W / 2), gh = Math.ceil(H / 2);
-      if (this.gc.width !== gw || this.gc.height !== gh) { this.gc.width = gw; this.gc.height = gh; }
-      this.gctx.clearRect(0, 0, gw, gh);
-      this.gctx.drawImage(this.c, 0, 0, gw, gh);
+      // (7.9.7) a third of the size and copied every other frame: past a suit's limit (all of the second sea) it ran every
+      // frame and cost more than the rest of the scene together. A soft ghost at 45 %: one frame old and a little softer
+      // cannot be seen, and its drift below still moves every frame
+      const gw = Math.ceil(W / 3), gh = Math.ceil(H / 3);
+      if (this.gc.width !== gw || this.gc.height !== gh) { this.gc.width = gw; this.gc.height = gh; this.ghostN = 0; }
+      if (!((this.ghostN = (this.ghostN || 0) + 1) & 1)) { this.gctx.clearRect(0, 0, gw, gh); this.gctx.drawImage(this.c, 0, 0, gw, gh); }
       // the second image drifts apart and back together
       const sep = fx.ghost * (0.6 + 0.4 * Math.sin(t * 0.8));
       ctx.globalAlpha = fx.ghost * 0.45;
@@ -2728,7 +2734,7 @@ export class Renderer {
     ctx.lineTo(S(x1 + step), H + 20); ctx.closePath();
     const midD = V ? V.midD : g.world.floorAt(this.cam.x);
     const fg = ctx.createLinearGradient(0, Sy(midD - 6), 0, Sy(midD + 30));
-    const c = midD > AREA2.ice - 1500 ? [190, 203, 210] : sampleTable(FLOOR_COL, midD); /* (7.8.0, owner) the second sea's floor is ice VI: pale, glassy */
+    const c = midD > AREA2.ice - 1500 ? [78, 102, 112] : sampleTable(FLOOR_COL, midD); /* (7.9.7, owner) nearly clear: dark glass, not white */ /* (7.8.0, owner) the second sea's floor is ice VI: pale, glassy */
     fg.addColorStop(0, rgbStr(c)); fg.addColorStop(0.15, rgbStr(mixRgb(c, [40, 36, 30], 0.35))); fg.addColorStop(1, rgbStr(mixRgb(c, [10, 10, 10], 0.75)));
     ctx.fillStyle = fg; ctx.fill();
     // grain texture
@@ -2857,7 +2863,7 @@ export class Renderer {
     const A = AREA2; if (!all) { xa = Math.max(xa, A.edge - 26); ya = Math.max(ya, 10.2); } if (xb <= xa || yb <= ya) return;
     const ss = smoothstep, X0 = S(xa), X1 = S(xb), Y0 = Sy(ya), Y1 = Sy(yb);
     ctx.save(); ctx.globalCompositeOperation = 'source-over'; ctx.globalAlpha = 1;
-    const ICE = [[A.ice - 5000, null], [A.ice - 1000, [150, 178, 192]], [A.ice, [178, 202, 214]]];
+    const ICE = [[A.ice - 5000, null], [A.ice - 1000, [92, 116, 126]], [A.ice, [74, 100, 112]]]; /* (7.9.7, owner) clear ice reads dark, the deep seen through it */
     const colAt = (y) => { const c = sampleTable(FLOOR_COL, y); if (y < A.ice - 5000) return c; const t = ss(A.ice - 5000, A.ice - 500, y); return c.map((v, i) => Math.round(v + ((ICE[2][1][i]) - v) * t)); };
     const gr = ctx.createLinearGradient(0, Y0, 0, Y1); for (let k2 = 0; k2 <= 10; k2++) { const y = ya + (yb - ya) * k2 / 10; gr.addColorStop(k2 / 10, rgbStr(colAt(y))); }
     ctx.fillStyle = gr; ctx.fillRect(X0, Y0, X1 - X0, Y1 - Y0);
@@ -4134,9 +4140,9 @@ export class Renderer {
     }
     for (const L of this.extraLights || []) radial(L.x, L.y, L.r, L.col, L.a); this.extraLights = [];
     if (this.slushHalo && head && (e.lampOn || g.abilLight > 0)) { // (7.9.1, owner) the ice in the water scatters his light: one soft glow, long along the beam and fading smoothly into it (no ring, no edge between them)
-      const v = this.slushHalo.v, lamp = e.lampOn, ang = lamp ? this.lampAngle(g, e, head) : 0, R = (3 + 9 * v) * ppm, off = lamp ? R * 0.5 : 0, a = 0.04 + 0.26 * v * v;
+      const v = this.slushHalo.v, lamp = e.lampOn, ang = lamp ? this.lampAngle(g, e, head) : 0, R = (3 + 9 * v) * ppm, off = lamp ? R * 0.5 : 0, a = 0.02 + 0.07 * v * v; /* (7.9.7, owner) the ice is nearly clear: it lets the light through, scattering only a little back */
       l.save(); l.translate((head.x + Math.cos(ang) * off) * k, (head.y + Math.sin(ang) * off) * k); l.rotate(ang); l.scale(lamp ? 1.7 : 1, 1);
-      const gg = l.createRadialGradient(0, 0, 0, 0, 0, R * k); for (let i = 0; i <= 10; i++) { const u = i / 10; gg.addColorStop(u, rgbStr([196, 210, 220], a * Math.exp(-3.2 * u * u) * (1 - u * u))); }
+      const gg = l.createRadialGradient(0, 0, 0, 0, 0, R * k); for (let i = 0; i <= 10; i++) { const u = i / 10; gg.addColorStop(u, rgbStr([150, 182, 196], a * Math.exp(-3.2 * u * u) * (1 - u * u))); }
       l.fillStyle = gg; l.beginPath(); l.arc(0, 0, R * k, 0, TAU); l.fill(); l.restore(); } // (7.9.0) milky: the ice in the water scatters his light back round him // (7.9.0) the lantern, the wreck's light
     for (const p of glowPts) {
       const [x, y, col, r, gk = 1, core] = p;

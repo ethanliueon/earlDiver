@@ -1,5 +1,6 @@
 // Earl (diver) and his submersible: movement, oxygen, pressure, hull.
 import { clamp, lerp, angleLerp } from './util.js';
+const TAU = Math.PI * 2;
 import { X0 as SEA_X0 } from './mapx.js';
 import { collide, BOAT, SPAWN, WORLD_W, waterRes } from './world.js';
 import { SUB_TIERS } from './economy.js';
@@ -138,7 +139,21 @@ export function updateEarl(g, dt, inp) {
     if (e.struggle) { e.vx += Math.sin(g.time * 0.6) * 0.9 * e.struggle * dt; e.vy += (0.35 + Math.sin(g.time * 0.9) * 0.3) * e.struggle * dt; }
     // (5.0) a fish fighting the net pulls him along a little, harder the bigger it is
     if (g.tug) { const T = g.tug, k = T.t / T.dur, f = T.str * (1 - k) * (0.55 + 0.45 * Math.sin(g.time * 23)); e.vx += T.dir * f * dt * 3.2; e.vy += Math.sin(g.time * 17) * f * dt * 1.6; }
-    e.x += e.vx * dt; e.y += e.vy * dt;
+    // (7.9.7, owner) in the mush he is held by the ice, not slowed: his push builds up as strain while he barely moves, and
+    // when the ice gives (a crack, e.iceSnap) he lurches the strained distance at once. Averaged out he goes as fast as the
+    // thick water lets him (the same as before), so it is never a dead end, only effort and air. Let go of the stick and
+    // the ice relaxes the strain back
+    const iceK = e.inSub ? 0 : clamp((((e.slush || 1)) - 1.4) / 4, 0, 1); e.iceK = iceK;
+    if (iceK > 0) {
+      const hold = 0.88 * Math.sqrt(iceK), I = e.ice || (e.ice = { sx: 0, sy: 0, give: 0.12, slip: 0, svx: 0, svy: 0, snapT: 0, snapP: 0, n: 0 });
+      I.sx += e.vx * hold * dt; I.sy += e.vy * hold * dt;
+      if (mag < 0.15) { const rel = Math.exp(-dt * 0.6); I.sx *= rel; I.sy *= rel; }
+      const sl = Math.hypot(I.sx, I.sy);
+      if (sl > I.give && I.slip <= 0) { const T = 0.11 + Math.random() * 0.07; I.svx = I.sx / T; I.svy = I.sy / T; I.slip = T; I.snapP = clamp(sl / 0.22, 0.25, 1.4); I.snapT = g.time; I.n++; I.sx = I.sy = 0; I.give = 0.08 + Math.random() * Math.random() * 0.32; }
+      let mx = e.vx * (1 - hold), my = e.vy * (1 - hold);
+      if (I.slip > 0) { const k = Math.min(dt, I.slip); mx += I.svx * k / dt; my += I.svy * k / dt; I.slip -= dt; }
+      e.x += mx * dt; e.y += my * dt;
+    } else { if (e.ice) e.ice.sx = e.ice.sy = 0; e.x += e.vx * dt; e.y += e.vy * dt; }
     if (e.y < 0.35) { e.y = 0.35; if (e.vy < 0) e.vy = 0; }
     const c = collide(W, e.x, e.y, 0.28);
     if (c.hit) { e.x = c.x; e.y = c.y; e.vx *= 0.7; e.vy *= 0.5; }
@@ -172,6 +187,18 @@ export function updateEarl(g, dt, inp) {
     const nowKick = (3.2 + (e.speedNow / sprintK) * 0.9) * 2.25;      // from his actual speed, sprint taken out
     const kickNow = Math.min(nowKick, baseKick * 1.5) * sprintK;
     e.kick += dt * (moving ? kickNow : 1.65) * kickRate / Math.pow(e.resK || 1, 0.6); // (7.9.0) the fins labour in thick water: slower, never frozen
+    // (7.9.7, owner) each arm and leg caught by the ice on its own: a caught limb stops where it is while the others go on,
+    // then tears free and snaps back into the stroke; the ice round it shoves it about a little (jit, a sprung angle).
+    // Order: far leg, far arm, near leg, near arm (earl_draw.js gear.ice)
+    { const L = e.limbs || (e.limbs = [0, 1, 2, 3].map(() => ({ off: 0, held: 0, jit: 0, jv: 0 }))), dk = dt * (moving ? kickNow : 1.65) * kickRate / Math.pow(e.resK || 1, 0.6), iK = e.iceK || 0;
+      const snap = e.ice && e.ice.snapT === g.time;
+      for (const q of L) {
+        if (q.held > 0) { q.off -= dk; q.held -= dt; if (q.held <= 0 || (snap && Math.random() < 0.6)) { q.held = 0; q.off = ((q.off % TAU) + TAU * 1.5) % TAU - Math.PI; q.jv += (Math.random() - 0.5) * 9; } }
+        else { q.off += (0 - q.off) * (1 - Math.exp(-dt * 11)); if (iK > 0 && Math.random() < dt * iK * (e.toiling ? 1.4 : 0.35)) q.held = 0.2 + Math.random() * 0.9 * iK; }
+        if (iK > 0) q.jv += (Math.random() - 0.5) * iK * dt * 70 + (snap ? (Math.random() - 0.5) * 6 * e.ice.snapP : 0);
+        q.jv += (-q.jit * 90 - q.jv * 9) * dt; q.jit = clamp(q.jit + q.jv * dt, -0.5, 0.5);
+        if (!iK && !q.held && Math.abs(q.off) < 0.01) { q.off = 0; }
+      } }
     // oxygen
     e.atSurface = e.y < 0.9;
     if (e.atSurface) {
