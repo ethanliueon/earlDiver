@@ -1,5 +1,6 @@
 // Hatchetfish (Earl is the default diver) — game loop, state, interactions and UI glue.
 import { scrollSellPearls } from './shelf.js'; // (7.6.2) scrolls sell for pearls
+import { X0 as SEA_X0 } from './mapx.js';
 import { rarKind } from './itemcard.js'; // (7.5.5) "Legendary net" on the sale's question
 import { watchPage } from './units.js'; // (6.0.3) first, so every canvas draws its figures in the chosen units
 import { watchPanels, platesReady } from './reveal.js'; // (6.5.0) no panel seen half-drawn
@@ -8,6 +9,7 @@ import { coinURL, tileURL } from './coins.js';
 installFatFinger();
 import { clamp, lerp, dist, makeRng, formatTime, TAU, smoothstep } from './util.js';
 import { markOf, SUB_MARKS, BOAT_U, BOAT_LADDER, BOAT_DOOR, deckLine } from './earl_draw.js';
+import { AREA2, GATE_X } from './world.js';
 import { generateWorld, RESOURCES, BOAT, BOAT_HOME, BOAT_MIN, BOAT_MAX, WORLD_W, ISLE, CAVE, CANYON, WHALE_FALL, SEEP, TRENCH, boatDock, SAIL, SAIL_OFF, yardX } from './world.js';
 import { SPECIES, SPECIES_BY_ID } from './species.js';
 import { speciesIcon } from './creatures_draw.js';
@@ -1727,21 +1729,38 @@ function ashoreInput(dt, mv) {
   const e = g.earl, W = g.world;
   if (!g.ashore) {
     if (e.inSub || g.aboard || g.kill || g.mode !== 'play') return;
-    if (e.x > ISLE.x0 - 6 && e.y < 2.2 && (mv.x || 0) > 0.3 && W.floorAt(e.x + 1.2) < 0.75) { g.ashore = { walk: 0, step: 0, hop: 0, wade: 0.6, saidT: 0 }; e.facing = 1; audio.ready && audio.splash && audio.splash(0.4); }
+    if (e.x > ISLE.x1 && e.x < ISLE.x1 + 14 && e.y < 2.2 && (mv.x || 0) < -0.3 && W.floorAt(e.x - 1.2) < 0.75) { g.ashore = { walk: 0, step: 0, hop: 0, wade: 0.6, saidT: 0 }; e.facing = -1; audio.ready && audio.splash && audio.splash(0.4); } /* (7.8.0) from the beach side too */
+    else if (e.x > ISLE.x0 - 6 && e.y < 2.2 && (mv.x || 0) > 0.3 && W.floorAt(e.x + 1.2) < 0.75) { g.ashore = { walk: 0, step: 0, hop: 0, wade: 0.6, saidT: 0 }; e.facing = 1; audio.ready && audio.splash && audio.splash(0.4); }
     return;
   }
   const A = g.ashore, walk = ui.anyOpen() ? 0 : Math.sign(Math.abs(mv.x || 0) > 0.2 ? mv.x : 0), pace = walk && mv.sprint ? ISLE_RUN : ISLE_WALK;
   A.saidT = Math.max(0, A.saidT - dt);
   let nx = e.x + walk * pace * dt;
-  if (nx > ISLE.stop) { nx = ISLE.stop; if (walk > 0 && !A.saidT) { say('Area available in a future update', 'earl'); A.saidT = 4; } }
   e.x = nx; if (walk) e.facing = walk;
-  // back into the sea: where the water is deep enough to swim
+  // back into the sea: where the water is deep enough to swim, either way (7.8.0: east, down the beach into the second sea)
+  if (walk > 0 && W.floorAt(e.x) > 0.95) { g.ashore = null; e.y = 0.8; e.vx = 1.2; e.vy = 0.4; e.angle = 0; audio.ready && audio.splash && audio.splash(0.5); return; }
   if (walk < 0 && W.floorAt(e.x) > 0.95) { g.ashore = null; e.y = 0.8; e.vx = -1.2; e.vy = 0.4; e.angle = 0; audio.ready && audio.splash && audio.splash(0.5); return; }
   A.walk = lerp(A.walk || 0, walk ? 1 : 0, 1 - Math.exp(-dt * (walk ? 8 : 6)));
   if (walk || A.walk > 0.05) { const s0 = A.step; A.step = s0 + dt * pace * 3.4; if (Math.floor(A.step / Math.PI) !== Math.floor(s0 / Math.PI) && A.walk > 0.35) audio.ready && audio.footstep && audio.footstep(0.05 * A.walk); }
   if (!ui.anyOpen() && !A.hop && pressed.has(' ')) { A.hop = 0.55; pressed.delete(' '); }
   if (A.hop) A.hop = Math.max(0, A.hop - dt);
   A.wade = Math.max(0, A.wade - dt);
+}
+// (7.8.0, owner) the gate to the second sea: the old diver at the beach's edge. Without a dive log signed by Station 7
+// (P.wallPass, given at the end of the main story) he turns the diver back; with it, the first time over the edge the
+// view draws back over the wall
+const KEEPER_FIRST = ['Whoa there. Not past me, friend.', 'Nobody goes over that edge without a dive log signed by Station 7.'];
+const KEEPER_AGAIN = ['Signed log, or back you go.', "It's a long way down. Longer than you think.", "Station 7's signature. Then we'll talk.", 'Turn back. I won\'t ask twice. Well. I will.'];
+function wallGate(dt) {
+  const e = g.earl; if (!profile || g.mode !== 'play' || e.inSub || g.ashore) return;
+  g.keeperT = Math.max(0, (g.keeperT || 0) - dt);
+  if (!profile.wallPass) {
+    if (e.x > GATE_X) { e.x = GATE_X; e.vx = Math.min(e.vx || 0, -0.8);
+      if (!g.keeperT) { if (!profile.keeperMet) { profile.keeperMet = 1; say(KEEPER_FIRST[0], 'keeper'); setTimeout(() => say(KEEPER_FIRST[1], 'keeper'), 1600); saveProfile(profile); g.keeperT = 6; }
+        else { g.keeperN = ((g.keeperN ?? -1) + 1) % KEEPER_AGAIN.length; say(KEEPER_AGAIN[g.keeperN], 'keeper'); g.keeperT = 4.5; } } }
+    return; }
+  if (!profile.edgeSeen && e.x > AREA2.edge + 2) { profile.edgeSeen = 1; saveProfile(profile); g.edgeReveal = { t: 0 }; hud.toast('The second sea', 'big'); g.notes = (g.notes ? g.notes + '\n' : '') + 'Over the edge. There is no bottom you can see.'; }
+  if (g.edgeReveal) { const R = g.edgeReveal; R.t += dt; renderer.aimZoom = R.t < 1.6 ? 1 + 1.6 * (R.t / 1.6) : R.t < 4.2 ? 2.6 : Math.max(1, 2.6 - 1.6 * (R.t - 4.2) / 1.6); if (R.t > 5.8) { g.edgeReveal = null; renderer.aimZoom = 1; } }
 }
 function placeAshore() {
   const e = g.earl, A = g.ashore, ground = g.world.floorAt(e.x), hk = A.hop ? 1 - A.hop / 0.55 : 0;
@@ -2226,8 +2245,8 @@ function rebirth(kind) {
   e.o2 = e.o2Max; g.noAir = 0; g.injury = 0; g.kill = null; e.vx = e.vy = 0;
   const safe = (e.pressStart || 300) - 5; if (e.y > safe) e.y = Math.max(2, safe);
   if (sub.imploded || kind === 'implode') { sub.imploded = false; g.imploded = false; sub.failing = null; sub.hull = 1; g.subTank = []; }
-  sub.docked = false; sub.vx = sub.vy = 0; sub.o2 = sub.o2Max; sub.x = clamp(e.x + 9, 6, 4994); /* (6.0.1) a little off to his right, so the open water on his left is free for his words */ sub.y = Math.max(2, Math.min(e.y, g.world.floorAt(sub.x) - 3));
-  if (ent) { ent.faceLock = null; ent.marked = false; ent.hunt = null; ent.ap = null; ent.slip = null; ent.sleepT = 90; ent.x = 20 + Math.random() * 4960; ent.y = ent.band(g)[0] + Math.random() * 400; }
+  sub.docked = false; sub.vx = sub.vy = 0; sub.o2 = sub.o2Max; sub.x = clamp(e.x + 9, SEA_X0 + 6, 4960); /* (6.0.1) a little off to his right, so the open water on his left is free for his words */ sub.y = Math.max(2, Math.min(e.y, g.world.floorAt(sub.x) - 3));
+  if (ent) { ent.faceLock = null; ent.marked = false; ent.hunt = null; ent.ap = null; ent.slip = null; ent.sleepT = 90; ent.x = SEA_X0 + 20 + Math.random() * (4930 - SEA_X0); ent.y = ent.band(g)[0] + Math.random() * 400; }
   g.rebirthT = 7; g.wake = { t: 0, eaten: kind === 'devoured' }; ui.closeAll && ui.closeAll(); audio.ready && audio.drop && audio.drop();
 }
 // (6.5.9) the revive offer. Only when the haul he would lose is worth something to him: more than 15 % of his cash, at
@@ -2258,7 +2277,7 @@ function revive(kind) {
   if (kind === 'implode' || e.inSub) { e.inSub = false; e.x = sub.x; e.y = sub.y; }
   e.o2 = e.o2Max * 0.3; g.noAir = 0; g.injury = 0; g.kill = null; e.vx = e.vy = 0;
   const safe = (e.pressStart || 300) - 5; if (e.y > safe) e.y = Math.max(2, safe); // not straight back under the pressure that killed him
-  if (sub.imploded || kind === 'implode') { sub.imploded = false; g.imploded = false; sub.failing = null; sub.hull = 1; sub.docked = false; sub.x = clamp(e.x + 9, 6, 4994); sub.y = Math.max(2, Math.min(e.y, g.world.floorAt(sub.x) - 3)); }
+  if (sub.imploded || kind === 'implode') { sub.imploded = false; g.imploded = false; sub.failing = null; sub.hull = 1; sub.docked = false; sub.x = clamp(e.x + 9, SEA_X0 + 6, 4960); sub.y = Math.max(2, Math.min(e.y, g.world.floorAt(sub.x) - 3)); }
   if (ent) { ent.faceLock = null; ent.placeFar(e, 1000); if (ent.goAway) ent.goAway(e.x, e.y, ent.band(g)[0], 30); } // (7.7.2, owner) it is gone from beside him: back at the radar's edge, 1,000 m off and below, and it keeps off a while; the mark stays
   g.rebirthT = 3; g.wake = { t: 0, eaten: false, plain: true }; ui.closeAll && ui.closeAll(); audio.ready && audio.drop && audio.drop();
 }
@@ -2726,6 +2745,7 @@ function update(dt) {
     // aboard the Margaret (2.4.0): the stern ladder, walking the deck, the stations
     deckInput(dt, mv);
     ashoreInput(dt, mv); // (7.4.17)
+    wallGate(dt); // (7.8.0)
     // seabed materials have to be worked loose: hold F (or the right mouse button), one at a time
     const holding = keys.has('f');
     const planting = canPlant(target);
@@ -3243,6 +3263,7 @@ function update(dt) {
     }
     // the deep will not go into the old one's cave
     if (!g.protection && inCave(e.x, e.y)) g.protection = { x: CAVE.x + 10, y: CAVE.y, cave: true };
+    if (!g.protection && !e.inSub && e.x > AREA2.edge) g.protection = { x: AREA2.edge - 200, y: e.y, area2: true }; // (7.8.0, owner) it doesn't follow him past the island's beach
 
     // animals that attack
     g.fauna.bleeding = g.injury > 0;
@@ -3257,6 +3278,7 @@ function update(dt) {
       ent.dist = dist(ent.x, ent.y, e.x, e.y); ent.eyeOpen = 1; ent.fade = 1; ent.heading = Math.PI;
       if (R.t > 26) { g.reveal = null; ent.y = Math.max(ent.y, e.y + 200); }
     } else if (!g.kill && !g.frozen) r = ent.update(g, dt);
+    if (ent.x > 4960) { ent.x = 4960; ent.vx = Math.min(0, ent.vx || 0); } // (7.8.0, owner) it never comes past the island
     if (r === 'grab' || r === 'swallow') startKill();
     for (const ev of g.events) {
       if (ev === 'marked') {
@@ -3395,7 +3417,7 @@ function update(dt) {
       if (f.fade <= 0 && (f.gone || f.t > f.dur)) g.farShadow = null;
     } else if (e.y > 120 && e.y < 1600 && fx.dread < 0.02 && !ent.marked && Math.random() < dt / 420) {
       const side = Math.random() < 0.5 ? -1 : 1;
-      const x = clamp(e.x + side * (20 + Math.random() * 10), 10, WORLD_W - 10);
+      const x = clamp(e.x + side * (20 + Math.random() * 10), SEA_X0 + 10, 4960);
       const y = Math.min(e.y + (Math.random() - 0.4) * 16, W.floorAt(x) - 15);
       if (y > 60) {
         g.farShadow = { x, y, vx: -side * (0.3 + Math.random() * 0.4), dir: -side, t: 0, dur: 50 + Math.random() * 30, fade: 0, gone: false };

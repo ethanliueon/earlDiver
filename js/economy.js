@@ -1,3 +1,4 @@
+import { mapX, MAP_V } from './mapx.js';
 import { VERSION as GAME_VERSION } from './version.js';
 import { ITEMS, kitOf, worn as wornItem, skillLv, setOn, pocketsBonus } from './items.js';
 // The money side of the game: the save (what survives death), prices, the market, and the
@@ -519,7 +520,7 @@ export function gear(P, kind) {
 // ---------------- the profile ----------------
 export function newProfile() {
   return {
-    v: 1, tlvCh: 1, cash: 0, pearls: 20 /* (7.3.9, owner) the premium currency: a new diver starts with twenty */, lifetime: 0, tank: 0, fins: 0, subTier: 0, subLost: false, hull: 1, addons: {},
+    v: 1, mapV: MAP_V, tlvCh: 1, cash: 0, pearls: 20 /* (7.3.9, owner) the premium currency: a new diver starts with twenty */, lifetime: 0, tank: 0, fins: 0, subTier: 0, subLost: false, hull: 1, addons: {},
     lv: {}, gear: {}, caught: [], tagger: -1, camera: -1, photos: [], traps: { pot: 1, fish: 0, steel: 0, cage: 0 }, // one beginner's wire pot
     journal: [], notes: '', runs: 0, deaths: 0, deepest: 0, market: {}, created: Date.now(), coins: 0,
     items: { necklace: 3 }, glowKind: 'necklace', // (6.0.1) a new diver starts with three glow sticks on the belt
@@ -539,7 +540,15 @@ export function lastSlot() { try { const n = +localStorage.getItem(LAST_KEY); re
 // bring any readable save up to the current format: fill in whatever it lacks from a new profile
 export function migrate(data) {
   if (!data || typeof data !== 'object' || !data.profile || typeof data.profile !== 'object') return null;
+  const oldMap = data.profile.mapV !== MAP_V; // (7.8.0) positions saved in the long first sea
   const fresh = newProfile(), P = Object.assign({}, fresh, data.profile);
+  if (oldMap) { // moved once into the shortened sea (mapx.js): the boat's mooring, where a dive stopped, traps, markers
+    const mx = (o) => { if (o && typeof o.x === 'number') o.x = mapX(o.x); };
+    if (typeof P.boatX === 'number') P.boatX = Math.round(mapX(P.boatX));
+    if (P.resume) { mx(P.resume.e); mx(P.resume.sub); }
+    for (const t of Array.isArray(P.trapSets) ? P.trapSets : []) mx(t); if (P.trapSet) mx(P.trapSet);
+    for (const m of Array.isArray(P.markers) ? P.markers : []) mx(m); }
+  P.mapV = MAP_V;
   for (const k of ['lv', 'gear', 'addons', 'market', 'traps']) if (!P[k] || typeof P[k] !== 'object' || Array.isArray(P[k])) P[k] = fresh[k] || {};
   for (const k of ['caught', 'journal', 'photos']) if (!Array.isArray(P[k])) P[k] = [];
   for (const k of ['cash', 'coins', 'lifetime', 'runs', 'deaths', 'deepest']) if (typeof P[k] !== 'number' || !isFinite(P[k])) P[k] = fresh[k] || 0;

@@ -8,6 +8,7 @@
 // toward ~120 m (slowing and fading as it rises - no hard line); otherwise it stays below ~200 m.
 // Staying shallow long enough makes it lose interest, and the mark fades.
 import { clamp, lerp, dist } from './util.js';
+import { X0 as SEA_X0 } from './mapx.js';
 import { MONSTER_LEN, MONSTER_EYE } from './monster_draw.js';
 export const ENTITY_SPEED = 12; // m/s: its travelling speed, far faster than Earl, and than the sub
 export const ENTITY_BURST = 15; // m/s: a burst, only once it is in sight of him and only if he is getting away
@@ -28,9 +29,9 @@ export class Entity {
     this.rng = rng;
     this.world = world;
     // a new place every run: anywhere across the ocean, between 1,500 and 3,500 m, in open water
-    this.x = rng.range(60, 4900); this.y = rng.range(1500, 3500);
+    this.x = rng.range(SEA_X0 + 60, 4900); this.y = rng.range(1500, 3500);
     if (world) for (let k = 0; k < 60; k++) {
-      const x = rng.range(60, 4900), y = rng.range(1500, 3500);
+      const x = rng.range(SEA_X0 + 60, 4900), y = rng.range(1500, 3500);
       if (world.floorAt(x) - y > 40) { this.x = x; this.y = y; break; }
     }
     this.teleported = false; // it may close the distance once a run (see closeIn)
@@ -117,7 +118,7 @@ export class Entity {
     if (this.teleported || this.marked || g.earl.y < 100) return false;
     const dx = g.earl.x - this.x, dy = g.earl.y - this.y, d = Math.hypot(dx, dy);
     if (d - 500 <= 1000) return false;
-    let x = clamp(this.x + dx / d * 500, 20, 4980), y = this.y + dy / d * 500;
+    let x = clamp(this.x + dx / d * 500, SEA_X0 + 20, 4950), y = this.y + dy / d * 500;
     if (this.world) y = Math.min(y, this.world.floorAt(x) - 25);
     y = Math.max(150, y);
     if (this.world && this.world.rockAt && this.world.rockAt(x, y, 10)) return false;
@@ -185,6 +186,7 @@ export class Entity {
 
   // the attention meter: what Earl is doing in the deep, every frame
   attend(g, dt, d, per) {
+    if (g.earl && g.earl.x > 5014) { this.attn = Math.max(0, this.attn - dt * 0.01); return; } // (7.8.0, owner) it has no part in the second sea: nothing there draws it
     const e = g.earl;
     const lit = e.inSub ? !!g.sub.lightsOn : !!e.lampOn; // (5.12.4) his light: the sub's floodlight in her, his lamp out of her; never a glow stick
     if (this.marked) {
@@ -232,8 +234,8 @@ export class Entity {
     if (this.flee) { const F = this.flee, e0 = g.earl; F.t += dt;
       if (F.ux == null) { const dx = this.x - e0.x, dy = this.y - e0.y, l = Math.hypot(dx, dy) || 1; F.ux = dx / l; F.uy = Math.max(0.25, dy / l); const l2 = Math.hypot(F.ux, F.uy); F.ux /= l2; F.uy /= l2; }
       const sp = Math.min(FLEE_SPEED, FLEE_SPEED * F.t / 0.8); this.vx = F.ux * sp; this.vy = F.uy * sp; this.x += this.vx * dt; this.y += this.vy * dt;
-      const fl = this.world ? this.world.floorAt(clamp(this.x, 0, 5000)) - 15 : 3900; if (this.y > fl) { this.y = fl; F.uy = 0; F.ux = Math.sign(F.ux) || 1; }
-      if (this.x < 20 || this.x > 4980) { this.x = clamp(this.x, 20, 4980); F.ux = 0; F.uy = 1; }
+      const fl = this.world ? this.world.floorAt(clamp(this.x, SEA_X0, 4960)) - 15 : 3900; if (this.y > fl) { this.y = fl; F.uy = 0; F.ux = Math.sign(F.ux) || 1; }
+      if (this.x < SEA_X0 + 20 || this.x > 4950) { this.x = clamp(this.x, SEA_X0 + 20, 4950); F.ux = 0; F.uy = 1; }
       this.heading = Math.atan2(this.vy, this.vx); this.marked = false; this.hunt = null; this.ap = null; this.slip = null; this.state = 'away'; this.attn = 0; this.fade = 1;
       this.dist = dist(this.x, this.y, e0.x, e0.y); this.tideBlue = 1;
       if (this.dist > 1100 && F.past == null) F.past = F.t;
@@ -247,7 +249,7 @@ export class Entity {
     const per = this.perception(g);
     this.attend(g, dt, d, per);
     const [bandLo, bandHi] = this.band(g);
-    const floorY = this.world ? this.world.floorAt(clamp(this.x, 0, 5000)) - 10 : 3900;
+    const floorY = this.world ? this.world.floorAt(clamp(this.x, SEA_X0, 4960)) - 10 : 3900;
 
     let tx = this.x, ty = this.y, speed = ENTITY_SPEED * 0.35;
 
@@ -261,9 +263,9 @@ export class Entity {
       if (lit) { this.slip = null; this.state = 'hunt'; this.lastX = e.x; this.lastY = e.y; this.knows = 1; g.events.push('turnsBack'); }
       else if (S.t <= 0) {
         this.slip = null; this.marked = false; this.ap = null; this.hunt = null; this.flick = 0; this.attn = 0.5; this.offRadarT = 60;
-        this.lingerT = 90; this.lingerX = clamp(e.x + S.dir * 240, 20, 4980); this.lingerY = Math.max(e.y + 60, this.y); this.state = 'linger'; g.events.push('unmarked');
+        this.lingerT = 90; this.lingerX = clamp(e.x + S.dir * 240, SEA_X0 + 20, 4950); this.lingerY = Math.max(e.y + 60, this.y); this.state = 'linger'; g.events.push('unmarked');
       }
-      if (this.slip) { tx = clamp(e.x + S.dir * 240, 20, 4980); ty = Math.max(e.y + 60, this.y); speed = ENTITY_SPEED * 0.35; /* (7.7.3) turning away a little quicker (was 0.12) */ this.state = 'away';
+      if (this.slip) { tx = clamp(e.x + S.dir * 240, SEA_X0 + 20, 4950); ty = Math.max(e.y + 60, this.y); speed = ENTITY_SPEED * 0.35; /* (7.7.3) turning away a little quicker (was 0.12) */ this.state = 'away';
         ty = Math.min(ty, floorY); const dx0 = tx - this.x, dy0 = ty - this.y, dl0 = Math.hypot(dx0, dy0) || 1, w0 = Math.min(speed * ENTITY_PACE, dl0);
         this.vx = lerp(this.vx, dx0 / dl0 * w0, 1 - Math.exp(-dt * 1.4)); this.vy = lerp(this.vy, dy0 / dl0 * w0, 1 - Math.exp(-dt * 1.4)); this.x += this.vx * dt; this.y += this.vy * dt;
         if (Math.abs(this.vx) > 0.2) this.heading = Math.atan2(this.vy, this.vx); this.eyeOpen = lerp(this.eyeOpen, 0, dt); this.lights(g, dt); return; }
@@ -276,10 +278,10 @@ export class Entity {
       this.roamT -= dt;
       if (this.roamT <= 0 || dist(this.x, this.y, this.roamX, this.roamY) < 15) {
         this.roamT = this.rng.range(40, 90);
-        this.roamX = this.rng.range(20, 4980);
+        this.roamX = this.rng.range(SEA_X0 + 20, 4950);
         this.roamY = this.rng.range(bandLo, bandHi);
       }
-      const fl = this.world ? this.world.floorAt(clamp(this.roamX, 0, 5000)) - 15 : 3900;
+      const fl = this.world ? this.world.floorAt(clamp(this.roamX, SEA_X0, 4960)) - 15 : 3900;
       tx = this.roamX; ty = Math.min(this.roamY, fl);
       // the band moves with the day: drift with it
       if (this.y < bandLo - 30 || this.y > bandHi + 30) ty = clamp(this.y, bandLo, Math.min(bandHi, fl));
@@ -382,7 +384,7 @@ export class Entity {
     this.vx = lerp(this.vx, tvx, k); this.vy = lerp(this.vy, tvy, k);
     this.x += this.vx * dt; this.y += this.vy * dt;
     if (this.y < SAFE_DEPTH) { this.y = lerp(this.y, SAFE_DEPTH, dt * 2); this.vy = Math.max(0, this.vy); }
-    this.x = clamp(this.x, -40, 5040);
+    this.x = clamp(this.x, SEA_X0 - 40, 4960); /* (7.8.0) never in the second sea */
     if (Math.abs(this.vx) > 0.2) this.heading = Math.atan2(this.vy, this.vx);
     // it fades as it rises toward the light
     this.fade = clamp((this.y - SAFE_DEPTH + 10) / 70, 0.25, 1);
@@ -407,7 +409,7 @@ export class Entity {
     if (this.openT && g.time - this.openT < 1 && Math.abs(this.openX - e.x) < 8 && Math.abs(this.openY - e.y) < 8) return this.openOk;
     let ok = e.y > 25;
     for (let dx = -50; ok && dx <= 50; dx += 5) {
-      const x = clamp(e.x + dx, 0, 4999);
+      const x = clamp(e.x + dx, SEA_X0, 4960);
       if (W.floorAt(x) < e.y + 32) ok = false;
       for (let dy = -20; ok && dy <= 30; dy += 5) if (W.rockAt(x, e.y + dy, 1)) ok = false;
     }
@@ -492,13 +494,13 @@ export class Entity {
     let best = null;
     for (let i = 0; i < 24; i++) {
       const a = Math.PI / 2 + (this.rng() - 0.5) * (i < 12 ? 1.6 : 3.0); // straight down first, then widening to the sides
-      let x = clamp(e.x + Math.cos(a) * R, 20, 4980), y = e.y + Math.sin(a) * R;
+      let x = clamp(e.x + Math.cos(a) * R, SEA_X0 + 20, 4950), y = e.y + Math.sin(a) * R;
       const fl = this.world ? this.world.floorAt(x) - 20 : 3900; y = Math.max(SAFE_DEPTH + 30, Math.min(y, fl));
       if (this.world && this.world.rockAt && this.world.rockAt(x, y, 10)) continue;
       const d = Math.hypot(x - e.x, y - e.y), score = Math.abs(d - R) + (y < e.y ? 300 : 0);
       if (!best || score < best.score) best = { x, y, score };
     }
-    if (!best) { const x = clamp(e.x + (e.x > 2500 ? -R : R), 20, 4980); best = { x, y: Math.max(SAFE_DEPTH + 30, Math.min(e.y + 200, this.world ? this.world.floorAt(x) - 20 : 3900)) }; }
+    if (!best) { const x = clamp(e.x + (e.x > (SEA_X0 + 4950) / 2 ? -R : R), SEA_X0 + 20, 4950); best = { x, y: Math.max(SAFE_DEPTH + 30, Math.min(e.y + 200, this.world ? this.world.floorAt(x) - 20 : 3900)) }; }
     this.x = best.x; this.y = best.y; this.vx = this.vy = 0; this.roamX = best.x; this.roamY = best.y; this.roamT = 0;
     this.dist = Math.hypot(this.x - e.x, this.y - e.y); this.hunt = null; this.ap = null; this.slip = null;
   }
@@ -506,8 +508,8 @@ export class Entity {
     if (this.ap) this.ap.phase = null;
     const side = Math.sign(this.x - fx) || (this.rng() < 0.5 ? -1 : 1);
     let ax = this.x + side * this.rng.range(350, 500);
-    if (ax < 20 || ax > 4980) ax = this.x - side * this.rng.range(350, 500);
-    ax = clamp(ax, 20, 4980);
+    if (ax < SEA_X0 + 20 || ax > 4950) ax = this.x - side * this.rng.range(350, 500);
+    ax = clamp(ax, SEA_X0 + 20, 4950);
     const fl = this.world ? this.world.floorAt(ax) - 15 : 3900;
     this.awayX = ax; this.awayY = Math.min(fl, Math.max(bandLo, this.y, fy) + this.rng.range(150, 350));
     this.awayT = T ?? this.rng.range(90, 150);

@@ -5,6 +5,7 @@
 //  - predators hunt nearby small fish and eat them
 //  - everything flees the entity
 import { rollVariant, canBeRare } from './variants.js';
+import { X0 as SEA_X0 } from './mapx.js';
 import { SPECIES, SPECIES_BY_ID, isSwimHab } from './species.js';
 import { MORE_SPECIES } from '../data/species_more.js';
 import { rarityOf, spawnLen, livesOnBottom, useUsualDepth, rarityShare } from './specimens.js';
@@ -178,7 +179,7 @@ export const homeOf = (sp) => HOME[sp.id] || null;
 // cold-water animals keep to the kelp, the shelf and the deep, never the coral reef.
 const TROPICAL = new Set([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 27, 28, 29, 31, 32, 33, 34, 35, 36, 37, 38, 80, 92, 93, 94, 96, 140, 183]);
 const COLD = new Set([58, 59, 60, 61, 68, 69, 70, 71, 72, 73, 75, 115, 116]);
-const onTropicalReef = (x) => x > 4900 || x < 34;
+const onTropicalReef = (x) => x > 4900 || x < SEA_X0 + 34;
 // warm and cold water for anything else that needs it (traps): crabs and lobsters too
 const COLD_BOTTOM = new Set([152, 154, 155, 156]), WARM_BOTTOM = new Set([153, 144, 145, 159, 160]);
 // The everyday crowd of each deep zone: met five to ten times as often as the other deep animals, so
@@ -334,7 +335,7 @@ export class Fauna {
   trySpawn(cam, dread) {
     const rng = this.rng, W = this.W;
     const { x, y, side } = this.pickSpawnPoint(cam);
-    if (x < 2 || x > 4966 || y < 0.6) return; // (7.4.17) nothing past the end of the sea (the island's pool stays empty)
+    if (x < SEA_X0 + 2 || x > 4966 || y < 0.6) return; // (7.4.17) nothing past the end of the sea (the island's pool stays empty)
     // which homes are free: one group to a home (an anemone holds one family of clownfish)
     const live = new Set(); for (const c of this.list) live.add(c.gid);
     const homes = new Map();
@@ -382,7 +383,7 @@ export class Fauna {
   trySpawnBait(cam, night) {
     const rng = this.rng, W = this.W;
     const { x, y, side } = this.pickSpawnPoint(cam);
-    if (x < 5 || x > 4975 || y < 2) return;
+    if (x < SEA_X0 + 5 || x > 4975 || y < 2) return;
     const fl = W.floorAt(x);
     if (fl - y < 8) return;
     const opts = BAIT.filter((b) => {
@@ -455,7 +456,7 @@ export class Fauna {
   echoContacts(x, y, R, n, legP, rnd = Math.random) {
     const W = this.W, out = [];
     for (let tries = 0; out.length < n && tries < n * 8; tries++) {
-      const a = rnd() * Math.PI * 2, r = R * Math.sqrt(0.04 + 0.96 * rnd()), px = clamp(x + Math.cos(a) * r, 8, 4950), fl = W.floorAt(px), py = y + Math.sin(a) * r;
+      const a = rnd() * Math.PI * 2, r = R * Math.sqrt(0.04 + 0.96 * rnd()), px = clamp(x + Math.cos(a) * r, SEA_X0 + 8, 4950), fl = W.floorAt(px), py = y + Math.sin(a) * r;
       if (py < 4 || py > fl - 4 || (W.rockAt && W.rockAt(px, py, 1.5))) continue;
       const want = rnd() < legP ? 'legendary' : 'exotic';
       const L = SWIMMERS.filter((s) => s.len <= 4 && py >= s.dmin && py <= s.dmax && (rarityOf(s) || {}).id === want && habitatOk(s, px, py, W) && climateOk(s.id, px));
@@ -487,7 +488,7 @@ export class Fauna {
       const ha = rnd() * Math.PI * 2, hd = 3.5 + rnd() * 7, home = { x: x + Math.cos(ha) * hd, y: y + Math.sin(ha) * hd * 0.55, ox: Math.cos(ha) * hd, oy: Math.sin(ha) * hd * 0.55, kind: 'call' }; homes.push(home);
       const a = ha + (rnd() - 0.5) * 0.8, rx = cam.w / 2 + 3 + rnd() * 4, ry = cam.h / 2 + 3 + rnd() * 4, kk = Math.min(rx / Math.max(1e-3, Math.abs(Math.cos(a))), ry / Math.max(1e-3, Math.abs(Math.sin(a))));
       const gx = cam.x + Math.cos(a) * kk, gy = cam.y + Math.sin(a) * kk, gid = this.groupId++;
-      for (let i = 0; i < sz; i++) { const fx = clamp(gx + (rnd() - 0.5) * 2.4, 3, 4960), fy = clamp(gy + (rnd() - 0.5) * 1.4, 1, W.floorAt(fx) - 0.6);
+      for (let i = 0; i < sz; i++) { const fx = clamp(gx + (rnd() - 0.5) * 2.4, SEA_X0 + 3, 4960), fy = clamp(gy + (rnd() - 0.5) * 1.4, 1, W.floorAt(fx) - 0.6);
         const f = this.makeFish(sp, fx, fy, Math.cos(a) > 0 ? -1 : 1, gid, i === 0); if (!f) continue;
         f.home = home; f.homeR = 1.6 + sz * 0.35 + rnd() * 1.2; f.hide = false; f.tT = rnd() * 1.5; f.called = true; f.speed = Math.max(f.cruise * 3, 3.2) * (0.85 + rnd() * 0.3);
         this.list.push(f); out.push(f); }
@@ -506,7 +507,7 @@ export class Fauna {
     // anywhere about the view, but out in the dark, well away from him and his lamps (a deep fish
     // in the dark is only ever its light, so one turning up there is simply one coming into sight)
     const rng = this.rng, side = rng() < 0.5 ? -1 : 1;
-    const x = clamp(cam.x + rng.range(-0.75, 0.75) * cam.w, 5, 4966);
+    const x = clamp(cam.x + rng.range(-0.75, 0.75) * cam.w, SEA_X0 + 5, 4966);
     const fl = this.W.floorAt(x);
     const y = clamp(cam.y + rng.range(-0.7, 0.7) * cam.h, 150, fl - 3);
     if (fl - 3 < 150 || dist(x, y, cam.x, cam.y) < 12) return;
@@ -644,7 +645,7 @@ export class Fauna {
       if (v > sp) { s.vx *= sp / v; s.vy *= sp / v; }
       s.x += s.vx * dt; s.y += s.vy * dt;
       { const fl2 = Math.min(W.floorAt(s.x - sw), W.floorAt(s.x), W.floorAt(s.x + sw)); if (s.y > fl2 - s.r - 0.8) { s.y = fl2 - s.r - 0.8; if (s.vy > 0) s.vy = 0; } }
-      if (s.x < 10) s.dir = 1; if (s.x > 4970) s.dir = -1;
+      if (s.x < SEA_X0 + 10) s.dir = 1; if (s.x > 4970) s.dir = -1;
       // now and then the school wheels round on its own
       s.turnT -= dt;
       if (s.turnT <= 0) { s.turnT = rng.range(18, 45); s.vx = -s.vx * 0.5; s.dir = -s.dir; }

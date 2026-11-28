@@ -709,9 +709,9 @@ export class UI {
   // the sea in section: the seafloor across the whole map, the depth asked for as a line, where he is, and the nearest
   // place the floor goes deeper than that
   drawQuestMap(cv, g, d, bed = null) {
-    const x = cv.getContext('2d'), W = cv.width, H = cv.height, Wd = 5000, D = 5200, X = (m) => (m / Wd) * W, Y = (y) => (y / D) * (H - 14) + 4;
+    const x = cv.getContext('2d'), W = cv.width, H = cv.height, A0 = 2215, Wd = 5040, D = 5200, X = (m) => ((m - A0) / (Wd - A0)) * W, Y = (y) => (y / D) * (H - 14) + 4; /* (7.8.0) the first sea, from its west wall */
     x.fillStyle = '#0d2230'; x.fillRect(0, 0, W, H);
-    x.fillStyle = '#4a4234'; x.beginPath(); x.moveTo(0, H); for (let m = 0; m <= Wd; m += 10) x.lineTo(X(m), Y(Math.max(0, g.world.floorAt(m)))); x.lineTo(W, H); x.closePath(); x.fill();
+    x.fillStyle = '#4a4234'; x.beginPath(); x.moveTo(0, H); for (let m = A0; m <= Wd; m += 10) x.lineTo(X(m), Y(Math.max(0, Math.min(D, g.world.floorAt(m))))); x.lineTo(W, H); x.closePath(); x.fill();
     x.font = '600 13px "Barlow Semi Condensed", "Arial Narrow", sans-serif';
     const e = g.earl.inSub ? g.sub : g.earl; let best = null, bd = Infinity, bestY = 0;
     if (bed) {
@@ -719,13 +719,13 @@ export class UI {
       const lit = (m) => { const f = g.world.floorAt(m); return f > 1 && bed.some(([a, b]) => f >= a && f <= b); };
       x.strokeStyle = 'rgba(170,214,150,0.75)'; x.lineWidth = 2.5; x.lineCap = 'round'; // (4.8.3) a quiet line along the bottom, no glow
       x.beginPath(); let on = false;
-      for (let m = 0; m <= Wd; m += 5) { const f = g.world.floorAt(m); if (lit(m)) { if (!on) { x.moveTo(X(m), Y(f)); on = true; } else x.lineTo(X(m), Y(f)); if (Math.abs(m - e.x) < bd) { bd = Math.abs(m - e.x); best = m; bestY = f; } } else on = false; }
+      for (let m = A0; m <= Wd; m += 5) { const f = g.world.floorAt(m); if (lit(m)) { if (!on) { x.moveTo(X(m), Y(f)); on = true; } else x.lineTo(X(m), Y(f)); if (Math.abs(m - e.x) < bd) { bd = Math.abs(m - e.x); best = m; bestY = f; } } else on = false; }
       x.stroke();
       // (no 'nearest place' for the bottom: the lit seabed says where)
     } else {
       x.strokeStyle = 'rgba(239,232,210,0.7)'; x.setLineDash([5, 4]); x.beginPath(); x.moveTo(0, Y(d)); x.lineTo(W, Y(d)); x.stroke(); x.setLineDash([]);
       x.fillStyle = '#efe8d2'; x.textBaseline = Y(d) < 18 ? 'top' : 'alphabetic'; x.fillText(`${Math.round(d).toLocaleString()} m`, 6, Y(d) < 18 ? Y(d) + 4 : Y(d) - 4); x.textBaseline = 'alphabetic'; // (4.28) below the line when the line is at the top (it was cut off)
-      for (let m = 0; m <= Wd; m += 5) if (g.world.floorAt(m) > d + 15 && Math.abs(m - e.x) < bd) { bd = Math.abs(m - e.x); best = m; }
+      for (let m = A0; m <= 4990; m += 5) if (g.world.floorAt(m) > d + 15 && Math.abs(m - e.x) < bd) { bd = Math.abs(m - e.x); best = m; }
     }
     if (best != null && !bed) { x.fillStyle = '#9fdc8c'; x.beginPath(); x.arc(X(best), Y(d), 5, 0, Math.PI * 2); x.fill(); x.fillText('nearest place this deep', Math.min(W - 160, X(best) + 8), Y(d) + (Math.abs(X(best) - X(e.x)) < 130 && Math.abs(Y(d) - Y(Math.max(0, e.y))) < 30 ? 30 : 14)); }
     x.fillStyle = '#ffffff'; x.beginPath(); x.arc(X(e.x), Y(Math.max(0, e.y)), 4.5, 0, Math.PI * 2); x.fill(); x.fillText('you are here', Math.min(W - 92, X(e.x) + 7), Y(Math.max(0, e.y)) + (Y(e.y) < 20 ? 14 : -6));

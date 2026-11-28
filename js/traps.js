@@ -9,6 +9,7 @@
 // whatever does not fit stays in it. Brought up from deep water, an animal suffers the climb as one in the bag does
 // (capture.js), and a dead one sells for half. Emptied with its time up, the trap comes up and is stowed.
 import { clamp, dist } from './util.js';
+import { X0 as SEA_X0 } from './mapx.js';
 import { TRAPS, TRAP_ORDER } from './economy.js';
 import { SPECIES } from './species.js';
 import { canTakeLive, spawnLen, rarityShare, pressureTolerance } from './specimens.js';
@@ -43,7 +44,7 @@ function candidates(g, T, x, d, onBottom) {
     if (h === 'floor' && !onBottom) continue;                       // crabs, lobsters, octopus: only a trap on the bottom
     if (h === 'floor-swim' && above > 3) continue;
     if (h === 'demersal' && above > 25) continue;
-    if (h === 'reef' && (above > 15 || !(x > 4900 || x < 34))) continue; // reef fish: low over the reef itself
+    if (h === 'reef' && (above > 15 || !(x > 4900 || x < SEA_X0 + 34))) continue; // reef fish: low over the reef itself
     if (h === 'drift' || h === 'drift-low' || h === 'surface') continue;
     const pref = g.fauna.depthPref ? g.fauna.depthPref(s, x, Math.min(d, fl - 2.5), night) : 1; // (bands stop just above the bottom)
     if (pref < 0.12) continue;                                       // only where it is reasonably common

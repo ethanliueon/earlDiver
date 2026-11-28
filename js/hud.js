@@ -820,7 +820,7 @@ e.inSub ? [
     const P = this.sonarP;
     if (!P || now - P.t > 0.5 || Math.abs(P.x - sub.x) > 4 || Math.abs(P.y - sub.y) > 4) {
       const xs = [], N = 64;
-      for (let i = 0; i <= N; i++) { const x = sub.x - 80 + 160 * i / N; xs.push(W.floorAt(Math.max(0, Math.min(4999, x)))); }
+      for (let i = 0; i <= N; i++) { const x = sub.x - 80 + 160 * i / N; xs.push(W.floorAt(Math.max(0, Math.min(6039, x)))); }
       this.sonarP = { t: now, x: sub.x, y: sub.y, fl: xs, below: W.floorAt(sub.x) - sub.y };
     }
     const S = this.sonarP, top = sub.y - 8, span = Math.max(40, Math.min(1500, Math.max(...S.fl) - top + 10));
@@ -1004,7 +1004,7 @@ e.inSub ? [
         if (this.dShown == null) { this.dShown = Math.floor(v); this.dPrev = null; this.dDir = 1; }
         if (v >= this.dShown + 1.12 || v < this.dShown - 0.12) { this.dPrev = this.dShown; this.dShown = Math.floor(v); this.dT = nowT; this.dDir = this.dShown > this.dPrev ? 1 : -1; }
         const k = this.dPrev == null ? 1 : clamp((nowT - (this.dT || 0)) / 260, 0, 1), ek = k * k * (3 - 2 * k), sl = lh * 0.22;
-        ctx.save(); ctx.beginPath(); ctx.rect(xr - 4 * dwOf(ctx) - 8 * s, base - lh - 4 * s, 4 * dwOf(ctx) + 12 * s, lh + 6 * s); ctx.clip();
+        const nd = Math.max(4, String(this.dShown).length, this.dPrev == null ? 0 : String(this.dPrev).length); /* (7.8.0) five figures in the second sea */ ctx.save(); ctx.beginPath(); ctx.rect(xr - nd * dwOf(ctx) - 8 * s, base - lh - 4 * s, nd * dwOf(ctx) + 12 * s, lh + 6 * s); ctx.clip();
         // (6.5.1) an odometer: each digit in its own fixed-width place from the right, and only a digit that changed rolls
         // (down as he goes deeper, up as he rises) while the rest stand still; a new leading digit fades in at the left
         { const now = String(this.dShown), was = this.dPrev == null ? now : String(this.dPrev), cw = dwOf(ctx), n2 = Math.max(now.length, was.length); ctx.fillStyle = ink(1); ctx.textAlign = 'center';
@@ -1074,7 +1074,7 @@ e.inSub ? [
       if (!e.inSub && !aboard && (g.diverPress || 1) > 1.05) { const pm = g.diverPress, k3 = clamp((pm - 1) / 6, 0, 1);
         ctx.save(); ctx.textAlign = 'right'; ctx.textBaseline = 'top'; ctx.shadowColor = 'rgba(0,0,0,0.85)'; ctx.shadowBlur = 5 * s; ctx.font = `600 ${17 * s}px ${HUDT}`;
         ctx.fillStyle = `rgba(${Math.round(lerp(cr, 196, k3))},${Math.round(lerp(cg, 120, k3))},${Math.round(lerp(cb, 84, k3))},${(0.9 * lit).toFixed(3)})`;
-        ctx.fillText(`Pressure \u00d7${pm < 10 ? pm.toFixed(1) : Math.round(pm)}`, rx0, yy - 6 * s); ctx.restore(); yy += 16 * s; }
+        ctx.fillText(`Pressure \u00d7${pm < 10 ? pm.toFixed(1) : Math.round(Math.min(pm, 1e6)).toLocaleString('en-US')}`, rx0, yy - 6 * s); ctx.restore(); yy += 16 * s; }
       if ((g.loadKg || 0) > 10 && !e.inSub) notes.push([`Heavy: ${Math.round(g.loadKg)} kg`, '#f06a5c']);
       const py = pad - 8 * s;
       // hidden: a small leaf at the plate's left

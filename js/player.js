@@ -1,5 +1,6 @@
 // Earl (diver) and his submersible: movement, oxygen, pressure, hull.
 import { clamp, lerp, angleLerp } from './util.js';
+import { X0 as SEA_X0 } from './mapx.js';
 import { collide, BOAT, SPAWN, WORLD_W } from './world.js';
 import { SUB_TIERS } from './economy.js';
 
@@ -19,7 +20,7 @@ export function diverDrainMult(depth, start = 300) {
   // climbs more slowly, about x80 at 1,000 m past, and keeps climbing (some x1,000 at 2,000 m past: crushed at once)
   if (depth <= start) return 1;
   const d = depth - start; if (d <= 500) return Math.exp(K_PRESS * d);
-  const m5 = Math.exp(K_PRESS * 500); return m5 * Math.pow(80 / m5, (d - 500) / 500);
+  const m5 = Math.exp(K_PRESS * 500); return Math.min(1e6, m5 * Math.pow(80 / m5, (d - 500) / 500)); // (7.8.0) capped: no number overflows at 60 km
 }
 // a damaged hull leaks: at 40 % integrity the air drains 2.5x as fast
 // (4.5.0) a damaged hull leaks air (hidden from the player): +3 % air use for every 1 % of hull lost; at 0 % four times
@@ -87,7 +88,7 @@ export function updateEarl(g, dt, inp) {
     if (sub.y < 1.6) { sub.y = 1.6; sub.vy = Math.max(0, sub.vy); }
     const c = collide(W, sub.x, sub.y, 2.2);
     if (c.hit) { sub.x = c.x; sub.y = c.y; sub.vx *= 0.6; sub.vy *= 0.4; }
-    sub.x = clamp(sub.x, 4, WORLD_W - 16);
+    sub.x = clamp(sub.x, SEA_X0 + 4, 4994); /* (7.8.0) never past the island */
     if (Math.abs(sub.vx) > 0.3) sub.facing = sub.vx > 0 ? 1 : -1;
     // swing round over ~1.5 s rather than flipping (the projection of the turn eases in and out)
     const yawT = sub.facing > 0 ? 0 : Math.PI, rate = Math.PI / 1.5;
@@ -137,7 +138,7 @@ export function updateEarl(g, dt, inp) {
     if (e.y < 0.35) { e.y = 0.35; if (e.vy < 0) e.vy = 0; }
     const c = collide(W, e.x, e.y, 0.28);
     if (c.hit) { e.x = c.x; e.y = c.y; e.vx *= 0.7; e.vy *= 0.5; }
-    e.x = clamp(e.x, 2, WORLD_W - 20);
+    e.x = clamp(e.x, SEA_X0 + 2, WORLD_W - 30);
     // never onto the beach
     if (W.floorAt(e.x) < 0.9) { e.x -= 0.6; e.vx = Math.min(0, e.vx); }
     e.speedNow = Math.hypot(e.vx, e.vy);

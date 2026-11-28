@@ -3,6 +3,7 @@
 // (ambient that fades with depth and loses red, plus lamps and bioluminescence),
 // then additive glows are layered on top.
 import { eyePicture } from './hud.js';
+import { X0 as SEA_X0 } from './mapx.js';
 import { UPRIGHT } from './fauna.js';
 import { clamp, lerp, smoothstep, sampleTable, rgbStr, TAU, fbm1, hexToRgb, mixRgb } from './util.js';
 import { drawSpecies } from './creatures_draw.js';
@@ -26,7 +27,7 @@ import { makeVariantSprite } from './variants.js';
 import { SPECIES_BY_ID } from './species.js';
 import { LEGENDARY } from './specimens.js';
 import { glint, ember, ACCENT } from './scrolls.js'; // (7.4.3) the legendary sparkle, for a legendary pet
-import { BOAT, WORLD_W, EAST, CAVE, ANGLER, CANYON, SAIL, WHALE_FALL, ISLE, yardX } from './world.js';
+import { BOAT, WORLD_W, EAST, CAVE, ANGLER, CANYON, SAIL, WHALE_FALL, ISLE, yardX, SIGN, KEEPER, AREA2 } from './world.js';
 import { bargePicture, BARGE } from './barge_draw.js';
 import { LANTERN_RADIUS } from './entity.js';
 import { Clouds } from './clouds.js';
@@ -317,7 +318,7 @@ export class Renderer {
     const k = 1 - Math.exp(-dt * (g.mode === 'menu' ? 0.6 : 3));
     cam.x = lerp(cam.x, tx, k); cam.y = lerp(cam.y, ty, k);
     if (g.mode === 'play' && !g.helm && !(lk > 0)) { const mX = cam.w * 0.25, mY = cam.h * 0.25; cam.x = clamp(cam.x, e.x - mX, e.x + mX); cam.y = clamp(cam.y, Math.max(e.y, -1e9) - mY, e.y + mY); } // (7.6.26)
-    cam.x = clamp(cam.x, cam.w / 2 - 20, WORLD_W - cam.w / 2 + 25);
+    cam.x = clamp(cam.x, SEA_X0 + cam.w / 2 - 20, WORLD_W - cam.w / 2 + 25);
   }
 
   render(g) {
@@ -452,6 +453,8 @@ export class Renderer {
     this.drawFloorCached(g, S, Sy, ppm);
     this.drawFloorLife(g, ctx, S, Sy, ppm, x0, x1, t);
     if (x1 > ISLE.x0 - 10) this.drawIsland(g, ctx, S, Sy, ppm, t, dayEff); // (7.4.17)
+    { const L = g.world.lip; if (L && x1 > L.x0 && x0 < L.x1 && y1 > L.y0 && y0 < L.y1) { ctx.save(); ctx.beginPath(); L.poly.forEach((p, i) => (i ? ctx.lineTo(S(p.x), Sy(p.y)) : ctx.moveTo(S(p.x), Sy(p.y)))); ctx.closePath(); ctx.clip(); this.paintCliff(ctx, S, Sy, ppm, L.x0 - 1, L.x1 + 1, L.y0, L.y1); ctx.restore(); } } // (7.8.0) the wall's overhanging lip, painted as the cliff
+    if (x1 > SIGN.x - 6 && x0 < KEEPER.x + 6) this.drawEdgeKeeper(g, ctx, S, Sy, ppm, t); // (7.8.0)
     for (const rk of g.world.rocks) if (rk.kind !== 'oldone' && !rk.hidden && rk.x1 > x0 && rk.x0 < x1 && rk.y1 > y0 && rk.y0 < y1 && visible((rk.x0 + rk.x1) / 2, (rk.y0 + rk.y1) / 2, Math.max(rk.x1 - rk.x0, rk.y1 - rk.y0) * 0.6)) this.drawRock(ctx, rk, S, Sy, ppm);
     this.drawDeepPlaces(g, ctx, S, Sy, ppm, t, inView);
     // statics on the floor
@@ -2629,7 +2632,7 @@ export class Renderer {
       const fctx = F.c.getContext('2d');
       const bS = (x) => (x - F.x0) * ppm, bSy = (y) => (y - F.y0) * ppm;
       // the floor's colour follows the bottom over a wide stretch, so a new bake never jumps
-      let mid = 0; for (let k = -4; k <= 4; k++) mid += g.world.floorAt(cam.x + k * 12); mid /= 9;
+      let mid = 0; const deepest = cam.y + cam.h * 0.75 + 40; for (let k = -4; k <= 4; k++) mid += Math.min(deepest, g.world.floorAt(cam.x + k * 12)); mid /= 9; /* (7.8.0) only the floor in sight: beside the wall the abyss no longer colours the beach */
       this.drawFloor(g, bS, bSy, ppm, F.x0, F.x1, { ctx: fctx, W: cw, H: ch, midD: mid, camY: cam.y, y0: F.y0, y1: F.y1 });
     }
     const k = ppm / F.ppm;
@@ -2646,7 +2649,7 @@ export class Renderer {
     ctx.lineTo(S(x1 + step), H + 20); ctx.closePath();
     const midD = V ? V.midD : g.world.floorAt(this.cam.x);
     const fg = ctx.createLinearGradient(0, Sy(midD - 6), 0, Sy(midD + 30));
-    const c = sampleTable(FLOOR_COL, midD);
+    const c = midD > 40000 ? [168, 196, 212] : sampleTable(FLOOR_COL, midD); /* (7.8.0, owner) the second sea's floor is ice VI: pale, glassy */
     fg.addColorStop(0, rgbStr(c)); fg.addColorStop(0.15, rgbStr(mixRgb(c, [40, 36, 30], 0.35))); fg.addColorStop(1, rgbStr(mixRgb(c, [10, 10, 10], 0.75)));
     ctx.fillStyle = fg; ctx.fill();
     // grain texture
@@ -2655,7 +2658,7 @@ export class Renderer {
     if (x1 > ISLE.x0 - 4 && x0 < WORLD_W + 80) {
       const top = Sy(-1.7), wl = Sy(0);
       const dg = ctx.createLinearGradient(0, top, 0, wl + ppm * 0.3); dg.addColorStop(0, '#d6c49a'); dg.addColorStop(0.7, '#c8b286'); dg.addColorStop(0.88, '#a8916a'); dg.addColorStop(1, '#8a7656');
-      ctx.fillStyle = dg; ctx.fillRect(S(ISLE.x0 - 4), top - ppm, S(WORLD_W + 80) - S(ISLE.x0 - 4), wl + ppm * 0.3 - top + ppm);
+      ctx.fillStyle = dg; ctx.fillRect(S(ISLE.x0 - 4), top - ppm, S(ISLE.x1 + 3) - S(ISLE.x0 - 4), wl + ppm * 0.3 - top + ppm); /* (7.8.0) the dry sand only as far as the island's far shore */
     }
     // (7.4.17, owner) the painted sand itself (assets/textures/seabed.png), multiplied over the floor's colour, pinned to
     // the world; strongest in the shallows, where the bottom is seen close and lit (a phone draws it too: this is baked)
@@ -2711,12 +2714,44 @@ export class Renderer {
       if (h > 0.25) continue;
       ctx.beginPath(); ctx.ellipse(S(x), Sy(base + 1 + h * 10), ppm * (0.2 + h), ppm * (0.1 + h * 0.4), 0, 0, TAU); ctx.fill();
     }
+    // (7.8.0, owner) the second sea's rock: the cliff, the plain's bed and the far wall painted as stone, the floor of the
+    // abyss as ice, instead of the sand and silt of the first sea
+    if (x1 > AREA2.edge - 30) { const yT = V ? V.y0 : camY - this.cam.h / 2 - 5, yB = V ? V.y1 : camY + this.cam.h / 2 + 5; this.paintCliff(ctx, S, Sy, ppm, x0, x1, yT, yB); }
     ctx.restore();
     // lit edge
     ctx.strokeStyle = 'rgba(255,250,235,0.16)'; ctx.lineWidth = Math.max(1, ppm * 0.06);
     ctx.beginPath(); for (let x = x0; x <= x1 + step; x += step) ctx.lineTo(S(x), Sy(g.world.floorAt(x)) + 1); ctx.stroke();
   }
 
+  // (7.8.0, owner) stone, painted: the colour of the rock by its depth (pale grey-olive limestone near the top, darkening to
+  // basalt), its layers as wavering bands with a lit lip under each, hairline cracks between them; below 55 km, ice VI:
+  // pale, faintly blue, with long facets. Fills whatever is clipped (the floor, the wall's overhanging lip)
+  paintCliff(ctx, S, Sy, ppm, xa, xb, ya, yb) {
+    const A = AREA2; xa = Math.max(xa, A.edge - 26); ya = Math.max(ya, 10.2); if (xb <= xa || yb <= ya) return;
+    const hsh = (n) => { const v = Math.sin(n * 127.1 + 311.7) * 43758.5453; return v - Math.floor(v); };
+    const STOPS = [[0, [122, 116, 98]], [150, [96, 92, 80]], [1500, [64, 66, 64]], [10000, [40, 43, 45]], [45000, [30, 33, 36]], [57000, [120, 150, 166]], [60000, [176, 200, 212]]];
+    const colAt = (y) => { let i = 1; while (i < STOPS.length - 1 && STOPS[i][0] < y) i++; const [y0, c0] = STOPS[i - 1], [y1, c1] = STOPS[i], t = clamp((y - y0) / (y1 - y0), 0, 1); return c0.map((v, k) => Math.round(v + (c1[k] - v) * t)); };
+    const X0 = S(xa), X1 = S(xb), Y0 = Sy(ya), Y1 = Sy(yb);
+    ctx.save(); ctx.globalCompositeOperation = 'source-over'; ctx.globalAlpha = 1;
+    // (below 10 m: under the beach the top 10 m stay sand)
+    const gr = ctx.createLinearGradient(0, Y0, 0, Y1); for (let k = 0; k <= 6; k++) { const y = ya + (yb - ya) * k / 6; gr.addColorStop(k / 6, rgbStr(colAt(y))); }
+    ctx.fillStyle = gr; ctx.fillRect(X0, Y0, X1 - X0, Y1 - Y0);
+    const ice = yb > 55000;
+    // the layers
+    const sp = ya < 300 ? 4.5 : ya < 3000 ? 16 : ya < 20000 ? 55 : 140, lw = Math.max(1, ppm * 0.08);
+    for (let yy = Math.ceil(ya / sp) * sp; yy < yb; yy += sp) { const h = hsh(Math.round(yy / sp)), h2 = hsh(yy * 0.37 + 9);
+      if (ice && yy > 57000) { ctx.strokeStyle = 'rgba(235,248,255,0.22)'; ctx.lineWidth = lw; ctx.beginPath(); ctx.moveTo(X0, Sy(yy)); ctx.lineTo(X1, Sy(yy + (h - 0.5) * sp * 0.3)); ctx.stroke(); continue; }
+      ctx.beginPath(); for (let x = xa; x <= xb + 2; x += Math.max(0.6, 6 / ppm)) ctx.lineTo(S(x), Sy(yy + Math.sin(x * 0.3 + h * 9) * sp * 0.06 + Math.sin(x * 0.045 + h2 * 7) * sp * 0.18));
+      ctx.strokeStyle = 'rgba(0,0,0,0.32)'; ctx.lineWidth = lw * (0.7 + h); ctx.stroke();
+      ctx.save(); ctx.translate(0, lw * 1.6); ctx.strokeStyle = 'rgba(255,244,222,0.08)'; ctx.lineWidth = lw * 0.8; ctx.stroke(); ctx.restore(); }
+    // hairline cracks and a few darker patches, pinned to the rock
+    const cs = Math.max(3, sp * 0.8);
+    for (let xx = Math.floor(xa / cs) * cs; xx < xb; xx += cs) for (let yy = Math.floor(ya / sp) * sp; yy < yb; yy += sp) { const h = hsh(xx * 3.1 + yy * 0.7); if (h > 0.35) continue;
+      const cx = xx + h * cs * 2.4, top = yy + sp * 0.12, bot = yy + sp * (0.55 + h); ctx.strokeStyle = 'rgba(0,0,0,0.25)'; ctx.lineWidth = Math.max(0.7, ppm * 0.03);
+      ctx.beginPath(); ctx.moveTo(S(cx), Sy(top)); ctx.lineTo(S(cx + (h - 0.17) * sp * 0.2), Sy((top + bot) / 2)); ctx.lineTo(S(cx + (h - 0.1) * sp * 0.1), Sy(bot)); ctx.stroke();
+      if (h < 0.08) { const r = sp * (0.6 + h * 4) * ppm, bg = ctx.createRadialGradient(S(cx), Sy(yy + sp / 2), 0, S(cx), Sy(yy + sp / 2), r); bg.addColorStop(0, 'rgba(0,0,0,0.18)'); bg.addColorStop(1, 'rgba(0,0,0,0)'); ctx.fillStyle = bg; ctx.fillRect(S(cx) - r, Sy(yy + sp / 2) - r, r * 2, r * 2); } }
+    ctx.restore();
+  }
   // the small things on the bottom: pebbles and shells in the shallows, burrows and worm tubes on
   // the shelf, brittle stars and sea pens on the slope, sea cucumbers, tracks and lumpy
   // xenophyophores on the abyssal plain. Placed by hash, so they are always in the same place.
@@ -3566,13 +3601,53 @@ export class Renderer {
   }
 
 
+  // (7.8.0, owner) the edge of the first sea: a weathered wooden sign where the beach goes into the water, and the old
+  // diver who sits on a stone at the beach's end in a brass helmet and a patched canvas suit, his back to the drop
+  drawEdgeKeeper(g, ctx, S, Sy, ppm, t) {
+    const W = g.world;
+    { const x = SIGN.x, gy = W.floorAt(x), px = S(x), base = Sy(gy), top = Sy(-1.9), bw = 1.5 * ppm, bh = 0.62 * ppm, by = Sy(-1.55);
+      ctx.save(); ctx.lineCap = 'round';
+      ctx.strokeStyle = '#4a3622'; ctx.lineWidth = Math.max(2, 0.12 * ppm); ctx.beginPath(); ctx.moveTo(px, base); ctx.lineTo(px + 0.03 * ppm, top); ctx.stroke(); // the post
+      ctx.translate(px, by); ctx.rotate(-0.04);
+      const wg = ctx.createLinearGradient(0, -bh / 2, 0, bh / 2); wg.addColorStop(0, '#8a6a44'); wg.addColorStop(0.5, '#73563a'); wg.addColorStop(1, '#5a432c');
+      ctx.fillStyle = wg; ctx.beginPath(); ctx.moveTo(-bw / 2, -bh / 2 + 1); ctx.lineTo(bw / 2, -bh / 2); ctx.lineTo(bw / 2 - 1, bh / 2); ctx.lineTo(-bw / 2 + 1, bh / 2 + 1); ctx.closePath(); ctx.fill();
+      ctx.strokeStyle = 'rgba(30,20,10,0.5)'; ctx.lineWidth = 1; for (const k of [-0.15, 0.18]) { ctx.beginPath(); ctx.moveTo(-bw / 2 + 2, k * bh); ctx.lineTo(bw / 2 - 2, k * bh + 0.5); ctx.stroke(); } // grain
+      ctx.fillStyle = '#e9dcc0'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.font = `700 ${Math.max(7, bh * 0.34)}px 'Barlow Semi Condensed', sans-serif`; ctx.fillText('DANGER AHEAD', 0, -bh * 0.17);
+      ctx.font = `600 ${Math.max(6, bh * 0.28)}px 'Barlow Semi Condensed', sans-serif`; ctx.fillText('TURN BACK', 0, bh * 0.22);
+      ctx.restore(); }
+    { const x = KEEPER.x, gy = W.floorAt(x), px = S(x), sy = Sy(gy), u = ppm / 40, bob = Math.sin(t * 0.8) * 0.6 * u;
+      ctx.save(); ctx.translate(px, sy);
+      // his stone
+      const sg = ctx.createLinearGradient(0, -16 * u, 0, 2 * u); sg.addColorStop(0, '#5d6260'); sg.addColorStop(1, '#2f3332');
+      ctx.fillStyle = sg; ctx.beginPath(); ctx.moveTo(-15 * u, 2 * u); ctx.quadraticCurveTo(-16 * u, -12 * u, -4 * u, -16 * u); ctx.quadraticCurveTo(10 * u, -17 * u, 15 * u, -8 * u); ctx.lineTo(16 * u, 2 * u); ctx.closePath(); ctx.fill();
+      ctx.translate(0, -15 * u + bob); ctx.scale(-1, 1); // facing back toward the beach, the drop behind him
+      const canvas = ctx.createLinearGradient(0, -30 * u, 0, 10 * u); canvas.addColorStop(0, '#7d7560'); canvas.addColorStop(1, '#4f4a3c');
+      ctx.fillStyle = canvas; ctx.strokeStyle = 'rgba(20,16,10,0.6)'; ctx.lineWidth = 1.2 * u;
+      ctx.beginPath(); ctx.moveTo(-8 * u, 0); ctx.quadraticCurveTo(-10 * u, -18 * u, -2 * u, -26 * u); ctx.lineTo(8 * u, -25 * u); ctx.quadraticCurveTo(10 * u, -12 * u, 7 * u, 0); ctx.closePath(); ctx.fill(); ctx.stroke(); // body, seated
+      ctx.beginPath(); ctx.moveTo(-6 * u, -2 * u); ctx.quadraticCurveTo(10 * u, -3 * u, 16 * u, 4 * u); ctx.lineTo(16 * u, 12 * u); ctx.lineTo(11 * u, 12 * u); ctx.lineTo(10 * u, 6 * u); ctx.quadraticCurveTo(2 * u, 4 * u, -6 * u, 4 * u); ctx.closePath(); ctx.fill(); ctx.stroke(); // thighs and shins
+      ctx.fillStyle = '#2a2622'; ctx.fillRect(9 * u, 11 * u, 9 * u, 4 * u); // lead boots
+      ctx.fillStyle = '#6e6450'; ctx.fillRect(-3 * u, -14 * u, 7 * u, 4 * u); // a patch
+      ctx.fillStyle = canvas; ctx.beginPath(); ctx.moveTo(5 * u, -22 * u); ctx.quadraticCurveTo(12 * u, -14 * u, 12 * u, -6 * u); ctx.lineTo(8 * u, -5 * u); ctx.quadraticCurveTo(8 * u, -13 * u, 2 * u, -18 * u); ctx.closePath(); ctx.fill(); ctx.stroke(); // arm on his knee
+      // the brass helmet: a dome, its breastplate, a round front port and two side ports
+      const hx = 2 * u, hy = -34 * u, hr = 9 * u, hg = ctx.createRadialGradient(hx - hr * 0.4, hy - hr * 0.45, hr * 0.1, hx, hy, hr * 1.1);
+      hg.addColorStop(0, '#e4c47e'); hg.addColorStop(0.5, '#a87d3c'); hg.addColorStop(1, '#5a3e1a');
+      ctx.fillStyle = '#7a5a2c'; ctx.beginPath(); ctx.ellipse(hx, hy + 8 * u, 11 * u, 4 * u, 0, 0, TAU); ctx.fill();
+      ctx.fillStyle = hg; ctx.beginPath(); ctx.arc(hx, hy, hr, 0, TAU); ctx.fill();
+      ctx.fillStyle = '#1a2224'; ctx.strokeStyle = '#c9a55c'; ctx.lineWidth = 1.6 * u; ctx.beginPath(); ctx.arc(hx + 4.6 * u, hy + 0.5 * u, 3.6 * u, 0, TAU); ctx.fill(); ctx.stroke();
+      ctx.beginPath(); ctx.arc(hx - 2 * u, hy - 1 * u, 2 * u, 0, TAU); ctx.fill(); ctx.stroke();
+      ctx.fillStyle = 'rgba(255,255,255,0.35)'; ctx.beginPath(); ctx.ellipse(hx - 3.5 * u, hy - 5 * u, 2.4 * u, 1.3 * u, -0.5, 0, TAU); ctx.fill();
+      ctx.restore();
+      // a thread of bubbles from his helmet now and then
+      if (g.bubbles && Math.random() < 0.02) g.bubbles.push({ x: x + 0.05, y: gy - 1.3, r: 0.03 + Math.random() * 0.04, w: Math.random() * 6, t: 0 }); }
+  }
   drawSay(g, S, Sy, ppm) {
     // (6.0.5) the scene's messages: each written beside what it is about (him, the sub), with a short line to it, the
     // (6.1.5) where Earl (or the sub he is in) is on screen, for the line that says what killed him
     { const o = g.earl && g.earl.inSub ? g.sub : g.earl; if (o) g.earlScr = [S(o.x) / this.W, Sy(o.y) / this.H, ppm / this.W]; } /* as fractions of the screen: the HUD's canvas has its own size */
     // words on the side away from the screen's nearer edge; they fade after a few seconds
     if (g.says && g.says.length && g.mode === 'play') { const ctx = this.ctx, W = this.W; let row = 0;
-      for (const m of g.says) { const o = m.at === 'sub' ? g.sub : m.at === 'pet' ? g.petC : g.earl, a = clamp(m.t / 0.3, 0, 1) * clamp((4 - m.t) / 0.7, 0, 1); if (a < 0.01 || !o) continue;
+      for (const m of g.says) { const o = m.at === 'sub' ? g.sub : m.at === 'pet' ? g.petC : m.at === 'keeper' ? { x: KEEPER.x, y: g.world.floorAt(KEEPER.x) - 1.1 } : g.earl, a = clamp(m.t / 0.3, 0, 1) * clamp((4 - m.t) / 0.7, 0, 1); if (a < 0.01 || !o) continue;
         const hx = S(o.x), hy = Sy(o.y) - ppm * (m.at === 'sub' ? 2.2 : 0.8) - row * 22, fs = 15; row++;
         ctx.save(); ctx.font = `500 ${fs}px ${HUDF}`; const w = ctx.measureText(m.text).width, left = hx > W * 0.5, d = Math.max(30, ppm * 1.2); let tx = left ? Math.max(150, hx - d - w) : Math.min(W - w - 150, hx + d); let ty = Math.max(fs + 70, hy - Math.max(30, ppm * 1.2));
         // (7.5.0, owner) every word written just above what it is about (him, the sub, the pet), with no line to it
@@ -3616,7 +3691,7 @@ export class Renderer {
     const surf = Sy(0), TW = W * 1.1, TH = H * 1.1;
     // the seabed's line on screen, a column every 24 px, once a frame
     const step = 24, cols = Math.ceil(W / step) + 1, floorY = this.snowFloor || (this.snowFloor = new Float32Array(cols + 1));
-    for (let i = 0; i <= cols; i++) floorY[i] = Sy(g.world.floorAt(clamp(cam.x + (i * step - W / 2) / ppm, 0, 4999)));
+    for (let i = 0; i <= cols; i++) floorY[i] = Sy(g.world.floorAt(clamp(cam.x + (i * step - W / 2) / ppm, 0, WORLD_W - 1)));
     const sz = clamp(ppm / 24, 0.8, 1.1) * 0.6; /* (6.1.9) never swelling with the zoom. (7.6.0, owner) smaller: specks, not discs */
     ctx.save(); ctx.fillStyle = '#dfe6e8';
     this.snowL.forEach((L, li) => {

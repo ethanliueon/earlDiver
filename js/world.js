@@ -3,27 +3,37 @@
 import { makeRng, fbm1, clamp, lerp, smoothstep, pointInPoly, closestOnSeg } from './util.js';
 import { SPECIES, isStaticHab } from './species.js';
 import { climateOk } from './fauna.js';
+import { mapX, X0 } from './mapx.js';
+export { mapX, X0 };
 // the shallowest the game puts these deep-sea bottom animals (their recorded minimums are rare outliers)
 const DEEP_FLOOR = { 130: 250, 131: 250, 132: 400, 162: 300, 170: 1000, 163: 2000, 180: 1600 };
 
 // 5,000 m wide, down to 5,100 m in the trench's pit. The shore is on the right (east); the deep ocean and a sheer wall
 // with a trench at its foot are on the left (west). The shallow half (shelf, wreck, kelp, reef,
 // beach) is the original map moved 2,000 m east (EAST); everything west of the shelf edge is new.
-export const WORLD_W = 5040; // (7.4.17) 40 m more on the east: the coconut island and the pool beyond it
+export const WORLD_W = 6040; // (7.4.17) 40 m more on the east: the coconut island and the pool beyond it. (7.8.0, owner) and the second sea beyond it, 1 km across
+// (7.8.0, owner) the second sea, past the island: a 20 m beach shelving to 10 m at its edge, then the wall: a sheer cliff
+// leaning in under its own lip, down to a plain at the Challenger Deep's depth; across the plain a second drop into the
+// deep abyss, whose floor is ice VI (the ice that forms under about 0.6 GPa in water near 2 °C), about 60 km down. Divers
+// only: the sub stays west of the island
+export const AREA2 = { beach0: 4994, edge: 5014, plain: 10935, drop2: 5700, ice: 60000, end: 6015 };
+// (7.8.0, owner) the warning sign where the beach goes into the water, and the old diver who sits at its edge and turns
+// back anyone without a signed dive log (the gate stands a few metres short of the drop: the drop can be looked over)
+export const SIGN = { x: 4997.2 }, KEEPER = { x: 5009.2 }, GATE_X = 5007.5;
 // (7.4.17, owner) the coconut island at the end of the sea: a sand bar rising 1.5 m out of the water, about 18 m long
 // above it, one coconut palm near its far end. He can wade out and walk on it (his helmet off, as on deck); the sub and
 // the boat meet it as a wall. Beyond it a small pool (about 20 m, no fish): a second ocean, for a later update. Past
 // the palm: "Area available in a future update"
 export const ISLE = { x0: 4974, top0: 4982, top1: 4988, x1: 4994, palm: 4989.5, stop: 4990.6, pool0: 4995, pool1: 5015 };
 export const SEA_END = 4966; // nothing of the sea (rock, coral, kelp, statics, fish) is placed past here
-export const WORLD_D = 5200;
+export const WORLD_D = 61000; // (7.8.0) to the ice under the second sea
 export const EAST = 4000;
 // v2: a 2,000 m wide hadal trench was opened west of the old one; everything east of it moved by SH
 export const SH = 2000;
 export const FLOOR_RES = 0.5; // metres per floor sample
 // the Margaret: she starts 150 m from the east edge (over the kelp) and can be driven along the surface
 // anywhere between BOAT_MIN and BOAT_MAX
-export const BOAT_HOME = 4850, BOAT_MIN = 60, BOAT_MAX = 4950; // (7.4.17) up to the island's shallows // (v2: she can go anywhere on the surface)
+export const BOAT_HOME = 4850, BOAT_MIN = X0 + 60, BOAT_MAX = 4950; // (7.4.17) up to the island's shallows // (v2: she can go anywhere on the surface)
 export const BOAT = { x: BOAT_HOME, yaw: 0 }; // (3.0.0) yaw: 0 = bow to the left as drawn (her usual heading), PI = turned about
 // (7.6.23, owner) the shipyard: a work barge moored right beside the Margaret, off her bow; everything for the sub is
 // bought there (the subs, their refits, the yard's work), not on the cabin computer
@@ -32,12 +42,12 @@ export const boatDock = () => BOAT.x + 8.5 * Math.cos(BOAT.yaw || 0); // the sub
 export const BOAT_X = BOAT_HOME; // (where she starts)
 export const SPAWN = { x: BOAT_HOME - 12, y: 5 };
 // the anglerfish's cave: a hollow in the west wall
-export const CAVE = { x: 52, y: 1800 };
+export const CAVE = { x: mapX(52), y: 1800 };
 // the old one who lives in it: a giant anglerfish, head to the mouth of the cave
-export const ANGLER = { x: 46, y: 1802.5, len: 14 };
+export const ANGLER = { x: mapX(46), y: 1802.5, len: 14 };
 
 // Fixed overall profile (x -> seafloor depth). Beach on the right, deep on the left.
-const PROFILE = [
+const PROFILE_OLD = [
   // the west wall: a reef cap near the surface, then a sheer drop to the trench
   [0, 25], [22, 40], [34, 900], [40, 2600], [46, 3880],
   // v2: the hadal trench at its foot, 2,000 m wide: a floor of swells and outcrops at ~4,800-4,950 m,
@@ -59,6 +69,7 @@ const PROFILE = [
   [4520, 860], [4560, 640], [4585, 470], [4596, 330], [4604, 215], [4640, 175], [4700, 132],
   [4760, 72], [4800, 42], [4880, 26], [4920, 16], [4950, 9], [4964, 4], [4972, 1.2], [4984, -1.5], [5040, -1.2],
 ];
+const PROFILE = PROFILE_OLD.map(([x, d]) => [mapX(x), d]).concat([[WORLD_W, -1.2]]); // (7.8.0) the west drawn closer together (mapx.js)
 
 // Deep sapphires: rare valuables, only below 500 m, a few per ocean at random, each tucked under a
 // ledge, between boulders or beside one. They are worth a great deal and the deep notices them go.
@@ -82,15 +93,15 @@ export const RESOURCES = {
   bone: { name: 'Whalebone', desc: 'A rib from the whale fall, picked clean and white.' },
 };
 // places on the deep floor (x ranges in metres)
-export const BRINE = { x0: 3730, x1: 3788 };     // a lake of brine on the abyssal plain: heavy, airless, deadly
-export const WHALE_FALL = { x: 2770 };            // a dead whale on the plain, and everything that feeds on it
-export const SEEP = { x: 3960 };
+export const BRINE = { x0: mapX(3730), x1: mapX(3788) };     // a lake of brine on the abyssal plain: heavy, airless, deadly
+export const WHALE_FALL = { x: mapX(2770) };            // a dead whale on the plain, and everything that feeds on it
+export const SEEP = { x: mapX(3960) };
 // (2.7.0) Dave's Haul: a diver's habitat on a terrace cut into the seamount's east flank, about 1,200 m down
-export const DAVE = { x: 3278, half: 11 };                 // a cold seep on the rise: methane, mussels, tube worms
+export const DAVE = { x: mapX(3278), half: 11 };                 // a cold seep on the rise: methane, mussels, tube worms
 // (3.0.0) the research station: a tower on the seamount's summit (~315 m), the station ~30 m up it (~285 m)
-export const STATION = { x: 3175, half: 16 };
-export const PIT = { x: 1180, half: 38, y: 5100 };       // the deepest point: a pit in the hadal trench floor
-export const TRENCH = { x0: 70, x1: 2220 };              // the hadal trench floor (the monster's lair is down here)
+export const STATION = { x: mapX(3175), half: 16 };
+export const PIT = { x: mapX(1180), half: 38, y: 5100 };       // the deepest point: a pit in the hadal trench floor
+export const TRENCH = { x0: mapX(70), x1: mapX(2220) };              // the hadal trench floor (the monster's lair is down here)
 // (6.8.1) the sail points: a numbered marker buoy on its chain above each place. A point is found by passing over it
 // (the boat, the sub or the diver within 60 m of it, at any depth); found, the chart can sail the boat there. The boat
 // lies at anchor 26 m east of its buoy, so the buoy rides clear of its bow.
@@ -98,12 +109,12 @@ export const SAIL_OFF = 26;
 export const SAIL = [
   { id: 'home', x: 4824, no: 'B-01', name: 'Home mooring' },
   { id: 'canyon', x: 4440, no: 'B-07', name: 'The canyon' },
-  { id: 'seep', x: 3960, no: 'B-12', name: 'Cold seep' },
-  { id: 'dave', x: 3290, no: 'B-19', name: "Dave's Haul" },
-  { id: 'station', x: 3160, no: 'B-21', name: 'Station 7' },
-  { id: 'whale', x: 2770, no: 'B-26', name: 'Whale fall' },
-  { id: 'trench', x: 1100, no: 'B-38', name: 'The trench' },
-  { id: 'cave', x: 90, no: 'B-43', name: "The Old One's cave" },
+  { id: 'seep', x: mapX(3960), no: 'B-12', name: 'Cold seep' },
+  { id: 'dave', x: mapX(3290), no: 'B-19', name: "Dave's Haul" },
+  { id: 'station', x: mapX(3160), no: 'B-21', name: 'Station 7' },
+  { id: 'whale', x: mapX(2770), no: 'B-26', name: 'Whale fall' },
+  { id: 'trench', x: mapX(1100), no: 'B-38', name: 'The trench' },
+  { id: 'cave', x: mapX(90), no: 'B-43', name: "The Old One's cave" },
 ];
 export const CANYON = { x0: 4385, x1: 4495, top: 1000 }; // the canyon below its rim, where the current runs
 
@@ -116,8 +127,18 @@ export function isleDepth(x, d0 = 4) {
   if (x < I.top0) return lerp(0.25, -1.5, ss(I.x0, I.top0, x)) + bump * ss(I.x0, I.top0, x);
   if (x < I.top1) return -1.5 + bump;
   if (x < I.x1) return lerp(-1.5, 0.15, ss(I.top1, I.x1, x)) + bump * (1 - ss(I.top1, I.x1, x));
-  if (x < I.pool1) return lerp(0.15, 1.3, ss(I.x1, I.pool0 + 3, x)) * (1 - ss(I.pool1 - 3, I.pool1, x)) + lerp(0, -0.35, ss(I.pool1 - 3, I.pool1, x)) + Math.sin(x * 0.9) * 0.05 * ss(I.x1, I.pool0 + 3, x);
-  return lerp(-0.35, -1.3, ss(I.pool1, WORLD_W, x)) + bump * 0.6;
+  // (7.8.0, owner) the beach past the island: 20 m of sand shelving gently, then faster, to 10 m at its edge
+  const A = AREA2; if (x <= A.edge) { const u = clamp((x - I.x1) / (A.edge - I.x1), 0, 1); return lerp(0.15, 10, u * u * 0.55 + u * 0.45) + Math.sin(x * 0.9) * 0.05 * u; }
+  return area2Depth(x);
+}
+// (7.8.0, owner) the second sea's floor east of the beach's edge: the plain under the first wall, the drop, the ice, and
+// the far side rising again to close the sea
+export function area2Depth(x, seed = 1) {
+  const A = AREA2;
+  if (x <= A.edge + 0.25) return 10;
+  if (x < A.drop2) return A.plain + fbm1(x / 90, 3, seed + 51) * 30 + fbm1(x / 9, 2, seed + 52) * 3;
+  if (x < A.end) return A.ice + fbm1(x / 60, 2, seed + 53) * 4;
+  return lerp(A.ice, -40, clamp((x - A.end) / 12, 0, 1));
 }
 export function generateWorld(seed) {
   const rng = makeRng(seed);
@@ -135,10 +156,11 @@ export function generateWorld(seed) {
     const big = fbm1(x / 70, 4, seed) * clamp(d * 0.05, 1.5, 60);
     const fine = fbm1(x / 6, 3, seed + 5) * clamp(d * 0.006, 0.25, 4);
     d += big + fine;
-    if (x > 4962) d = isleDepth(x, d); // (7.4.17) the island and its pool, drawn exactly (no roughness out of the water)
-    if (x < 30) d = Math.min(d, 25 + x * 0.5);                                         // the wall's reef cap stays shallow
-    if (x > 60 && x < 2230) {                                // the hadal floor: gentler swells, never past ~4,990 m
-      d = lerp(d, Math.min(d, 4985 - fine), smoothstep(60, 140, x) * (1 - smoothstep(2150, 2230, x)));
+    if (x > 4962) d = x > AREA2.edge ? area2Depth(x, seed) : isleDepth(x, d); // (7.4.17) the island and its pool, drawn exactly (no roughness out of the water); (7.8.0) and the second sea
+    if (x < X0) d = -60; // (7.8.0) west of the sea's west wall: solid rock
+    if (x >= X0 && x < mapX(30)) d = Math.min(d, 25 + (x - X0) * 0.5);                                         // the wall's reef cap stays shallow
+    if (x > mapX(60) && x < mapX(2230)) {                                // the hadal floor: gentler swells, never past ~4,990 m
+      d = lerp(d, Math.min(d, 4985 - fine), smoothstep(mapX(60), mapX(140), x) * (1 - smoothstep(mapX(2150), mapX(2230), x)));
     }
     floor[i] = d;
   }
@@ -163,7 +185,7 @@ export function generateWorld(seed) {
   // (7.4.28, owner) the floor less placed: gentle rolls tens of metres long, low ridges and small terraces, and bumps a metre
   // or two across, each scaled to the depth (the shallow sand barely, the open slopes more), never on the island or the pit
   { const pi0 = Math.round((PIT.x - PIT.half - 20) / FLOOR_RES), pi1 = Math.round((PIT.x + PIT.half + 20) / FLOOR_RES), bi0 = Math.round((BRINE.x0 - 10) / FLOOR_RES), bi1 = Math.round((BRINE.x1 + 10) / FLOOR_RES);
-    for (let i = 0; i < n; i++) { const x = i * FLOOR_RES, d = floor[i]; if (x > 4955 || d < 3 || (i > pi0 && i < pi1) || (i > bi0 && i < bi1)) continue;
+    for (let i = 0; i < n; i++) { const x = i * FLOOR_RES, d = floor[i]; if (x > 4955 || x < X0 || d < 3 || (i > pi0 && i < pi1) || (i > bi0 && i < bi1)) continue;
       const k = clamp((d - 3) / 40, 0, 1), big = clamp(d / 400, 0, 1);
       const roll = fbm1(x / 55, 3, seed + 31) * (1.6 + 10 * big);                          // long gentle rolls
       const ridge = Math.abs(fbm1(x / 14, 2, seed + 37)); const r2 = (0.35 - ridge) * (0.9 + 3 * big); // low ridges (sharp crests)
@@ -217,7 +239,7 @@ export function generateWorld(seed) {
     for (const p of poly) { x0 = Math.min(x0, p.x); x1 = Math.max(x1, p.x); y0 = Math.min(y0, p.y); y1 = Math.max(y1, p.y); }
     W.rocks.push({ poly, kind, x0, x1, y0, y1, seed: rng() * 1000 });
   };
-  for (let x = 2; x < SEA_END; x += rng.range(5, 22)) {
+  for (let x = X0 + 2; x < SEA_END; x += rng.range(5, 22)) {
     const d = W.floorAt(x);
     const s = W.slopeAt(x);
     if (x > EAST + 940 && rng() < 0.6) continue;
@@ -253,12 +275,17 @@ export function generateWorld(seed) {
   // the anglerfish's cave mouth: an upper and a lower lip of rock jutting from the west wall
   {
     const cx = CAVE.x, cy = CAVE.y;
-    addRock(roughen([{ x: 30, y: cy - 34 }, { x: cx + 26, y: cy - 22 }, { x: cx + 30, y: cy - 15 }, { x: cx + 8, y: cy - 11 }, { x: 30, y: cy - 12 }], 4, 1.2), 'ledge');
-    addRock(roughen([{ x: 30, y: cy + 12 }, { x: cx + 6, y: cy + 10 }, { x: cx + 28, y: cy + 15 }, { x: cx + 24, y: cy + 26 }, { x: 30, y: cy + 36 }], 4, 1.2), 'boulder');
+    const w0 = mapX(30); addRock(roughen([{ x: w0, y: cy - 34 }, { x: cx + 26, y: cy - 22 }, { x: cx + 30, y: cy - 15 }, { x: cx + 8, y: cy - 11 }, { x: w0, y: cy - 12 }], 4, 1.2), 'ledge');
+    addRock(roughen([{ x: w0, y: cy + 12 }, { x: cx + 6, y: cy + 10 }, { x: cx + 28, y: cy + 15 }, { x: cx + 24, y: cy + 26 }, { x: w0, y: cy + 36 }], 4, 1.2), 'boulder');
   }
   // (6.1.8) the old one's body is as solid as the rock round her: Earl, the sub and the animals go round it, never into
   // it (an outline a little inside the drawing, so nothing seems to stop short of her); never drawn as rock
   { const P0 = []; for (let k = 0; k < 24; k++) { const a = (k / 24) * Math.PI * 2; P0.push({ x: ANGLER.x + Math.cos(a) * 7.2, y: ANGLER.y + Math.sin(a) * 4.4 }); } addRock(P0, 'oldone'); }
+  // (7.8.0, owner) the second sea's wall leans in: its lip juts out over the drop at the beach's edge, and the face runs
+  // back under it to stand straight about 1,500 m down (a wedge of rock on the open water's side of the edge)
+  { const E = AREA2.edge, P0 = [{ x: E - 0.5, y: 9.7 }, { x: E + 4, y: 10.1 }, { x: E + 9, y: 11.5 }, { x: E + 12.5, y: 15 }, { x: E + 13.5, y: 22 }, { x: E + 12, y: 40 },
+      { x: E + 9, y: 75 }, { x: E + 6, y: 120 }, { x: E + 3, y: 170 }, { x: E - 0.5, y: 220 }];
+    addRock(roughen(P0, 2, 0.6), 'ledge'); const rk = W.rocks[W.rocks.length - 1]; rk.hidden = true; W.lip = rk; } // (a lip about 13 m out, the face running back under it over its first 200 m; drawn by render.js paintCliff)
   // (7.5.0) the rocks binned by 32 m of x, built again whenever the list changes: every animal asks this many times a
   // frame, and walking the whole sea's rocks each time was the costliest thing in the game's own code. Same answer as
   // before: the first rock in the list that holds the point.
@@ -306,12 +333,12 @@ export function generateWorld(seed) {
   // ---- Wrecks ----
   W.wrecks = [
     { x: EAST + 688, y: W.floorAt(EAST + 688), len: 36, tilt: -0.08, kind: 'ship' },
-    { x: 4110, y: W.floorAt(4110), len: 70, tilt: 0.12, kind: 'ship' },   // on the slope, ~1,800 m
+    { x: mapX(4110), y: W.floorAt(mapX(4110)), len: 70, tilt: 0.12, kind: 'ship' },   // on the slope, ~1,800 m
   ];
   // ---- Hydrothermal vents in the abyss ----
   W.vents = [];
   for (let i = 0; i < 7; i++) {
-    const x = rng.range(3520, 3690);   // a vent field on the abyssal plain
+    const x = rng.range(mapX(3520), mapX(3690));   // a vent field on the abyssal plain
     W.vents.push({ x, y: W.floorAt(x), h: rng.range(4, 14), phase: rng() * 6 });
   }
   // the anglerfish's cave: two great lips of rock jutting from the wall make a hollow between them
@@ -333,8 +360,8 @@ export function generateWorld(seed) {
     if (W.rockAt(x, y, 2)) return;
     W.lanterns.push({ x, y, charge: 1, active: 0, phase: rng() * 6, tether: rng() < 0.5 ? Math.min(W.floorAt(x) - y, 60) : 0, hue: rng.range(160, 200) });
   };
-  for (let cx = 0; cx < WORLD_W; cx += 250) {
-    for (let cy = 0; cy < WORLD_D; cy += 250) {
+  for (let cx = X0; cx < SEA_END; cx += 250) {
+    for (let cy = 0; cy < 5200; cy += 250) { // (7.8.0) the first sea only
       // (6.5.7) guardian jellyfish are rare and live only in the open ocean below 200 m: about one in ten 250 m cells
       // down there, and never near a wall or the seabed (at least 150 m of water under it)
       const expected = cy + 250 <= 200 ? 0 : 0.1;
@@ -366,14 +393,14 @@ export function generateWorld(seed) {
   // but a few cents at the boat)
   // manganese nodules strewn over the abyssal plain (not in the brine)
   for (let i = 0; i < 70; i++) {
-    const x = rng.pick([rng.range(2560, 2900), rng.range(3460, 3860)]);
+    const x = rng.pick([rng.range(mapX(2560), mapX(2900)), rng.range(mapX(3460), mapX(3860))]);
     if (W.floorAt(x) < 3000 || (x > BRINE.x0 - 3 && x < BRINE.x1 + 3)) continue;
     addPickup('nodule', x, onFloor(x));
   }
   // the whale fall: ribs to take; the seep: clams that often hold pearls
   for (let i = 0; i < 9; i++) { const x = WHALE_FALL.x + rng.range(-18, 18); addPickup('bone', x, W.whaleFall ? W.whaleFall.y - 0.2 : onFloor(x)); }
   for (let i = 0; i < 12; i++) { const x = SEEP.x + rng.range(-10, 10); addPickup('clam', x, onFloor(x), { pearl: rng() < 0.25 }); }
-  for (let i = 0; i < 60; i++) { const x = rng.range(2950, 4600); const fl = W.floorAt(x); if (fl > 300 && fl < 1300) addPickup('glass', x, onFloor(x)); }
+  for (let i = 0; i < 60; i++) { const x = rng.range(mapX(2950), 4600); const fl = W.floorAt(x); if (fl > 300 && fl < 1300) addPickup('glass', x, onFloor(x)); }
   // Usable items, found on the deeper seafloor
   // Rare finds, anywhere across the ocean (rarer than an exotic animal, commoner than a legend): a few
   // fangtooth necklaces on the seabed between 300 and 3,000 m, and a few anglerfish lures between
@@ -381,7 +408,7 @@ export function generateWorld(seed) {
   const scatter = (type, n, d0, d1, lift) => {
     const placed = [];
     for (let tries = 0; placed.length < n && tries < 600; tries++) {
-      const x = rng.range(60, 4900), fl = W.floorAt(x);
+      const x = rng.range(X0 + 60, 4900), fl = W.floorAt(x);
       if (fl < d0 || fl > d1 || placed.some((q) => Math.abs(q - x) < 120) || W.rockAt(x, fl - lift, 0.3)) continue;
       placed.push(x); addPickup(type, x, fl - lift);
     }
@@ -392,7 +419,7 @@ export function generateWorld(seed) {
   // Sapphires: random deep spots, spread apart
   const spots = [];
   for (let tries = 0; spots.length < SAPPHIRE_COUNT && tries < 400; tries++) {
-    const x = rng.range(60, EAST + 578);
+    const x = rng.range(X0 + 60, EAST + 578);
     if (W.floorAt(x) < 520 || spots.some((q) => Math.abs(q.x - x) < 45)) continue;
     spots.push({ x, hide: SAPPHIRE_HIDES[spots.length % SAPPHIRE_HIDES.length] });
   }
@@ -419,7 +446,7 @@ export function generateWorld(seed) {
   // deep bottom life is never set out in the shallows, whatever the records' shallowest find
   W.statics = [];
   const statics = SPECIES.filter((s) => isStaticHab(s.v.hab) && s.id !== 118 && s.id !== 119);
-  for (let x = 1; x < SEA_END; x += rng.range(0.6, 2.5) * clamp(W.floorAt(x) / 120, 1, 6) * (x > EAST + 880 ? 0.6 : 1)) {
+  for (let x = X0 + 1; x < SEA_END; x += rng.range(0.6, 2.5) * clamp(W.floorAt(x) / 120, 1, 6) * (x > EAST + 880 ? 0.6 : 1)) {
     const d = W.floorAt(x);
     if (d < 0.6) continue;
     const cands = statics.filter((s) => d >= Math.max(s.dmin, DEEP_FLOOR[s.id] || 0) && d <= s.dmax && climateOk(s.id, x));
@@ -447,7 +474,7 @@ export function generateWorld(seed) {
   // coral heads: a real reef is built of them (the shallow reef by the beach, and the wall's cap)
   {
     const heads = [126, 127, 127, 133].map((id) => SPECIES.find((s) => s.id === id));
-    for (const [xa, xb, n] of [[EAST + 905, SEA_END, 34], [2, 30, 12]]) {
+    for (const [xa, xb, n] of [[EAST + 905, SEA_END, 34], [X0 + 2, mapX(30), 12]]) {
       for (let i = 0, tries = 0; i < n && tries < 400; tries++) {
         const x = rng.range(xa, xb), d = W.floorAt(x), sp = rng.pick(heads);
         if (d < 1.5 || d < sp.dmin || d > sp.dmax || W.rockAt(x, d - 0.3)) continue;
@@ -508,12 +535,12 @@ function buildHabitats(W) {
   }
   for (const w of W.wrecks) for (let k = -2; k <= 2; k++) add('wreck', w.x + k * w.len * 0.2, w.y - 2 - Math.abs(k) * 0.5);
   // open sand and mud: gentle bottom away from the reef and the kelp
-  for (let x = 4; x < SEA_END; x += 7) {
+  for (let x = X0 + 4; x < SEA_END; x += 7) {
     const d = W.floorAt(x);
     if (d < 2 || Math.abs(W.slopeAt(x)) > 0.7) continue;
     add('sand', x, d - 0.3);
   }
-  for (let x = 3112; x < 3240; x += 8) add('seamount', x, W.floorAt(x) - 4);
+  for (let x = mapX(3112); x < mapX(3240); x += 8) add('seamount', x, W.floorAt(x) - 4);
   for (let k = -10; k <= 10; k++) add('whalefall', W.whaleFall.x + k * 2.6, W.whaleFall.y - 5.2 - (k % 3 === 0 ? 2 : 0)); /* above the bones, which are solid */ // (7.0.6) a crowded place: many homes, always taken
   for (const v of W.vents) add('vent', v.x, v.y - 2);
   for (const kind in H) H[kind].sort((a, b) => a.x - b.x);

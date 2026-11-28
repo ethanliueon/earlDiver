@@ -1,6 +1,8 @@
 // (4.10.0) the chart: the whole sea in section, as the quest maps draw it, with the player's own markers. Click the
 // water or the seabed to set a marker there, name it and pick its colour; click a marker to rename it, follow it (the
 // tutorial's trail leads there) or take it off. Markers are kept with the save, and show in the sea as small pins.
+import { X0 as SEA_X0 } from './mapx.js';
+const SEA_X1 = 5040;
 import { WORLD_W, BOAT, STATION, DAVE, SAIL, SAIL_OFF } from './world.js';
 
 const DEPTH = 5200, MAX_MARKS = 24;
@@ -45,21 +47,21 @@ export class Chart {
     cancelAnimationFrame(this.raf); this.closeEdit();
     if (!open) return;
     const g = this.h.getGame(); this.floor = [];
-    for (let m = 0; m <= WORLD_W; m += 5) this.floor.push(Math.max(0, g.world.floorAt(m)));
+    for (let m = SEA_X0; m <= SEA_X1; m += 5) this.floor.push(Math.max(0, Math.min(DEPTH, g.world.floorAt(m)))); /* (7.8.0) the first sea, west wall to the island */
     this.list();
     const loop = () => { if (this.el.hidden) return; this.draw(); this.raf = requestAnimationFrame(loop); }; loop();
   }
   // metres to the canvas and back: the whole width of the sea, the depth to 5,200 m
-  get geo() { const W = this.cv.width, H = this.cv.height, top = 26, bot = 8; return { W, H, X: (m) => (m / WORLD_W) * W, Y: (y) => top + (y / DEPTH) * (H - top - bot), top, bot }; }
+  get geo() { const W = this.cv.width, H = this.cv.height, top = 26, bot = 8; return { W, H, X: (m) => ((m - SEA_X0) / (SEA_X1 - SEA_X0)) * W, Y: (y) => top + (y / DEPTH) * (H - top - bot), top, bot }; }
   toWorld(ev) {
     const r = this.cv.getBoundingClientRect(), { W, H, top, bot } = this.geo;
     const px = (ev.clientX - r.left) * (W / r.width), py = (ev.clientY - r.top) * (H / r.height);
-    const x = Math.max(0, Math.min(WORLD_W, (px / W) * WORLD_W)), y = ((py - top) / (H - top - bot)) * DEPTH;
+    const x = Math.max(SEA_X0, Math.min(SEA_X1, SEA_X0 + (px / W) * (SEA_X1 - SEA_X0))), y = ((py - top) / (H - top - bot)) * DEPTH;
     if (y < -60) return null;
     const fl = this.floorAt(x);
     return { x, y: Math.max(0, Math.min(y, fl - 1)), rock: y > fl + 40 };
   }
-  floorAt(x) { const i = x / 5, a = this.floor[Math.floor(i)] ?? 0, b = this.floor[Math.ceil(i)] ?? a; return a + (b - a) * (i - Math.floor(i)); }
+  floorAt(x) { const i = (x - SEA_X0) / 5, a = this.floor[Math.floor(i)] ?? 0, b = this.floor[Math.ceil(i)] ?? a; return a + (b - a) * (i - Math.floor(i)); }
   markerAt(ev) {
     const r = this.cv.getBoundingClientRect(), { W, H, X, Y } = this.geo;
     const px = (ev.clientX - r.left) * (W / r.width), py = (ev.clientY - r.top) * (H / r.height);
