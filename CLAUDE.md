@@ -525,4 +525,9 @@ last desktop build is kept on the branch `desktop-4.25.5`).
   round him up to 34 slabs of clear ice are real bodies that jam, grind, crack and chip (icefloes.js); cracks, grinding
   and the settling pack are heard (audio.js iceCrack, iceGrind) and the air leaves his helmet in uneven bursts.
   The view's double image past a suit's limit is copied at a third of the size every other frame (render.js).
+- (7.9.8, owner) The second sea's ice is seen: the floor has a glassy top edge that catches the lamp and, through it, the
+  clear ice with fractures, trapped bubbles and grit (assets/textures/ice_floor.png, tools/bake_ice_floor.py); round him
+  the ice floor and the slabs' edges catch a little of the lamp's spill beyond the beam (icefloes.js drawIceLit,
+  drawSheen) and the floor glints where the beam falls (drawFloorGlints); the slabs drift in from 300 m above the floor,
+  larger and denser toward it; near the ice floor the view sinks so the floor sits a fifth up from the screen's foot.
 - **Before release**: see `docs/RELEASE.md` (remove the test shop, connect real purchases, new redeem codes).

@@ -356,6 +356,9 @@ export class Renderer {
     const capX = cam.w * 0.2, capY = cam.h * 0.16, lookX = capX * Math.tanh(this.lookV.x * 0.9 / capX), lookY = capY * Math.tanh(this.lookV.y * 0.6 / capY);
     let tx = e.x + lookX, ty = e.y + lookY;
     ty = Math.max(ty, -cam.h * 0.18); // let a little sky show near the surface
+    // (7.9.8, owner) over the second sea's ice floor the view sinks toward it as he nears it, so the ice sits in the lower
+    // part of the screen (about a fifth up from the foot) instead of out of sight below him; eased in over the last 24 m
+    if (!e.inSub && e.x > AREA2.drop2 && g.mode === 'play') { const fy = g.world.floorAt(e.x); if (fy > AREA2.ice - 40) { const h = fy - e.y, k = smoothstep(24, 6, h); if (k > 0) ty = lerp(ty, Math.max(ty, fy - cam.h * 0.3), k); } }
     // (5.7.0) the title: the camera starts at the boat and sinks slowly past her keel into the dark, over a minute
     if (g.mode === 'menu') { const T = g.time - (g.menuT0 ?? g.time), k = smoothstep(6, 62, T); tx = BOAT.x - 7 + Math.sin(g.time * 0.05) * 3 + k * 10; ty = lerp(5.5, 78, k); }
     if (g.helm) { tx = BOAT.x + 3 * Math.cos(BOAT.yaw || 0) + clamp(g.boatV || 0, -5, 5) * 1.6; ty = -2.5; } // at the wheel: the whole Margaret and the sub in her cradle, looking a little ahead the way she goes
@@ -553,7 +556,7 @@ export class Renderer {
       if (s.variant === 'crimson') glowPts.push([S(s.x), Sy(s.y) - L * 0.3, '#ff3018', Math.max(ppm * 0.6, L * 0.6), 1]);
       if (r && glowOf(s)) glowPts.push([S(s.x), Sy(s.y), glowOf(s), L]);
     }
-    if (this.slush && cam.y + cam.h / 2 > AREA2.ice - 12 && x1 > AREA2.drop2 && x0 < AREA2.cliff - 470) this.slush.drawBody(ctx, S, Sy, ppm, this.W, this.H, t, cam.y); // (7.9.1, owner) the mush becomes the ice: no floor line
+    if (this.slush && cam.y + cam.h / 2 > AREA2.ice - 12 && x1 > AREA2.drop2 && x0 < AREA2.cliff - 470) this.slush.drawBody(ctx, S, Sy, ppm, this.W, this.H, t, cam.y, (x) => g.world.floorAt(x)); // (7.9.1, owner) the mush becomes the ice: no floor line
     // ---- fauna ----
     // Fish are drawn nose at -x, so a fish heading right (+x) is mirrored, and the tilt is negated
     // so the nose follows the direction of travel (a fish swimming down points down).
@@ -1466,6 +1469,8 @@ export class Renderer {
     ctx.imageSmoothingQuality = 'low'; // (only the light needs the careful scaling; everything else uses the fast kind)
     ctx.globalCompositeOperation = 'lighter';
     this.drawGlows(g, S, Sy, ppm, head, subLamps, glowPts, horizon, dayEff);
+    if (this.ice && g.mode === 'play' && head && !g.earl.inSub) { const e3 = g.earl, on = !!(e3.lampOn || g.abilLight > 0), la = e3.lampOn ? this.lampAngle(g, e3, head) : (e3.facing > 0 ? 0.3 : Math.PI - 0.3); // (7.9.8, owner) the ice beyond the beam and the floor's glints
+      this.ice.drawSheen(ctx, S, Sy, ppm, this.W, this.H, head.x, head.y, on); this.ice.drawIceLit(ctx, S, Sy, ppm, this.W, this.H, head.x, head.y, la, on, (x) => g.world.floorAt(x), this.slush && this.slush.iceIn); this.ice.drawFloorGlints(ctx, S, Sy, ppm, this.W, this.H, head.x, head.y, la, on, (x) => g.world.floorAt(x)); }
     if (g.abilLight >= 2 && ((g.lightFade ?? 1) * (g.abilOutK ?? 1)) > 0.01 && g.mode === 'play') { // (7.4.9, owner) the Lighthouse over the lit scene: up to half again as bright as it pulses, and its two beams turning, brighter still where they cross the screen
       const e2 = g.earl, bx = e2.inSub ? S(g.sub.x) : S(e2.x), by = e2.inSub ? Sy(g.sub.y) : Sy(e2.y), fl = (g.lightFade ?? 1) * (g.abilOutK ?? 1) * (1 - 0.55 * (this.slushHalo ? this.slushHalo.v : 0)) /* (7.9.1) in the slush its glare is the ice's: no added wash to white it out */, pul = lerp(0.35, Math.pow(0.5 + 0.5 * Math.sin(g.time * 1.6), 2), g.pulseK ?? 1), rot = g.time * 0.45, Rb = Math.hypot(W, H), bK = g.beamK ?? 1;
       ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.globalCompositeOperation = 'screen';

@@ -10,6 +10,7 @@
 // The ice is nearly clear: a slab is drawn as a faint body with its edges catching his lamp (bright on the faces
 // turned to the light, dark on the far ones) and a second, offset outline for its thickness. Drawn before the light map,
 // like the rest of the slush, so it shows only where a light falls.
+import { AREA2 } from './world.js';
 const TAU = Math.PI * 2;
 const MAX = 34;
 
@@ -18,7 +19,7 @@ export class IceField {
   rnd() { this.seed = (this.seed * 16807) % 2147483647; return this.seed / 2147483647; }
   // a slab: an irregular plate, a little flattened, its corners not all alike
   make(x, y) {
-    const r = this.rnd.bind(this), R = 0.2 + r() * r() * 0.6, n = 7 + Math.floor(r() * 4), asp = 0.45 + r() * 0.4, pts = [];
+    const r = this.rnd.bind(this), R = (0.2 + r() * r() * 0.6) * (this.sz || 1), n = 7 + Math.floor(r() * 4), asp = 0.45 + r() * 0.4, pts = [];
     for (let i = 0; i < n; i++) { const a = (i + (r() - 0.5) * 0.6) / n * TAU, rr = R * (0.72 + r() * 0.34); pts.push([Math.cos(a) * rr, Math.sin(a) * rr * asp]); }
     return { x, y, hx: x, hy: y, vx: 0, vy: 0, a: r() * TAU, va: 0, R, rc: R * (0.55 + asp * 0.35), pts, cracks: [], al: 0, out: false, tint: r(), gap: pts.map(() => r() < 0.22), ew: pts.map(() => 0.6 + r() * 0.8) }; // gap: an edge chipped dull; ew: each edge's own weight
   }
@@ -43,7 +44,11 @@ export class IceField {
   }
   update(g, dt, floorAt) {
     const e = g.earl; if (!e || e.inSub) { this.k = 0; this.f.length = 0; this.chips.length = 0; return; }
-    const want = e.iceK || 0; this.k += (want - this.k) * (1 - Math.exp(-dt * 1.2));
+    // (7.9.8, owner) seen well before they hold him: over the ice floor the slabs drift in from 300 m above it, more and
+    // larger the nearer the floor (sz), so the pack is there to see on the way down, not only once he is stuck in it
+    const fy0 = floorAt(e.x), overIce = e.x > AREA2.drop2 && fy0 > AREA2.ice - 40, h = fy0 - e.y, vis = overIce ? Math.pow(Math.min(1, Math.max(0, 1 - h / 300)), 1.3) : 0;
+    this.sz = 0.55 + 0.45 * Math.max(vis, e.iceK || 0);
+    const want = Math.max(e.iceK || 0, vis * 0.85); this.k += (want - this.k) * (1 - Math.exp(-dt * 1.2));
     const n = this.k < 0.02 ? 0 : Math.round(MAX * Math.min(1, this.k * 1.6) * (this.lite ? 0.7 : 1));
     let live = 0; for (const q of this.f) if (!q.out) live++;
     while (live < n) { const p = this.place(e, false); if (!p) break; this.f.push(this.make(p[0], p[1])); live++; }
@@ -130,5 +135,57 @@ export class IceField {
       const s = Math.max(3, c.sz * ppm * 6), k = c.age / c.life; ctx.save(); ctx.translate(px, py); ctx.rotate(c.rot); ctx.globalAlpha = 0.9 * (1 - k * k) * Math.min(1, c.age * 10);
       ctx.drawImage(atlas, c.sp * 64, (Math.cos(c.rot * 2) > 0.8 ? 1 : 0) * 64, 64, 64, -s / 2, -s / 2, s, s); ctx.restore(); }
     ctx.restore();
+  }
+  // (7.9.8, owner) beyond his beam: the slabs' edges that face him catch a little of his lamp's spill, faint and falling
+  // away with distance, so the pack round him can be felt in the dark. Drawn added on after the light map
+  drawSheen(ctx, S, Sy, ppm, W, H, lx, ly, on) {
+    if (!on || !this.f.length) return;
+    ctx.save(); ctx.lineCap = 'round';
+    for (const q of this.f) {
+      const px = S(q.x), py = Sy(q.y), rr = q.R * ppm * 1.1; if (px < -rr || px > W + rr || py < -rr || py > H + rr) continue;
+      const dist = Math.hypot(px - lx, py - ly) / ppm; if (dist > 14) continue;
+      const k = q.al * Math.min(1, this.k * 2) * Math.pow(1 - dist / 14, 1.3) * 0.34; if (k < 0.005) continue;
+      const ca = Math.cos(q.a), sa = Math.sin(q.a), P = q.pts.map(([x, y]) => [px + (x * ca - y * sa) * ppm, py + (x * sa + y * ca) * ppm]);
+      for (let i = 0; i < P.length; i++) { if (q.gap[i]) continue;
+        const [x0, y0] = P[i], [x1, y1] = P[(i + 1) % P.length], ex = x1 - x0, ey = y1 - y0, el = Math.hypot(ex, ey) || 1, nx = ey / el, ny = -ex / el;
+        const mx = (x0 + x1) / 2, my = (y0 + y1) / 2, ll = Math.hypot(lx - mx, ly - my) || 1, f = (nx * (lx - mx) + ny * (ly - my)) / ll; if (f <= 0.2) continue;
+        ctx.strokeStyle = `rgba(190,214,226,${(k * f).toFixed(3)})`; ctx.lineWidth = Math.max(0.8, 0.008 * ppm * q.ew[i]); ctx.beginPath(); ctx.moveTo(x0, y0); ctx.lineTo(x1, y1); ctx.stroke(); }
+    }
+    ctx.restore();
+  }
+  // (7.9.8, owner) where his lamp falls on the ice floor it glints: short tapered streaks along the surface, each catching
+  // the light only at its own angle, so they come and go as he moves. Added on after the light map
+  drawFloorGlints(ctx, S, Sy, ppm, W, H, hx, hy, lampA, on, floorAt) {
+    if (!on) return; const wx0 = (hx - S(0)) / ppm, wy0 = (hy - Sy(0)) / ppm;
+    if (wx0 < AREA2.drop2 || floorAt(wx0) < AREA2.ice - 40 || floorAt(wx0) - wy0 > 12) return;
+    ctx.save();
+    for (let i = -40; i <= 40; i++) {
+      const x = Math.round(wx0 * 3) / 3 + i / 3, fy = floorAt(x), dx = x - wx0, dy = fy - wy0, d = Math.hypot(dx, dy); if (d > 11 || d < 0.5) continue;
+      let da = Math.atan2(dy, dx) - lampA; da = Math.atan2(Math.sin(da), Math.cos(da)); const cone = Math.max(0, 1 - Math.abs(da) / 0.75); if (cone <= 0) continue;
+      const hsh = Math.sin(Math.round(x * 3) * 127.1) * 43758.5453, rnd = hsh - Math.floor(hsh), face = Math.cos(rnd * 40 + Math.atan2(dy, dx) * 9);
+      if (face < 0.55) continue;
+      const a = cone * Math.pow(1 - d / 11, 1.2) * Math.pow((face - 0.55) / 0.45, 1.5) * 0.85, px = S(x), py = Sy(fy), L = (0.18 + rnd * 0.3) * ppm;
+      ctx.fillStyle = `rgba(226,240,248,${a.toFixed(3)})`; ctx.beginPath(); ctx.moveTo(px - L, py); ctx.quadraticCurveTo(px, py - Math.max(0.8, 0.02 * ppm), px + L, py); ctx.quadraticCurveTo(px, py + Math.max(0.6, 0.012 * ppm), px - L, py); ctx.fill();
+    }
+    ctx.restore();
+  }
+  // (7.9.8, owner) the ice floor round him catching his lamp: through the slush the lamp itself barely reaches the floor,
+  // so the ice's surface and what is inside it (the same baked tile) are added on round him, strongest a little way along
+  // his beam and fading out within about 12 m. Worked at half size
+  drawIceLit(ctx, S, Sy, ppm, W, H, hx, hy, lampA, on, floorAt, tile) {
+    if (!on || !tile || !tile.ok) return; const wx0 = (hx - S(0)) / ppm, wy0 = (hy - Sy(0)) / ppm, f0 = floorAt(wx0);
+    if (wx0 < AREA2.drop2 || f0 < AREA2.ice - 40 || f0 - wy0 > 26) return;
+    const w2 = Math.ceil(W / 2), h2 = Math.ceil(H / 2), c = this.litC || (this.litC = document.createElement('canvas')); if (c.width !== w2 || c.height !== h2) { c.width = w2; c.height = h2; this.litP = null; }
+    const x = c.getContext('2d'); x.setTransform(1, 0, 0, 1, 0, 0); x.globalCompositeOperation = 'source-over'; x.clearRect(0, 0, w2, h2); x.setTransform(0.5, 0, 0, 0.5, 0, 0);
+    const R = 12 * ppm, cx = hx + Math.cos(lampA) * 3 * ppm, cy = hy + Math.sin(lampA) * 3 * ppm, xa = Math.max(0, cx - R), xb = Math.min(W, cx + R);
+    const pts = []; for (let px = xa - 8; px <= xb + 8; px += 8) pts.push([px, Sy(floorAt((px - S(0)) / ppm))]);
+    x.beginPath(); x.moveTo(pts[0][0], H + 2); for (const [px, py] of pts) x.lineTo(px, py); x.lineTo(pts[pts.length - 1][0], H + 2); x.closePath();
+    x.save(); x.clip(); const k = 8 * ppm / tile.width, pat = this.litP || (this.litP = x.createPattern(tile, 'repeat-x'));
+    pat.setTransform(new DOMMatrix([k, 0, 0, k, S(0) % (tile.width * k), Sy(AREA2.ice - 1.6)])); x.fillStyle = pat; x.fillRect(xa, 0, xb - xa, H); x.restore();
+    x.lineJoin = 'round'; x.strokeStyle = 'rgba(214,234,242,0.9)'; x.lineWidth = Math.max(1.5, 0.03 * ppm); x.beginPath(); pts.forEach(([px, py], n) => (n ? x.lineTo(px, py) : x.moveTo(px, py))); x.stroke();
+    x.strokeStyle = 'rgba(160,196,210,0.35)'; x.lineWidth = Math.max(3, 0.18 * ppm); x.beginPath(); pts.forEach(([px, py], n) => (n ? x.lineTo(px, py + 0.08 * ppm) : x.moveTo(px, py + 0.08 * ppm))); x.stroke();
+    x.globalCompositeOperation = 'destination-in'; const gr = x.createRadialGradient(cx, cy, 0, cx, cy, R); gr.addColorStop(0, 'rgba(0,0,0,1)'); gr.addColorStop(0.35, 'rgba(0,0,0,0.6)'); gr.addColorStop(0.7, 'rgba(0,0,0,0.18)'); gr.addColorStop(1, 'rgba(0,0,0,0)');
+    x.fillStyle = gr; x.fillRect(0, 0, W, H);
+    ctx.save(); ctx.globalAlpha = 0.42; ctx.drawImage(c, 0, 0, W, H); ctx.restore();
   }
 }

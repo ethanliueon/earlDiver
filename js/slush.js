@@ -30,6 +30,7 @@ export class Slush {
   constructor() {
     this.far = img('assets/textures/slush_far.png'); this.soft = img('assets/textures/slush_soft.png');
     this.mush = img('assets/textures/slush_mush.png'); this.atlas = img('assets/textures/ice_pieces.png');
+    this.iceIn = img('assets/textures/ice_floor.png'); // (7.9.8) the inside of the ice floor (tools/bake_ice_floor.py)
     this.p = []; this.trail = []; this.rng = 1;
   }
   rnd() { this.rng = (this.rng * 16807) % 2147483647; return this.rng / 2147483647; }
@@ -147,7 +148,7 @@ export class Slush {
   // after the floor and what lies on it, so the floor's line, its colour and anything on it are lost in the mush; a
   // smooth gradient (no bands), the same milky colour as the mush, then the mush's own grain over it. Like the rest of the
   // slush it is drawn before the light map: it shows only where a light falls
-  drawBody(ctx, S, Sy, ppm, W, H, t, camY) {
+  drawBody(ctx, S, Sy, ppm, W, H, t, camY, floorAt) {
     // (7.9.1, owner) thickening over 150 m, not 10: within any one screen it changes too little to see as a layer, and
     // over the last 12 m it is whole, so the floor is never seen at all
     const A = AREA2, top = A.ice - 160, full = A.ice - 12, yA = Sy(top); if (yA >= H) return;
@@ -164,6 +165,22 @@ export class Slush {
       const aT = 0.16 * alphaAt(camY - H / 2 / ppm), aB = 0.16 * alphaAt(camY + H / 2 / ppm);
       if (Math.abs(aT - aB) < 0.01) { ctx.globalAlpha = (aT + aB) / 2; ctx.fillRect(xa, y0, xb - xa, H - y0); }
       else for (let py = y0; py < H; py += 4) { const wy = camY + (py + 2 - H / 2) / ppm, a = 0.16 * alphaAt(wy); if (a < 0.004) continue; ctx.globalAlpha = a; ctx.fillRect(xa, py, xb - xa, Math.min(4, H - py)); }
+    }
+    // (7.9.8, owner) the ice itself under the mush: its top a glassy edge that catches his lamp (bright where lit, a soft
+    // band under it), and through it the clear ice with its fractures, trapped bubbles and grit (a baked tile pinned to the
+    // world). Drawn before the light map like the rest, so only what his lamp reaches shows
+    if (floorAt) {
+      const step = 6, pts = []; for (let px = xa - step; px <= xb + step; px += step) { const wx = (px - S(0)) / ppm; pts.push([px, Sy(floorAt(wx))]); }
+      const top = Math.min(...pts.map((q) => q[1])); if (top < H + 4) {
+        ctx.globalAlpha = 1; ctx.beginPath(); ctx.moveTo(pts[0][0], H + 2); for (const [x, y] of pts) ctx.lineTo(x, y); ctx.lineTo(pts[pts.length - 1][0], H + 2); ctx.closePath();
+        ctx.save(); ctx.clip();
+        ctx.fillStyle = 'rgba(30,46,54,0.92)'; ctx.fillRect(xa, Math.max(0, top - 2), xb - xa, H - top + 4); // the deep ice under the tile
+        const im = this.iceIn; if (im.ok) { const k = 8 * ppm / im.width, pat = this.pIce || (this.pIce = ctx.createPattern(im, 'repeat-x'));
+          pat.setTransform(new DOMMatrix([k, 0, 0, k, S(0) % (im.width * k), Sy(AREA2.ice - 1.6)])); ctx.fillStyle = pat; ctx.fillRect(xa, Math.max(0, top - 2), xb - xa, Math.min(H, Sy(AREA2.ice - 1.6) + im.height * k) - top + 4); }
+        ctx.restore();
+        const line = (col, w, dy = 0) => { ctx.strokeStyle = col; ctx.lineWidth = w; ctx.beginPath(); pts.forEach(([x, y], n) => (n ? ctx.lineTo(x, y + dy) : ctx.moveTo(x, y + dy))); ctx.stroke(); };
+        ctx.lineJoin = 'round'; line('rgba(150,184,198,0.28)', Math.max(2, 0.16 * ppm), 0.07 * ppm); line('rgba(226,240,246,0.75)', Math.max(1, 0.025 * ppm));
+      }
     }
     ctx.restore();
   }
