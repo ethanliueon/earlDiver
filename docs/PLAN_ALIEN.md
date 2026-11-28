@@ -1,5 +1,9 @@
 # The alien world (owner, after 7.9.8): plan, agreed in principle, not built
 
+This branch (`claude/alien-world`) keeps the second sea as built up to 7.9.8 (the drop, the plain, the ice V floor, the
+mush and its slabs, the keeper) for the alien update. The main line (`claude/fish-mobile`) will end the coconut island
+with a radio and "Area available in a future update".
+
 Written so the next session can pick it up. Read CLAUDE.md first; its rules apply. Nothing here is built unless marked.
 
 ## The idea
@@ -57,3 +61,12 @@ vast). Completely alien animals (the owner designs them), its own gear, its own 
 - Does the thing hunt on the alien side (its home), and how?
 - The pressure curve after x10 for Earth (proposed softer: +x10 per extra 1,000 m) is still undecided.
 - Does the deep sub (the owner's Deepsea Challenger / Triton references) belong to the alien world?
+
+## Later decisions (owner)
+- Saved for its own update. Until then the coconut island is capped halfway by a radio box: "Area available in a future
+  update". The crossing's price (about $5 million) is set when the update is built.
+- Alien gear starts at **rare** and goes up to **mythical**: whoever paid to get there has outgrown commons.
+- The alien world brings **new skills** (new families), found there and usable back on Earth. **No existing skill moves
+  there**: Dauntless, Temper, Breath and the rest stay where they are.
+- With no suit on, a diver is rated as the starter wetsuit (15 m, air x1.05): already so (economy.js suitOf).
+- Gravity 0.65 of Earth's.
