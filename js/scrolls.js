@@ -436,8 +436,8 @@ function emblemTier(x, fam, tier) {
   const S = (p, w = 2) => { x.lineWidth = w; x.strokeStyle = W; x.stroke(p); };
   const P = () => new Path2D();
   x.save(); x.lineCap = 'round'; x.lineJoin = 'round';
-  const ring = () => { const p = P(); p.arc(0, 0, 25.5, 0, TAU); S(p, 2.4); };
-  const medallion = () => {
+  const ring = () => { if (BARE) return; const p = P(); p.arc(0, 0, 25.5, 0, TAU); S(p, 2.4); };
+  const medallion = () => { if (BARE) return; /* (7.9.6) on a coin the coin's own rim stands in for it */
     const o = P(); o.arc(0, 0, 27, 0, TAU); S(o, 3.4);
     for (let i = 0; i < 36; i++) { const a = i / 36 * TAU, t = P(); t.moveTo(Math.cos(a) * 25.6, Math.sin(a) * 25.6); t.lineTo(Math.cos(a + 0.07) * 28.4, Math.sin(a + 0.07) * 28.4); D(t, 0.9); } // the rope's twist
     const i2 = P(); i2.arc(0, 0, 23, 0, TAU); S(i2, 1.1);
@@ -697,9 +697,12 @@ function emblemTier(x, fam, tier) {
   }
   x.restore();
 }
-function emblemMask2(fam, tier, size) {
+// (7.9.6, owner) `bare`: for a skill coin, the emblem without its ring or medallion (the coin draws its rarity's rim at the
+// coin's own size), fitted larger: its longer side to 80 % of the coin, its farthest point clear of the rim
+let BARE = false;
+function emblemMask2(fam, tier, size, bare = false) {
   const c = document.createElement('canvas'); c.width = c.height = size; const x = c.getContext('2d'); x.translate(size / 2, size / 2); x.scale(size / 72, size / 72);
-  emblemTier(x, fam, tier);
+  BARE = bare; try { emblemTier(x, fam, tier); } finally { BARE = false; }
   const d = x.getImageData(0, 0, size, size), a = d.data;
   for (let i = 0; i < a.length; i += 4) { const lum = (a[i] + a[i + 1] + a[i + 2]) / 3, al = a[i + 3] / 255; a[i + 3] = Math.round((lum > 128 ? al : 0) * 255); a[i] = a[i + 1] = a[i + 2] = 255; }
   x.putImageData(d, 0, 0);
@@ -707,8 +710,12 @@ function emblemMask2(fam, tier, size) {
   // harpoon came out a size apart), its longer side to 62 % of the coin, centred
   let x0 = size, y0 = size, x1 = -1, y1 = -1; for (let yy = 0; yy < size; yy++) for (let xx = 0; xx < size; xx++) if (a[(yy * size + xx) * 4 + 3] > 40) { if (xx < x0) x0 = xx; if (xx > x1) x1 = xx; if (yy < y0) y0 = yy; if (yy > y1) y1 = yy; }
   if (x1 < x0) return c;
-  const bw = x1 - x0 + 1, bh = y1 - y0 + 1, k = size * 0.62 / Math.max(bw, bh * 1.05), o = document.createElement('canvas'); o.width = o.height = size;
+  const bw = x1 - x0 + 1, bh = y1 - y0 + 1;
+  let k = size * 0.62 / Math.max(bw, bh * 1.05);
+  if (bare) { const cx = (x0 + x1) / 2, cy = (y0 + y1) / 2; let rad = 1; for (let yy = y0; yy <= y1; yy++) for (let xx = x0; xx <= x1; xx++) if (a[(yy * size + xx) * 4 + 3] > 40) rad = Math.max(rad, Math.hypot(xx - cx, yy - cy));
+    const rimR = tier === 'rare' ? 47 : 41; k = Math.min(size * 0.8 / Math.max(bw, bh), size * (rimR / 96) / rad); } // the mask is drawn 96 units across the coin
+  const o = document.createElement('canvas'); o.width = o.height = size;
   const ox = o.getContext('2d'); ox.imageSmoothingQuality = 'high'; ox.drawImage(c, x0, y0, bw, bh, (size - bw * k) / 2, (size - bh * k) / 2, bw * k, bh * k); return o;
 }
 const EMB2 = new Map();
-export function drawTierEmblemMask(fam, tier, size) { const key = fam + tier + size; if (!EMB2.has(key)) EMB2.set(key, emblemMask2(fam, tier, size)); return EMB2.get(key); }
+export function drawTierEmblemMask(fam, tier, size, bare = false) { const key = fam + tier + size + (bare ? 'b' : ''); if (!EMB2.has(key)) EMB2.set(key, emblemMask2(fam, tier, size, bare)); return EMB2.get(key); }

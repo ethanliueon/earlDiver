@@ -7,7 +7,7 @@ import { drawTrawl3, drawTrap3 } from './kit_art.js'; // (6.5.3)
 import { ABILITY_FAMILIES, drawTierEmblemMask, ACCENT } from './scrolls.js';
 import { drawGlyph } from './glyphs.js';
 import { drawNet, netLook } from './tools_draw.js';
-import { PAINTED, paintSprint, paintMask, paintAbility, paintMythCoin } from './coin_art.js';
+import { PAINTED, paintSprint, paintMask, paintAbility, paintAbilityArt, paintTierRim, paintMythCoin } from './coin_art.js';
 
 const TAU = Math.PI * 2;
 const cache = new Map();
@@ -517,27 +517,32 @@ const ART = {
 };
 
 // (7.7.2, owner) a skill's painted picture drawn once off the coin, measured by what it covers, and put back on the coin
-// at one size for all (its longer side 66 units of the coin's ~120), centred: no harpoon twice the size of a net
+// at one size for all, centred: no harpoon twice the size of a net. (7.9.6, owner) Only the picture is fitted (the rarity's
+// rim used to be fitted with it, so an exotic's or legendary's symbol shrank to two thirds inside a shrunken rim): it fills
+// the coin, its longer side up to 78 of the coin's ~120 and never reaching the rim, which is drawn after at its own size
 const FIT_AB = new Map();
 function fittedAbility(x, f, tier) {
   const key = f + ':' + tier; let F = FIT_AB.get(key);
   if (F === undefined) { F = null; const N = 320, c = document.createElement('canvas'); c.width = c.height = N; const t = c.getContext('2d'); t.translate(N / 2, N / 2); t.scale(N / 160, N / 160);
-    let ok = false; try { ok = paintAbility(t, f, tier); } catch (e) { ok = false; }
+    let ok = false; try { ok = paintAbilityArt(t, f, tier); } catch (e) { ok = false; }
     if (ok) { const d = t.getImageData(0, 0, N, N).data; let x0 = N, y0 = N, x1 = -1, y1 = -1; for (let yy = 0; yy < N; yy++) for (let xx = 0; xx < N; xx++) if (d[(yy * N + xx) * 4 + 3] > 30) { if (xx < x0) x0 = xx; if (xx > x1) x1 = xx; if (yy < y0) y0 = yy; if (yy > y1) y1 = yy; }
-      if (x1 >= x0) { const u = 160 / N; F = { c, sx: x0, sy: y0, sw: x1 - x0 + 1, sh: y1 - y0 + 1, w: (x1 - x0 + 1) * u, h: (y1 - y0 + 1) * u }; } else F = false; } else F = false;
+      if (x1 >= x0) { const u = 160 / N, cx = (x0 + x1) / 2, cy = (y0 + y1) / 2; let rad = 0; // the farthest drawn point from the picture's centre, so a square one's corners keep clear of the rim
+        for (let yy = y0; yy <= y1; yy++) for (let xx = x0; xx <= x1; xx++) if (d[(yy * N + xx) * 4 + 3] > 30) rad = Math.max(rad, Math.hypot(xx - cx, yy - cy));
+        F = { c, sx: x0, sy: y0, sw: x1 - x0 + 1, sh: y1 - y0 + 1, w: (x1 - x0 + 1) * u, h: (y1 - y0 + 1) * u, rad: rad * u }; } else F = false; } else F = false;
     FIT_AB.set(key, F); }
-  if (F === false) return false; if (!F) return false;
-  const k = 66 / Math.max(F.w, F.h), w = F.w * k, h = F.h * k; x.drawImage(F.c, F.sx, F.sy, F.sw, F.sh, -w / 2, -h / 2, w, h); return true;
+  if (!F) return false;
+  const rim = tier === 'exotic' || tier === 'legendary', k = Math.min(78 / Math.max(F.w, F.h), (rim ? 41 : 47) / F.rad), w = F.w * k, h = F.h * k;
+  x.drawImage(F.c, F.sx, F.sy, F.sw, F.sh, -w / 2, -h / 2, w, h); paintTierRim(x, tier); return true;
 }
 // (5.8.0) the ability buttons: the family's emblem on the coin (its face tinted by the scroll's rarity)
 for (const f of ABILITY_FAMILIES) ART['ab_' + f] = (x, look) => { // (5.9.0) the scroll's own emblem for its tier, painted on the coin
-  const tier = (look && look.tier) || 'rare', m = drawTierEmblemMask(f, tier, 220), col = tier === 'legendary' ? '#d8b066' : (ACCENT[f] || '#e8e0c8');
+  const tier = (look && look.tier) || 'rare', m = drawTierEmblemMask(f, tier, 220, true), col = tier === 'legendary' ? '#d8b066' : (ACCENT[f] || '#e8e0c8');
   const tint = (c0) => { const c = document.createElement('canvas'); c.width = c.height = m.width; const t = c.getContext('2d'); t.drawImage(m, 0, 0); t.globalCompositeOperation = 'source-in'; t.fillStyle = c0; t.fillRect(0, 0, c.width, c.height); return c; };
   void tint; void col;
   if (tier === 'mythical') { paintMythCoin(x, m); return; } // (7.4.19) a mythical: its own picture, in ember
   if (fittedAbility(x, f, tier)) return; // (5.16.0) every skill painted, its tier told by craft (coin_art.js); (7.7.2) fitted to one size
   void paintSprint;
-  paintMask(x, m, tier === 'legendary'); // (5.15.6) the others' emblems in lit bone (bronze for a legendary), larger
+  paintMask(x, m, tier === 'legendary'); paintTierRim(x, tier); /* (7.9.6) the rarity's rim at the coin's size, round the bare emblem */ // (5.15.6) the others' emblems in lit bone (bronze for a legendary), larger
 };
 for (const [k, f] of Object.entries(PAINTED)) ART[k] = (x, look) => { x.save(); if (k === 'dive') { x.translate(0, 6); x.scale(1.08, 1.08); } else x.scale(1.32, 1.32); f(x, look); x.restore(); }; // (5.15.6) the glove, the claw, the hatch and the dive painted as objects (coin_art.js), filling the coin
 

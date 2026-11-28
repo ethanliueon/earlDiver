@@ -374,6 +374,9 @@ export function paintAbility(x, fam, tier) {
   x.save(); x.scale(1.06, 1.06); f(x, tier); x.restore(); tierRim(x, tier);
   return true;
 }
+// (7.9.6, owner) the picture alone (no rarity rim), for coins.js to fit to the coin; the rim is drawn after at its own size
+export function paintAbilityArt(x, fam, tier) { const f = ABIL_ART[fam]; if (!f || tier === 'mythical') return false; x.save(); x.scale(1.06, 1.06); f(x, tier); x.restore(); return true; }
+export function paintTierRim(x, tier) { tierRim(x, tier); }
 function mythRim(x) {
   x.lineWidth = 3.4; x.strokeStyle = '#4a1610'; x.beginPath(); x.arc(0, 0, 46, 0, TAU); x.stroke(); x.lineWidth = 1.7; x.strokeStyle = '#d06a44'; x.stroke();
   for (let i = 0; i < 16; i++) { const a = i / 16 * TAU; x.save(); x.rotate(a); x.strokeStyle = '#d87850'; x.lineWidth = 1.3; x.beginPath(); x.moveTo(-5, -46); x.quadraticCurveTo(-2.5, -41.5, 0, -43.5); x.quadraticCurveTo(2.5, -46, 5, -41.8); x.stroke();
