@@ -530,4 +530,5 @@ last desktop build is kept on the branch `desktop-4.25.5`).
   the ice floor and the slabs' edges catch a little of the lamp's spill beyond the beam (icefloes.js drawIceLit,
   drawSheen) and the floor glints where the beam falls (drawFloorGlints); the slabs drift in from 300 m above the floor,
   larger and denser toward it; near the ice floor the view sinks so the floor sits a fifth up from the screen's foot.
+- (after 7.9.8, owner) The second sea becomes an alien world reached by travel: see docs/PLAN_ALIEN.md (not built).
 - **Before release**: see `docs/RELEASE.md` (remove the test shop, connect real purchases, new redeem codes).
