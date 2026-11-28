@@ -453,7 +453,7 @@ export class Renderer {
     this.drawFloorCached(g, S, Sy, ppm);
     this.drawFloorLife(g, ctx, S, Sy, ppm, x0, x1, t);
     if (x1 > ISLE.x0 - 10) this.drawIsland(g, ctx, S, Sy, ppm, t, dayEff); // (7.4.17)
-    { const L = g.world.lip; if (L && x1 > L.x0 && x0 < L.x1 && y1 > L.y0 && y0 < L.y1) { ctx.save(); ctx.beginPath(); L.poly.forEach((p, i) => (i ? ctx.lineTo(S(p.x), Sy(p.y)) : ctx.moveTo(S(p.x), Sy(p.y)))); ctx.closePath(); ctx.clip(); this.paintCliff(ctx, S, Sy, ppm, L.x0 - 1, L.x1 + 1, L.y0, L.y1); ctx.restore(); } } // (7.8.0) the wall's overhanging lip, painted as the cliff
+    { const L = g.world.lip; if (L && x1 > L.x0 && x0 < L.x1 && y1 > L.y0 && y0 < L.y1) { ctx.save(); ctx.beginPath(); L.poly.forEach((p, i) => (i ? ctx.lineTo(S(p.x), Sy(p.y)) : ctx.moveTo(S(p.x), Sy(p.y)))); ctx.closePath(); ctx.clip(); this.paintWallSeabed(ctx, S, Sy, ppm, L.x0 - 1, L.x1 + 1, L.y0 - 1, L.y1, true); ctx.restore(); } } // (7.8.1) the wall's overhanging lip: the same seabed as the wall
     if (x1 > SIGN.x - 6 && x0 < KEEPER.x + 6) this.drawEdgeKeeper(g, ctx, S, Sy, ppm, t); // (7.8.0)
     for (const rk of g.world.rocks) if (rk.kind !== 'oldone' && !rk.hidden && rk.x1 > x0 && rk.x0 < x1 && rk.y1 > y0 && rk.y0 < y1 && visible((rk.x0 + rk.x1) / 2, (rk.y0 + rk.y1) / 2, Math.max(rk.x1 - rk.x0, rk.y1 - rk.y0) * 0.6)) this.drawRock(ctx, rk, S, Sy, ppm);
     this.drawDeepPlaces(g, ctx, S, Sy, ppm, t, inView);
@@ -2675,6 +2675,10 @@ export class Renderer {
       for (let zi = 0; zi < ZT.length; zi++) { const Z = ZT[zi]; if (!Z.im.ok) continue; if (!Z.pat) Z.pat = ctx.createPattern(Z.im, 'repeat'); Z.pat.setTransform(new DOMMatrix([k, 0, 0, k, S(0) % (512 * k), Sy(0)])); ctx.fillStyle = Z.pat;
         for (let px = 0; px < W; px += sw) { const wx = x0 + (px + sw / 2) / ppm, w = wts(wx)[zi]; if (w < 0.02) continue; ctx.globalAlpha = alpha * w; ctx.fillRect(px, 0, sw + 0.5, H); } }
       ctx.restore(); }
+    // (7.8.1, owner) the second sea's wall is the same seabed carried down: sand at the top, turning by depth (not by
+    // the floor below, which there is 11 km down) to the slope's silt, the ooze and the trench's rock, from the same
+    // painted textures; the ice only at the very bottom
+    if (x1 > AREA2.edge - 30) { const yT = V ? V.y0 : camY - this.cam.h / 2 - 5, yB = V ? V.y1 : camY + this.cam.h / 2 + 5; this.paintWallSeabed(ctx, S, Sy, ppm, x0, x1, yT, yB); }
     // rock and sediment: large mottling and a fine grain, pinned to the world so they never swim
     if (!this.phone) this.texture(ctx, 'rock', 19, 0.22 + 0.25 * smoothstep(30, 400, camY), 'soft-light', S(0), Sy(0), area);
     if (ppm > 14 && !this.lite) this.texture(ctx, 'grain', 2.7, 0.3, 'soft-light', S(0.37), Sy(0.61), area);
@@ -2716,41 +2720,33 @@ export class Renderer {
     }
     // (7.8.0, owner) the second sea's rock: the cliff, the plain's bed and the far wall painted as stone, the floor of the
     // abyss as ice, instead of the sand and silt of the first sea
-    if (x1 > AREA2.edge - 30) { const yT = V ? V.y0 : camY - this.cam.h / 2 - 5, yB = V ? V.y1 : camY + this.cam.h / 2 + 5; this.paintCliff(ctx, S, Sy, ppm, x0, x1, yT, yB); }
     ctx.restore();
     // lit edge
     ctx.strokeStyle = 'rgba(255,250,235,0.16)'; ctx.lineWidth = Math.max(1, ppm * 0.06);
     ctx.beginPath(); for (let x = x0; x <= x1 + step; x += step) ctx.lineTo(S(x), Sy(g.world.floorAt(x)) + 1); ctx.stroke();
   }
 
-  // (7.8.0, owner) stone, painted: the colour of the rock by its depth (pale grey-olive limestone near the top, darkening to
-  // basalt), its layers as wavering bands with a lit lip under each, hairline cracks between them; below 55 km, ice VI:
-  // pale, faintly blue, with long facets. Fills whatever is clipped (the floor, the wall's overhanging lip)
-  paintCliff(ctx, S, Sy, ppm, xa, xb, ya, yb) {
-    const A = AREA2; xa = Math.max(xa, A.edge - 26); ya = Math.max(ya, 10.2); if (xb <= xa || yb <= ya) return;
-    const hsh = (n) => { const v = Math.sin(n * 127.1 + 311.7) * 43758.5453; return v - Math.floor(v); };
-    const STOPS = [[0, [122, 116, 98]], [150, [96, 92, 80]], [1500, [64, 66, 64]], [10000, [40, 43, 45]], [45000, [30, 33, 36]], [57000, [120, 150, 166]], [60000, [176, 200, 212]]];
-    const colAt = (y) => { let i = 1; while (i < STOPS.length - 1 && STOPS[i][0] < y) i++; const [y0, c0] = STOPS[i - 1], [y1, c1] = STOPS[i], t = clamp((y - y0) / (y1 - y0), 0, 1); return c0.map((v, k) => Math.round(v + (c1[k] - v) * t)); };
-    const X0 = S(xa), X1 = S(xb), Y0 = Sy(ya), Y1 = Sy(yb);
+  // (7.8.1, owner) the seabed on the second sea's wall, by the depth of each band of it: its colour from the same table
+  // as the first sea's floor, then the painted textures (assets/textures/seabed*.png) multiplied over it in thin bands,
+  // each weighted by depth exactly as the first sea's floor is (sand above 30-70 m, the slope's silt to 300-520 m, the
+  // ooze to 2-2.9 km, the trench's rock below); below 55 km it pales into the ice. Then the floor's usual mottling and
+  // grain go over it like everywhere else. The texture is pinned to the world, so it never swims
+  paintWallSeabed(ctx, S, Sy, ppm, xa, xb, ya, yb, all = false) {
+    const A = AREA2; if (!all) { xa = Math.max(xa, A.edge - 26); ya = Math.max(ya, 10.2); } if (xb <= xa || yb <= ya) return;
+    const ss = smoothstep, X0 = S(xa), X1 = S(xb), Y0 = Sy(ya), Y1 = Sy(yb);
     ctx.save(); ctx.globalCompositeOperation = 'source-over'; ctx.globalAlpha = 1;
-    // (below 10 m: under the beach the top 10 m stay sand)
-    const gr = ctx.createLinearGradient(0, Y0, 0, Y1); for (let k = 0; k <= 6; k++) { const y = ya + (yb - ya) * k / 6; gr.addColorStop(k / 6, rgbStr(colAt(y))); }
+    const ICE = [[55000, null], [59000, [150, 178, 192]], [60000, [178, 202, 214]]];
+    const colAt = (y) => { const c = sampleTable(FLOOR_COL, y); if (y < 55000) return c; const t = ss(55000, 59500, y); return c.map((v, i) => Math.round(v + ((ICE[2][1][i]) - v) * t)); };
+    const gr = ctx.createLinearGradient(0, Y0, 0, Y1); for (let k2 = 0; k2 <= 10; k2++) { const y = ya + (yb - ya) * k2 / 10; gr.addColorStop(k2 / 10, rgbStr(colAt(y))); }
     ctx.fillStyle = gr; ctx.fillRect(X0, Y0, X1 - X0, Y1 - Y0);
-    const ice = yb > 55000;
-    // the layers
-    const sp = ya < 300 ? 4.5 : ya < 3000 ? 16 : ya < 20000 ? 55 : 140, lw = Math.max(1, ppm * 0.08);
-    for (let yy = Math.ceil(ya / sp) * sp; yy < yb; yy += sp) { const h = hsh(Math.round(yy / sp)), h2 = hsh(yy * 0.37 + 9);
-      if (ice && yy > 57000) { ctx.strokeStyle = 'rgba(235,248,255,0.22)'; ctx.lineWidth = lw; ctx.beginPath(); ctx.moveTo(X0, Sy(yy)); ctx.lineTo(X1, Sy(yy + (h - 0.5) * sp * 0.3)); ctx.stroke(); continue; }
-      ctx.beginPath(); for (let x = xa; x <= xb + 2; x += Math.max(0.6, 6 / ppm)) ctx.lineTo(S(x), Sy(yy + Math.sin(x * 0.3 + h * 9) * sp * 0.06 + Math.sin(x * 0.045 + h2 * 7) * sp * 0.18));
-      ctx.strokeStyle = 'rgba(0,0,0,0.32)'; ctx.lineWidth = lw * (0.7 + h); ctx.stroke();
-      ctx.save(); ctx.translate(0, lw * 1.6); ctx.strokeStyle = 'rgba(255,244,222,0.08)'; ctx.lineWidth = lw * 0.8; ctx.stroke(); ctx.restore(); }
-    // hairline cracks and a few darker patches, pinned to the rock
-    const cs = Math.max(3, sp * 0.8);
-    for (let xx = Math.floor(xa / cs) * cs; xx < xb; xx += cs) for (let yy = Math.floor(ya / sp) * sp; yy < yb; yy += sp) { const h = hsh(xx * 3.1 + yy * 0.7); if (h > 0.35) continue;
-      const cx = xx + h * cs * 2.4, top = yy + sp * 0.12, bot = yy + sp * (0.55 + h); ctx.strokeStyle = 'rgba(0,0,0,0.25)'; ctx.lineWidth = Math.max(0.7, ppm * 0.03);
-      ctx.beginPath(); ctx.moveTo(S(cx), Sy(top)); ctx.lineTo(S(cx + (h - 0.17) * sp * 0.2), Sy((top + bot) / 2)); ctx.lineTo(S(cx + (h - 0.1) * sp * 0.1), Sy(bot)); ctx.stroke();
-      if (h < 0.08) { const r = sp * (0.6 + h * 4) * ppm, bg = ctx.createRadialGradient(S(cx), Sy(yy + sp / 2), 0, S(cx), Sy(yy + sp / 2), r); bg.addColorStop(0, 'rgba(0,0,0,0.18)'); bg.addColorStop(1, 'rgba(0,0,0,0)'); ctx.fillStyle = bg; ctx.fillRect(S(cx) - r, Sy(yy + sp / 2) - r, r * 2, r * 2); } }
+    const ZT = this.seabedZ; if (ZT) {
+      const k = 3.2 * ppm / 512, bh = Math.max(4, Math.round((Y1 - Y0) / 120)), zi2 = [0, 2, 3, 4]; // sand, slope, ooze, trench (no kelp on the wall)
+      const wts = (d) => { const shelf = 1 - ss(30, 70, d), slope = ss(30, 70, d) * (1 - ss(300, 520, d)), oz = ss(300, 520, d) * (1 - ss(2000, 2900, d)), tr = ss(2000, 2900, d) * (1 - ss(55000, 59000, d)), sm = shelf + slope + oz + tr || 1; return [shelf / sm, slope / sm, oz / sm, tr / sm]; };
+      ctx.globalCompositeOperation = 'multiply';
+      for (let n = 0; n < zi2.length; n++) { const Z = ZT[zi2[n]]; if (!Z || !Z.im.ok) continue; if (!Z.pat) Z.pat = ctx.createPattern(Z.im, 'repeat'); Z.pat.setTransform(new DOMMatrix([k, 0, 0, k, S(0) % (512 * k), Sy(0) % (512 * k)])); ctx.fillStyle = Z.pat;
+        for (let py = Y0; py < Y1; py += bh) { const wy = ya + (py + bh / 2 - Y0) / ppm, w = wts(wy)[n]; if (w < 0.02) continue; ctx.globalAlpha = (0.85 - 0.5 * ss(20, 600, wy)) * w; ctx.fillRect(X0, py, X1 - X0, bh + 0.5); } } }
     ctx.restore();
+    if (!this.phone) this.texture(ctx, 'rock', 19, 0.22 + 0.25 * ss(30, 400, (ya + yb) / 2), 'soft-light', S(0), Sy(0), [X0, Y0, X1 - X0, Y1 - Y0]);
   }
   // the small things on the bottom: pebbles and shells in the shallows, burrows and worm tubes on
   // the shelf, brittle stars and sea pens on the slope, sea cucumbers, tracks and lumpy
