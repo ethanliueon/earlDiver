@@ -2649,7 +2649,7 @@ export class Renderer {
     ctx.lineTo(S(x1 + step), H + 20); ctx.closePath();
     const midD = V ? V.midD : g.world.floorAt(this.cam.x);
     const fg = ctx.createLinearGradient(0, Sy(midD - 6), 0, Sy(midD + 30));
-    const c = midD > 40000 ? [168, 196, 212] : sampleTable(FLOOR_COL, midD); /* (7.8.0, owner) the second sea's floor is ice VI: pale, glassy */
+    const c = midD > AREA2.ice - 1500 ? [168, 196, 212] : sampleTable(FLOOR_COL, midD); /* (7.8.0, owner) the second sea's floor is ice VI: pale, glassy */
     fg.addColorStop(0, rgbStr(c)); fg.addColorStop(0.15, rgbStr(mixRgb(c, [40, 36, 30], 0.35))); fg.addColorStop(1, rgbStr(mixRgb(c, [10, 10, 10], 0.75)));
     ctx.fillStyle = fg; ctx.fill();
     // grain texture
@@ -2735,13 +2735,13 @@ export class Renderer {
     const A = AREA2; if (!all) { xa = Math.max(xa, A.edge - 26); ya = Math.max(ya, 10.2); } if (xb <= xa || yb <= ya) return;
     const ss = smoothstep, X0 = S(xa), X1 = S(xb), Y0 = Sy(ya), Y1 = Sy(yb);
     ctx.save(); ctx.globalCompositeOperation = 'source-over'; ctx.globalAlpha = 1;
-    const ICE = [[55000, null], [59000, [150, 178, 192]], [60000, [178, 202, 214]]];
-    const colAt = (y) => { const c = sampleTable(FLOOR_COL, y); if (y < 55000) return c; const t = ss(55000, 59500, y); return c.map((v, i) => Math.round(v + ((ICE[2][1][i]) - v) * t)); };
+    const ICE = [[A.ice - 5000, null], [A.ice - 1000, [150, 178, 192]], [A.ice, [178, 202, 214]]];
+    const colAt = (y) => { const c = sampleTable(FLOOR_COL, y); if (y < A.ice - 5000) return c; const t = ss(A.ice - 5000, A.ice - 500, y); return c.map((v, i) => Math.round(v + ((ICE[2][1][i]) - v) * t)); };
     const gr = ctx.createLinearGradient(0, Y0, 0, Y1); for (let k2 = 0; k2 <= 10; k2++) { const y = ya + (yb - ya) * k2 / 10; gr.addColorStop(k2 / 10, rgbStr(colAt(y))); }
     ctx.fillStyle = gr; ctx.fillRect(X0, Y0, X1 - X0, Y1 - Y0);
     const ZT = this.seabedZ; if (ZT) {
       const k = 3.2 * ppm / 512, bh = Math.max(4, Math.round((Y1 - Y0) / 120)), zi2 = [0, 2, 3, 4]; // sand, slope, ooze, trench (no kelp on the wall)
-      const wts = (d) => { const shelf = 1 - ss(30, 70, d), slope = ss(30, 70, d) * (1 - ss(300, 520, d)), oz = ss(300, 520, d) * (1 - ss(2000, 2900, d)), tr = ss(2000, 2900, d) * (1 - ss(55000, 59000, d)), sm = shelf + slope + oz + tr || 1; return [shelf / sm, slope / sm, oz / sm, tr / sm]; };
+      const wts = (d) => { const shelf = 1 - ss(30, 70, d), slope = ss(30, 70, d) * (1 - ss(300, 520, d)), oz = ss(300, 520, d) * (1 - ss(2000, 2900, d)), tr = ss(2000, 2900, d) * (1 - ss(A.ice - 5000, A.ice - 1000, d)), sm = shelf + slope + oz + tr || 1; return [shelf / sm, slope / sm, oz / sm, tr / sm]; };
       ctx.globalCompositeOperation = 'multiply';
       for (let n = 0; n < zi2.length; n++) { const Z = ZT[zi2[n]]; if (!Z || !Z.im.ok) continue; if (!Z.pat) Z.pat = ctx.createPattern(Z.im, 'repeat'); Z.pat.setTransform(new DOMMatrix([k, 0, 0, k, S(0) % (512 * k), Sy(0) % (512 * k)])); ctx.fillStyle = Z.pat;
         for (let py = Y0; py < Y1; py += bh) { const wy = ya + (py + bh / 2 - Y0) / ppm, w = wts(wy)[n]; if (w < 0.02) continue; ctx.globalAlpha = (0.85 - 0.5 * ss(20, 600, wy)) * w; ctx.fillRect(X0, py, X1 - X0, bh + 0.5); } } }

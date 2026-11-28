@@ -14,9 +14,9 @@ const DEEP_FLOOR = { 130: 250, 131: 250, 132: 400, 162: 300, 170: 1000, 163: 200
 export const WORLD_W = 6040; // (7.4.17) 40 m more on the east: the coconut island and the pool beyond it. (7.8.0, owner) and the second sea beyond it, 1 km across
 // (7.8.0, owner) the second sea, past the island: a 20 m beach shelving to 10 m at its edge, then the wall: a sheer cliff
 // leaning in under its own lip, down to a plain at the Challenger Deep's depth; across the plain a second drop into the
-// deep abyss, whose floor is ice VI (the ice that forms under about 0.6 GPa in water near 2 °C), about 60 km down. Divers
+// deep abyss, whose floor is ice VI, 44,444 m down (owner's figure; real ice VI needs about 0.63 GPa, nearer 63 km in 2 °C water). Divers
 // only: the sub stays west of the island
-export const AREA2 = { beach0: 4994, edge: 5014, plain: 10935, drop2: 5700, ice: 60000, end: 6015 };
+export const AREA2 = { beach0: 4994, edge: 5014, plain: 10935, drop2: 5700, ice: 44444, end: 6015 }; // (7.8.3, owner) the deepest point 44,444 m, on ice VI
 // (7.8.0, owner) the warning sign where the beach goes into the water, and the old diver who sits at its edge and turns
 // back anyone without a signed dive log (the gate stands a few metres short of the drop: the drop can be looked over)
 export const SIGN = { x: 4997.2 }, KEEPER = { x: 5009.2 }, GATE_X = 5007.5;
@@ -26,7 +26,7 @@ export const SIGN = { x: 4997.2 }, KEEPER = { x: 5009.2 }, GATE_X = 5007.5;
 // the palm: "Area available in a future update"
 export const ISLE = { x0: 4974, top0: 4982, top1: 4988, x1: 4994, palm: 4989.5, stop: 4990.6, pool0: 4995, pool1: 5015 };
 export const SEA_END = 4966; // nothing of the sea (rock, coral, kelp, statics, fish) is placed past here
-export const WORLD_D = 61000; // (7.8.0) to the ice under the second sea
+export const WORLD_D = 45500; // (7.8.0) to the ice under the second sea (7.8.3: 44,444 m)
 export const EAST = 4000;
 // v2: a 2,000 m wide hadal trench was opened west of the old one; everything east of it moved by SH
 export const SH = 2000;
