@@ -1,8 +1,8 @@
 // (4.10.0) the chart: the whole sea in section, as the quest maps draw it, with the player's own markers. Click the
 // water or the seabed to set a marker there, name it and pick its colour; click a marker to rename it, follow it (the
 // tutorial's trail leads there) or take it off. Markers are kept with the save, and show in the sea as small pins.
-import { X0 as SEA_X0 } from './mapx.js';
-const SEA_X1 = 5040;
+import { X0 as SEA_X0, mapX } from './mapx.js';
+const SEA_X1 = 4994; // (7.8.2, owner) the chart ends at the island: the second sea is never on the map
 import { WORLD_W, BOAT, STATION, DAVE, SAIL, SAIL_OFF } from './world.js';
 
 const DEPTH = 5200, MAX_MARKS = 24;
@@ -139,10 +139,10 @@ export class Chart {
     const deep = Math.max(P.deepest || 0, g.earl.maxDepth || 0);
     if (deep > 30) { x.strokeStyle = 'rgba(239,232,210,0.45)'; x.setLineDash([6, 5]); x.beginPath(); x.moveTo(0, Y(deep)); x.lineTo(W, Y(deep)); x.stroke(); x.setLineDash([]); }
     // the seabed: rock, darker below, with a light edge along its top
-    x.beginPath(); x.moveTo(0, H); for (let i = 0; i < this.floor.length; i++) x.lineTo(X(i * 5), Y(this.floor[i])); x.lineTo(W, H); x.closePath();
+    x.beginPath(); x.moveTo(0, H); for (let i = 0; i < this.floor.length; i++) x.lineTo(X(SEA_X0 + i * 5), Y(this.floor[i])); /* (7.8.2) from the sea's west wall */ x.lineTo(W, H); x.closePath();
     const rg = x.createLinearGradient(0, top, 0, H); rg.addColorStop(0, '#6a5a40'); rg.addColorStop(0.5, '#4a4234'); rg.addColorStop(1, '#2c2820');
     x.fillStyle = rg; x.fill();
-    x.beginPath(); for (let i = 0; i < this.floor.length; i++) x[i ? 'lineTo' : 'moveTo'](X(i * 5), Y(this.floor[i])); x.strokeStyle = 'rgba(214,196,150,0.55)'; x.lineWidth = 1.5; x.stroke(); x.lineWidth = 1;
+    x.beginPath(); for (let i = 0; i < this.floor.length; i++) x[i ? 'lineTo' : 'moveTo'](X(SEA_X0 + i * 5), Y(this.floor[i])); x.strokeStyle = 'rgba(214,196,150,0.55)'; x.lineWidth = 1.5; x.stroke(); x.lineWidth = 1;
     if (deep > 30) { x.fillStyle = 'rgba(239,232,210,0.85)'; x.shadowColor = '#000'; x.shadowBlur = 3; x.fillText(`deepest so far, ${Math.round(deep).toLocaleString()} m`, 200, Y(deep) - 5); x.shadowBlur = 0; }
     // the surface
     x.strokeStyle = 'rgba(190,226,236,0.55)'; x.beginPath(); x.moveTo(0, Y(0)); x.lineTo(W, Y(0)); x.stroke();
@@ -153,7 +153,7 @@ export class Chart {
     // (4.28) the lie of the land, named on the seabed itself: the kelp under the boat, the seamount, the plain, the trench
     if (!this.landmarks) {
       const F = (m) => this.floorAt(m), pick = (a, b, better) => { let bx = a; for (let m = a; m <= b; m += 10) if (better(F(m), F(bx))) bx = m; return bx; };
-      this.landmarks = [[4750, 'kelp forest'], [pick(2400, 3900, (u, v) => u < v) + 260, 'seamount'], [2150, 'abyssal plain'], [pick(0, 1400, (u, v) => u > v), 'trench']];
+      this.landmarks = [[4750, 'kelp forest'], [pick(mapX(2400), mapX(3900), (u, v) => u < v) + 60, 'seamount'], [mapX(3620), 'abyssal plain'], [pick(mapX(100), mapX(2150), (u, v) => u > v), 'trench']]; /* (7.8.2) in the shortened sea */
     }
     x.save(); x.font = '600 12px "Barlow Semi Condensed", "Arial Narrow", sans-serif'; x.textAlign = 'center'; x.letterSpacing = '1.5px';
     for (const [mx, nm] of this.landmarks) { x.fillStyle = 'rgba(236,228,200,0.5)'; x.fillText(nm.toUpperCase(), Math.max(60, Math.min(W - 60, X(mx))), Math.min(H - 8, Y(this.floorAt(mx)) + 22)); }

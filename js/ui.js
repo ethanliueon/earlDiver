@@ -709,7 +709,7 @@ export class UI {
   // the sea in section: the seafloor across the whole map, the depth asked for as a line, where he is, and the nearest
   // place the floor goes deeper than that
   drawQuestMap(cv, g, d, bed = null) {
-    const x = cv.getContext('2d'), W = cv.width, H = cv.height, A0 = 2215, Wd = 5040, D = 5200, X = (m) => ((m - A0) / (Wd - A0)) * W, Y = (y) => (y / D) * (H - 14) + 4; /* (7.8.0) the first sea, from its west wall */
+    const x = cv.getContext('2d'), W = cv.width, H = cv.height, A0 = 2215, Wd = 4994, D = 5200, X = (m) => ((m - A0) / (Wd - A0)) * W, Y = (y) => (y / D) * (H - 14) + 4; /* (7.8.0) the first sea, from its west wall */
     x.fillStyle = '#0d2230'; x.fillRect(0, 0, W, H);
     x.fillStyle = '#4a4234'; x.beginPath(); x.moveTo(0, H); for (let m = A0; m <= Wd; m += 10) x.lineTo(X(m), Y(Math.max(0, Math.min(D, g.world.floorAt(m))))); x.lineTo(W, H); x.closePath(); x.fill();
     x.font = '600 13px "Barlow Semi Condensed", "Arial Narrow", sans-serif';
