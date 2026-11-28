@@ -9,6 +9,7 @@ import { clamp, lerp, smoothstep, sampleTable, rgbStr, TAU, fbm1, hexToRgb, mixR
 import { drawSpecies } from './creatures_draw.js';
 import { SPECIES } from './species.js';
 import { drawEarl, drawSub, drawBoat, drawBoatRadar, markOf, SUB_MARKS, boatRock } from './earl_draw.js';
+import { keeperPicture } from './keeper_art.js';
 import { drawMonster, drawMonsterLights, drawMonsterShape, drawMonsterRim, MONSTER_LEN } from './monster_draw.js';
 import { sleeperState } from './sleeper_draw.js';
 import { activeTool, hatchAt, NET_DROP, NET_HAUL } from './capture.js';
@@ -2524,13 +2525,15 @@ export class Renderer {
     const ctx = this.ctx, cam = this.cam, ppm = cam.ppm, W = this.W, H = this.H;
     for (const [par, alpha, off] of [[0.35, 0.35, 70], [0.6, 0.45, 30]]) {
       ctx.fillStyle = rgbStr(sampleTable(WATER_ALBEDO, cam.y + 200), alpha);
+      // (7.9.4, owner) past the edge of the second sea the far seabed fades out sideways as it falls away, so no line is left
+      { const kE = ppm * par, sxE = W / 2 + (AREA2.edge - cam.x) * kE, fw = 60 * kE; if (sxE < W + 10) { const col = sampleTable(WATER_ALBEDO, cam.y + 200), gr = ctx.createLinearGradient(sxE - fw * 0.2, 0, sxE + fw, 0); gr.addColorStop(0, rgbStr(col, alpha)); gr.addColorStop(1, rgbStr(col, 0)); ctx.fillStyle = gr; } }
       ctx.beginPath(); ctx.moveTo(-10, H + 10);
       // (7.1.1) sampled at fixed places in the world (not at fixed places on the screen): the outline no longer shimmers
       // up and down as the camera moves
       const k = ppm * par, stepW = Math.pow(2, Math.round(Math.log2(Math.max(0.25, 20 / k)))), f0 = Math.floor((cam.x + (-10 - W / 2) / k) / stepW) * stepW, f1 = cam.x + (W + 20 - W / 2) / k + stepW;
       for (let fx = f0; fx <= f1; fx += stepW) {
         const sx = W / 2 + (fx - cam.x) * k;
-        const d = fx > AREA2.edge + 15 ? 1e6 : g.world.floorAt(clamp(fx, 0, WORLD_W)) - off + fbm1(fx / 40, 3, 99) * 25; // (7.9.0) no far seabed over the second sea: open water, as it would be over a hole that deep
+        const past = Math.max(0, fx - AREA2.edge), d = g.world.floorAt(clamp(Math.min(fx, AREA2.edge), 0, WORLD_W)) - off + fbm1(fx / 40, 3, 99) * 25 + Math.pow(past, 1.3) * 0.9; // (7.9.4, owner) over the second sea the far seabed falls away in a curve into the dark (it stopped dead, leaving a straight bright line)
         const sy = H / 2 + (d - cam.y) * ppm * par;
         ctx.lineTo(sx, Math.max(Sy(0) + 4, sy));
       }
@@ -3800,27 +3803,9 @@ export class Renderer {
   drawEdgeKeeper(g, ctx, S, Sy, ppm, t) {
     const W = g.world;
     this.drawSign(ctx, S, Sy, ppm, SIGN.x, W.floorAt(SIGN.x), ['DANGER AHEAD', 'TURN BACK'], t, { lantern: true });
-    { const x = KEEPER.x, gy = W.floorAt(x), px = S(x), sy = Sy(gy), u = ppm / 40, bob = Math.sin(t * 0.8) * 0.6 * u;
-      ctx.save(); ctx.translate(px, sy);
-      // his stone
-      const sg = ctx.createLinearGradient(0, -16 * u, 0, 2 * u); sg.addColorStop(0, '#5d6260'); sg.addColorStop(1, '#2f3332');
-      ctx.fillStyle = sg; ctx.beginPath(); ctx.moveTo(-15 * u, 2 * u); ctx.quadraticCurveTo(-16 * u, -12 * u, -4 * u, -16 * u); ctx.quadraticCurveTo(10 * u, -17 * u, 15 * u, -8 * u); ctx.lineTo(16 * u, 2 * u); ctx.closePath(); ctx.fill();
-      ctx.translate(0, -15 * u + bob); ctx.scale(-1, 1); // facing back toward the beach, the drop behind him
-      const canvas = ctx.createLinearGradient(0, -30 * u, 0, 10 * u); canvas.addColorStop(0, '#7d7560'); canvas.addColorStop(1, '#4f4a3c');
-      ctx.fillStyle = canvas; ctx.strokeStyle = 'rgba(20,16,10,0.6)'; ctx.lineWidth = 1.2 * u;
-      ctx.beginPath(); ctx.moveTo(-8 * u, 0); ctx.quadraticCurveTo(-10 * u, -18 * u, -2 * u, -26 * u); ctx.lineTo(8 * u, -25 * u); ctx.quadraticCurveTo(10 * u, -12 * u, 7 * u, 0); ctx.closePath(); ctx.fill(); ctx.stroke(); // body, seated
-      ctx.beginPath(); ctx.moveTo(-6 * u, -2 * u); ctx.quadraticCurveTo(10 * u, -3 * u, 16 * u, 4 * u); ctx.lineTo(16 * u, 12 * u); ctx.lineTo(11 * u, 12 * u); ctx.lineTo(10 * u, 6 * u); ctx.quadraticCurveTo(2 * u, 4 * u, -6 * u, 4 * u); ctx.closePath(); ctx.fill(); ctx.stroke(); // thighs and shins
-      ctx.fillStyle = '#2a2622'; ctx.fillRect(9 * u, 11 * u, 9 * u, 4 * u); // lead boots
-      ctx.fillStyle = '#6e6450'; ctx.fillRect(-3 * u, -14 * u, 7 * u, 4 * u); // a patch
-      ctx.fillStyle = canvas; ctx.beginPath(); ctx.moveTo(5 * u, -22 * u); ctx.quadraticCurveTo(12 * u, -14 * u, 12 * u, -6 * u); ctx.lineTo(8 * u, -5 * u); ctx.quadraticCurveTo(8 * u, -13 * u, 2 * u, -18 * u); ctx.closePath(); ctx.fill(); ctx.stroke(); // arm on his knee
-      // the brass helmet: a dome, its breastplate, a round front port and two side ports
-      const hx = 2 * u, hy = -34 * u, hr = 9 * u, hg = ctx.createRadialGradient(hx - hr * 0.4, hy - hr * 0.45, hr * 0.1, hx, hy, hr * 1.1);
-      hg.addColorStop(0, '#e4c47e'); hg.addColorStop(0.5, '#a87d3c'); hg.addColorStop(1, '#5a3e1a');
-      ctx.fillStyle = '#7a5a2c'; ctx.beginPath(); ctx.ellipse(hx, hy + 8 * u, 11 * u, 4 * u, 0, 0, TAU); ctx.fill();
-      ctx.fillStyle = hg; ctx.beginPath(); ctx.arc(hx, hy, hr, 0, TAU); ctx.fill();
-      ctx.fillStyle = '#1a2224'; ctx.strokeStyle = '#c9a55c'; ctx.lineWidth = 1.6 * u; ctx.beginPath(); ctx.arc(hx + 4.6 * u, hy + 0.5 * u, 3.6 * u, 0, TAU); ctx.fill(); ctx.stroke();
-      ctx.beginPath(); ctx.arc(hx - 2 * u, hy - 1 * u, 2 * u, 0, TAU); ctx.fill(); ctx.stroke();
-      ctx.fillStyle = 'rgba(255,255,255,0.35)'; ctx.beginPath(); ctx.ellipse(hx - 3.5 * u, hy - 5 * u, 2.4 * u, 1.3 * u, -0.5, 0, TAU); ctx.fill();
+    { const x = KEEPER.x, gy = W.floorAt(x), px = S(x), sy = Sy(gy), u = ppm / 40, bob = Math.sin(t * 0.8) * 0.4 * u, K = keeperPicture(); // (7.9.4, owner) the painted keeper
+      ctx.save(); ctx.translate(px, sy); ctx.scale(-1, 1); // facing back toward the beach, the drop behind him
+      ctx.drawImage(K.c, -K.ox * u, -K.oy * u + bob, K.w * u, K.h * u);
       ctx.restore();
       // a thread of bubbles from his helmet now and then
       if (g.bubbles && Math.random() < 0.02) g.bubbles.push({ x: x + 0.05, y: gy - 1.3, r: 0.03 + Math.random() * 0.04, w: Math.random() * 6, t: 0 }); }
