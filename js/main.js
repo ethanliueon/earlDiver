@@ -327,6 +327,19 @@ const ui = new UI({
     else if (act === 'chest') { const q = giveItem(P, 'chest_' + arg); if (q) ui.showGains([{ kind: 'item', id: 'chest_' + arg, how: 'Test' }]); else hud.toast('Locker full', 'warn'); }
     else if (act === 'abil' && arg === 'full') { /* (7.6.83, owner) every skill, each with every charge it can hold, every cooldown ready */ let n = 0; for (const id of ALL_ABILITIES) if (ITEMS[id] && !ownsItem(P, id)) { kitOf(P).items.push(mkItem(id)); n++; } /* past the locker's 60 on purpose: the test wants every one */
       for (const q of P.kit.items) { const A = abilityOf(q.id); if (A) { q.load = maxLoad(A); q.loadAt = Date.now(); } } P.abilReadyAt = P.abilReadyAt2 = P.abilReadyAt3 = 0; saveProfile(P); hud.toast(`Every skill, charges full (${n} new, test)`); }
+    else if (act === 'depth2') { /* (7.9.5, owner) straight to the second sea's gate: the coconut island, the log signed, the best legendary of every kind on, every skill with full charges, three on */
+      const e = g.earl; if (g.mode !== 'play' || e.inSub) { hud.toast('Leave the sub first', 'warn'); return; }
+      const K = kitOf(P), wear = (id) => { let q = K.items.find((x) => x.id === id); if (!q) { q = mkItem(id); K.items.push(q); } return q; };
+      for (const id of ['oldskin', 'blacklung', 'pinions', 'stomach', 'hagnet', 'flashlightfish']) putOn(P, wear(id).u);
+      for (const id of ALL_ABILITIES) if (ITEMS[id] && !ownsItem(P, id)) K.items.push(mkItem(id));
+      for (const q of K.items) { const A = abilityOf(q.id); if (A) { q.load = maxLoad(A); q.loadAt = Date.now(); } }
+      ['ab_dauntless_mythical', 'ab_temper_legendary', 'ab_gust_legendary'].forEach((id, i) => equipScroll(P, wear(id).u, i + 1));
+      P.abilReadyAt = P.abilReadyAt2 = P.abilReadyAt3 = 0; P.wallPass = 1; P.keeperMet = 1;
+      ui.closeAll && ui.closeAll(); ui.toggleStore && ui.toggleStore(false);
+      g.aboard = null; g.helm = false; e.x = ISLE.palm - 3; e.vx = e.vy = 0; e.facing = 1; e.o2 = e.o2Max;
+      g.ashore = { walk: 0, step: 0, hop: 0, wade: 0, saidT: 0 }; placeAshore();
+      if (renderer.cam) { renderer.cam.x = e.x; renderer.cam.y = e.y; }
+      hud.toast('Coconut island: log signed, legendary kit (test)'); }
     else if (act === 'abil') { if (arg === 'ready') { P.abilReadyAt = 0; hud.toast('Ability ready (test)'); } else { let n = 0; for (const id of ALL_ABILITIES) if (ITEMS[id] && !ownsItem(P, id) && giveItem(P, id)) n++; hud.toast(`${n} abilities into the locker (test)`); } }
     else if (act === 'item' && ITEMS[arg]) { const q = giveItem(P, arg); if (q) ui.showGains([{ kind: 'item', id: arg, how: 'Test' }]); else hud.toast('Locker full', 'warn'); }
     else if (act === 'reset') {

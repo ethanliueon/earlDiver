@@ -67,6 +67,7 @@ export function testHtml(P, items) {
     <div class="tt-row"><b>Abilities</b><button data-test="abil|all">Every ability</button><button data-test="abil|ready">Cooldown ready</button><button data-test="abil|full">All skills, full charges</button></div>
     <div class="tt-row"><b>Items</b><select class="tt-item">${opts}</select><button data-test="item|tt-item">Give</button><button data-test="item3|tt-item">Give 3</button></div>
     <div class="tt-row"><b>Skills</b><select class="tt-skill">${skills}</select><button data-test="item|tt-skill">Give</button><button data-test="item3|tt-skill">Give 3</button></div>
+    <div class="tt-row"><b>Teleport</b><button data-test="depth2|go">Test depth 2</button></div>
     <div class="tt-row"><b>Reset</b><button data-test="reset|lessons">Lessons</button><button data-test="reset|tutorial">Tutorial</button><button data-test="reset|board">First board</button></div></div></div>`;
 }
 // (7.3.9, owner) the shop's tabs: chests (for cash), pets (for pearls), and Test (behind ?dev)
